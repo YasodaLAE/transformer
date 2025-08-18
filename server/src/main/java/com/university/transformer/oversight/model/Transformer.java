@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Entity
-@Data // Lombok annotation to generate getters, setters, toString, etc.
+@Data
 public class Transformer {
 
     @Id
@@ -16,7 +16,7 @@ public class Transformer {
     private String transformerId;
     private String poleId;
     private String region;
-    private Double type;
+    private String type;
 
     @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ThermalImage> thermalImages;

@@ -4,11 +4,12 @@ import { Modal, Button, Form } from 'react-bootstrap';
 import { createTransformer } from '../services/apiService';
 
 const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
-    const [transformer, setTransformer] = useState(null);
-    const [transformerId, setTransformerId] = useState(null);
+    const [transformer, setTransformer] = useState('');
+    const [transformerId, setTransformerId] = useState('');
     const [region, setRegion] = useState('');
     const [poleId, setPoleId] = useState('');
     const [tType, setType] = useState('');
+    const [text, setText] = useState('');
     const [error, setError] = useState('');
     const transformerTypes = ['Bulk', 'Distribution'];
     const regions = ['Galle', 'Nugegoda', 'Colombo', 'Kurunegala', 'Gampaha', 'Ampara','Matara'];
@@ -20,7 +21,7 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
             transformerId,
             poleId,
             region,
-            type
+            tType
         };
 
         try {
@@ -75,8 +76,8 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
                         <Form.Select
                             type="text"
                             placeholder="Type"
-                            value={tType}
-                            onChange={(e) => setType(e.target.value)}
+                            value={region}
+                            onChange={(e) => setRegion(e.target.value)}
                             required
                         >
                             {regions.map(type => (
@@ -104,8 +105,8 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
                         <Form.Control
                             type="text"
                             placeholder="Location Details"
-                            value={region}
-                            onChange={(e) => setRegion(e.target.value)}
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
                             required
                         />
                     </Form.Group>

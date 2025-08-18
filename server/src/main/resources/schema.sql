@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS TRANSFORMER;
 
 -- Recreate the parent table
 CREATE TABLE TRANSFORMER (
-    id BIGINT PRIMARY KEY,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     transformer_id VARCHAR(255),
     pole_id VARCHAR(255),
     region VARCHAR(255),
