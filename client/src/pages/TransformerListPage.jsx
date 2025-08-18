@@ -6,7 +6,7 @@ import FilterBar from '../components/FilterBar';
 import AddTransformerModal from '../components/AddTransformerModal';
 
 const TransformerListPage = () => {
-    const [transformer, setTransformer] = useState(null);
+    const [transformers, setTransformers] = useState(null);
     const [showModal, setShowModal] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -24,11 +24,11 @@ const TransformerListPage = () => {
         } finally {
             setLoading(false);
         }
-    },);
+    },[]);
 
     useEffect(() => {
         fetchTransformers();
-    },);
+    },[]);
 
     const handleTransformerAdded = () => {
         // Refresh the list after a new transformer is added
