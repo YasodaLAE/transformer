@@ -1,18 +1,18 @@
 package com.university.transformer.oversight.service;
 
 import com.university.transformer.oversight.model.Inspection;
+import com.university.transformer.oversight.repository.InspectionRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.Optional;
 
-public interface InspectionService {
+@Service
+public class InspectionService {
 
-    List<Inspection> getInspectionsByTransformer(Long transformerId);
-    Inspection saveInspection(Inspection inspection);
+    @Autowired
+    private InspectionRepository inspectionRepository;
 
-    Optional<Inspection> findInspectionById(Long id);
-
-    //Optional<Inspection> findInspectionById(Long id);
-    void deleteInspection(Long id);
-
-    // You can add more methods here for updating inspections if needed
+    public List<Inspection> getInspectionsByTransformer(Long transformerId) {
+        return inspectionRepository.findByTransformerId(transformerId);
+    }
 }

@@ -1,12 +1,18 @@
 package com.university.transformer.oversight.model;
 
 import jakarta.persistence.*;
+import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.time.LocalDate;
 
 @Entity
+@Table(name = "inspection")
+@Data
+@NoArgsConstructor
 public class Inspection {
 
     @Id
@@ -28,7 +34,8 @@ public class Inspection {
     @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transformer_id")
+    @JsonBackReference
     private Transformer transformer;
 
-    // Constructors, getters, and setters
+    // Constructors, getters, and setters
 }

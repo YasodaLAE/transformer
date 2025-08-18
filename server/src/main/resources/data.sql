@@ -14,3 +14,8 @@ VALUES
 ('000123591', '2025-06-13', NULL, 'Pending', 3),
 ('000123592', '2025-06-06', '2025-08-08', 'Completed', 4),
 ('000123593', '2025-04-25', '2025-08-08', 'Completed',5);
+
+INSERT INTO thermal_image (image_url, pole_id, transformer_id)
+VALUES
+('/path/to/image1.jpg','uploader1', 1), -- Transformer 1 exists
+('/path/to/image2.jpg','uploader2', 2); -- Transformer 2 exists

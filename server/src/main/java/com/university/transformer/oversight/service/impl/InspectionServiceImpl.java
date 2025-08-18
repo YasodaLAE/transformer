@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class InspectionServiceImpl implements InspectionService {
+public class InspectionServiceImpl extends InspectionService {
 
     private final InspectionRepository inspectionRepository;
     private final TransformerRepository transformerRepository;
@@ -30,7 +30,7 @@ public class InspectionServiceImpl implements InspectionService {
         return inspectionRepository.findByTransformerId(transformerId);
     }
 
-    @Override
+
     public Inspection saveInspection(Inspection inspection) {
         // Find the transformer to associate with the inspection
         Transformer transformer = transformerRepository.findById(inspection.getTransformer().getId())
@@ -39,12 +39,12 @@ public class InspectionServiceImpl implements InspectionService {
         return inspectionRepository.save(inspection);
     }
 
-    @Override
+
     public Optional<Inspection> findInspectionById(Long id) {
         return inspectionRepository.findById(id);
     }
 
-    @Override
+
     public void deleteInspection(Long id) {
         if (!inspectionRepository.existsById(id)) {
             throw new RuntimeException("Inspection not found with id: " + id);

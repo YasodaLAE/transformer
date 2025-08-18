@@ -38,7 +38,7 @@ const TransformerTable = ({ transformers, onDelete }) => {
                         <td>{transformer.region}</td>
                         <td>{transformer.transformerType}</td>
                         <td>
-                        <Link to={`/transformers/${transformer.id}/inspections`} className="btn btn-primary btn-sm">View
+                        <Link to={`/inspections/by-transformer/${transformer.id}`} className="btn btn-primary btn-sm">View
                         </Link>
                         </td>
                         {showActions && (

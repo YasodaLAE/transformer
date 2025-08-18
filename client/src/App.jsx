@@ -14,7 +14,7 @@ function App() {
                     <Route path="/" element={<DashboardPage />} />
                     <Route path="/transformers" element={<TransformerListPage />} />
                     <Route path="/transformers/:id" element={<TransformerDetailPage />} />
-                    <Route path="/transformers/:transformerId/inspections" element={<InspectionPage />} />
+                    <Route path="inspections/by-transformer/:transformerId" element={<InspectionPage/>}/>
                 </Routes>
             </Layout>
         </Router>

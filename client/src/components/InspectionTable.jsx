@@ -1,46 +1,37 @@
 import React from 'react';
-import { Dropdown } from 'react-bootstrap';
+import { Table } from 'react-bootstrap';
 
-const InspectionTable = ({ inspections, onDelete, onEdit }) => {
-    // Check if the onDelete or onEdit functions exist to determine if we should show the Actions column
-    const showActions = !!onDelete || !!onEdit;
-
+const InspectionTable = ({ inspections }) => {
     return (
-        <table className="table table-striped">
+        <Table striped bordered hover responsive>
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Inspection No.</th>
                     <th>Inspected Date</th>
                     <th>Maintenance Date</th>
                     <th>Status</th>
-                    {showActions && <th>Actions</th>}
                 </tr>
             </thead>
             <tbody>
-                {inspections.map((inspection) => (
-                    <tr key={inspection.id}>
-                        <td>{inspection.inspectionNo}</td>
-                        <td>{inspection.inspectedDate}</td>
-                        <td>{inspection.maintenanceDate || '-'}</td>
-                        <td>{inspection.status}</td>
-                        {showActions && (
-                            <td>
-                                <Dropdown>
-                                    <Dropdown.Toggle as="span" bsPrefix="" id="dropdown-basic">
-                                        <span>⋮</span>
-                                    </Dropdown.Toggle>
-                                    <Dropdown.Menu>
-                                        <Dropdown.Item>View</Dropdown.Item>
-                                        {onEdit && <Dropdown.Item onClick={() => onEdit(inspection.id)}>Edit</Dropdown.Item>}
-                                        {onDelete && <Dropdown.Item onClick={() => onDelete(inspection.id)} className="text-danger">Delete</Dropdown.Item>}
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </td>
-                        )}
+                {/* Ensure inspections is an array and map is called correctly */}
+                {Array.isArray(inspections) && inspections.length > 0 ? (
+                    inspections.map((inspection) => (
+                        <tr key={inspection.id}>
+                            <td>{inspection.id}</td>
+                            <td>{inspection.inspectionNo}</td>
+                            <td>{inspection.inspectedDate}</td>
+                            <td>{inspection.maintenanceDate || 'N/A'}</td>
+                            <td>{inspection.status}</td>
+                        </tr>
+                    ))
+                ) : (
+                    <tr>
+                        <td colSpan="5" className="text-center">No inspections found.</td>
                     </tr>
-                ))}
+                )}
             </tbody>
-        </table>
+        </Table>
     );
 };
 

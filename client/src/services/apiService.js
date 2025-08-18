@@ -18,8 +18,8 @@ export const getTransformerById = (id) => {
     return apiClient.get(`/api/transformers/${id}`);
 };
 
-export const getInspectionsByTransformer = (id) => {
-    return apiClient.get(`/api/transformers/${id}`);
+export const getInspectionsByTransformer = (transformerId) => {
+    return apiClient.get(`/api/inspections/by-transformer/${transformerId}`);
 };
 
 export const createTransformer = (transformerData) => {
@@ -36,4 +36,8 @@ export const uploadImage = (transformerId, formData) => {
 
 export const deleteTransformer = (id) => {
     return apiClient.delete(`/api/transformers/${id}`);
+};
+
+export const createInspection = (inspectionData) => {
+    return apiClient.post('/api/inspections', inspectionData);
 };

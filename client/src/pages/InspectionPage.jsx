@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionsByTransformer } from '../services/apiService';
+import { getInspectionsByTransformer, createInspection } from '../services/apiService';
 import { Button } from 'react-bootstrap';
-// import AddInspectionModal from '../components/AddInspectionModal'; // You'll create this later
+import AddInspectionModal from '../components/AddInspectionModal';
+import InspectionTable from '../components/InspectionTable'; // We'll create this next
 
 const InspectionPage = () => {
     const { transformerId } = useParams();
@@ -11,30 +12,53 @@ const InspectionPage = () => {
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
 
-    useEffect(() => {
-        const fetchInspections = async () => {
-            try {
-                const response = await getInspectionsByTransformer(transformerId);
-                setInspections(response.data);
-            } catch (err) {
-                setError('Failed to fetch inspections.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchInspections();
+    const fetchInspections = useCallback(async () => {
+        try {
+            const response = await getInspectionsByTransformer(transformerId);
+            setInspections(response.data);
+            setLoading(false);
+        } catch (err) {
+            setError('Failed to fetch inspections.');
+            console.error(err);
+            setLoading(false);
+        }
     }, [transformerId]);
 
-    if (loading) return <p>Loading inspections...</p>;
-    if (error) return <p className="text-danger">{error}</p>;
+    useEffect(() => {
+        fetchInspections();
+    }, [fetchInspections]);
+
+    const handleInspectionAdded = () => {
+        // After an inspection is added, re-fetch the list to update the table
+        fetchInspections();
+        setShowAddModal(false);
+    };
+
+    if (loading) {
+        return <p>Loading inspections...</p>;
+    }
+
+    if (error) {
+        return <p className="text-danger">{error}</p>;
+    }
 
     return (
-        <div>
-            <h2>Inspections for Transformer ID: {transformerId}</h2>
-            <Button onClick={() => setShowAddModal(true)}>Add Inspection</Button>
-            {/* Display the table of inspections here */}
-            {/* You will need to create a table component similar to TransformerTable */}
-            {/* The photo shows a table with columns: Inspection No., Inspected Date, Maintenance Date, Status */}
+        <div className="container-fluid">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2>Inspections for Transformer ID: {transformerId}</h2>
+                <Button onClick={() => setShowAddModal(true)}>Add Inspection</Button>
+            </div>
+            {inspections.length > 0 ? (
+                <InspectionTable inspections={inspections} />
+            ) : (
+                <p>No inspections found for this transformer.</p>
+            )}
+            <AddInspectionModal
+                show={showAddModal}
+                handleClose={() => setShowAddModal(false)}
+                onInspectionAdded={handleInspectionAdded}
+                transformerId={transformerId}
+            />
         </div>
     );
 };

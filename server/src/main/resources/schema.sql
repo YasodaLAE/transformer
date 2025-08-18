@@ -29,10 +29,10 @@ CREATE TABLE inspection (
 -- Recreate the child table with the foreign key
 CREATE TABLE thermal_image (
     -- Define columns for the thermal_image table
-    id BIGINT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     image_url VARCHAR(255),
     -- And the foreign key that references the TRANSFORMER table
     transformer_id BIGINT,
-    pole_id BIGINT,
+    pole_id VARCHAR(255),
     FOREIGN KEY (transformer_id) REFERENCES TRANSFORMER(id)
 );
