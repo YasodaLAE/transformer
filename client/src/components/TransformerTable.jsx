@@ -26,7 +26,7 @@ const TransformerTable = ({ transformers, onDelete }) => {
                     <th>Pole No.</th>
                     <th>Region</th>
                     <th>Type</th>
-                    {showActions && <th></th>}
+                    <th></th>
                     {showActions && <th></th>}
                 </tr>
             </thead>

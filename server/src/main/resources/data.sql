@@ -6,3 +6,11 @@ INSERT INTO TRANSFORMER (id, transformer_id, pole_id, region, transformer_type) 
 (4, 'AZ-4613', 'EN-123B', 'Maharagama', 'Bulk'),
 (5, 'AX-8993', 'EN-122B', 'Kottawa', 'Distribution');
 
+-- Assuming your transformers have IDs 1 through 5
+INSERT INTO inspection (inspection_no, inspected_date, maintenance_date, status, transformer_id)
+VALUES
+('000123589', '2025-07-02', '2025-08-02', 'In Progress', 'EN-122A'),
+('000123590', '2025-07-01', NULL, 'In Progress', 'EN-123A'),
+('000123591', '2025-06-13', NULL, 'Pending', 'EN-123A'),
+('000123592', '2025-06-06', '2025-08-08', 'Completed', 4),
+('000123593', '2025-04-25', '2025-08-08', 'Completed', 5);

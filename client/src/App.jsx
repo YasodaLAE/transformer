@@ -4,6 +4,7 @@ import TransformerListPage from './pages/TransformerListPage';
 import TransformerDetailPage from './pages/TransformerDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import Layout from './components/Layout';
+import InspectionPage from './pages/InspectionPage'
 
 function App() {
     return (
@@ -13,6 +14,7 @@ function App() {
                     <Route path="/" element={<DashboardPage />} />
                     <Route path="/transformers" element={<TransformerListPage />} />
                     <Route path="/transformers/:id" element={<TransformerDetailPage />} />
+                    <Route path="/transformers/:transformerId/inspections" element={<InspectionPage />} />
                 </Routes>
             </Layout>
         </Router>

@@ -18,6 +18,10 @@ export const getTransformerById = (id) => {
     return apiClient.get(`/api/transformers/${id}`);
 };
 
+export const getInspectionsByTransformer = (id) => {
+    return apiClient.get(`/api/transformers/${id}`);
+};
+
 export const createTransformer = (transformerData) => {
     return apiClient.post('/api/transformers', transformerData);
 };
