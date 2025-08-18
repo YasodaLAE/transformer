@@ -1,6 +1,5 @@
-// src/pages/TransformerListPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { getAllTransformers } from '../services/apiService';
+import { getAllTransformers, deleteTransformer } from '../services/apiService';
 import TransformerTable from '../components/TransformerTable';
 import FilterBar from '../components/FilterBar';
 import AddTransformerModal from '../components/AddTransformerModal';
@@ -10,7 +9,6 @@ const TransformerListPage = () => {
     const [showModal, setShowModal] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
 
     const fetchTransformers = useCallback(async () => {
         try {
@@ -24,16 +22,26 @@ const TransformerListPage = () => {
         } finally {
             setLoading(false);
         }
-    },[]);
+    }, []);
+
+    const handleTransformerAdded = () => {
+        fetchTransformers();
+    };
+
+    // New delete function
+    const handleDelete = async (id) => {
+        try {
+            await deleteTransformer(id);
+            fetchTransformers(); // Refresh the list after successful deletion
+        } catch (err) {
+            console.error("Failed to delete transformer:", err);
+            setError('Failed to delete transformer. Please try again.');
+        }
+    };
 
     useEffect(() => {
         fetchTransformers();
-    },[]);
-
-    const handleTransformerAdded = () => {
-        // Refresh the list after a new transformer is added
-        fetchTransformers();
-    };
+    }, [fetchTransformers]);
 
     return (
         <div className="container-fluid">
@@ -47,7 +55,7 @@ const TransformerListPage = () => {
 
             {loading && <p>Loading transformers...</p>}
             {error && <p className="text-danger">{error}</p>}
-            {!loading &&!error && <TransformerTable transformers={transformers} />}
+            {!loading && !error && <TransformerTable transformers={transformers} onDelete={handleDelete} />}
 
             <AddTransformerModal
                 show={showModal}

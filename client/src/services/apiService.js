@@ -29,3 +29,7 @@ export const uploadImage = (transformerId, formData) => {
         },
     });
 };
+
+export const deleteTransformer = (id) => {
+    return apiClient.delete(`/api/transformers/${id}`);
+};

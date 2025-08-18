@@ -44,10 +44,10 @@ public class TransformerServiceImpl implements TransformerService {
         return transformerRepository.findById(id);
     }
 
-    @Override
-    public Optional<Transformer> findByTransformerId(String transformerId) {
-        return transformerRepository.findByTransformerId(transformerId);
-    }
+//    @Override
+//    public Optional<Transformer> findByTransformerId(String transformerId) {
+//        return transformerRepository.findByTransformerId(transformerId);
+//    }
 
     @Override
     public Transformer updateTransformer(Long id, Transformer transformerDetails) {

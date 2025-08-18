@@ -11,7 +11,7 @@ public interface TransformerService {
     Transformer saveTransformer(Transformer transformer);
     List<Transformer> findAllTransformers();
     Optional<Transformer> findTransformerById(Long id);
-    Optional<Transformer> findByTransformerId(String transformerId);
+    //Optional<Transformer> findByTransformerId(String transformerId);
     Transformer updateTransformer(Long id, Transformer transformerDetails);
     void deleteTransformer(Long id);
     void addImageToTransformer(String transformerId, MultipartFile file, ImageType imageType, EnvironmentalCondition condition, String uploaderId);
