@@ -16,7 +16,8 @@ public class Transformer {
     private String transformerId;
     private String poleId;
     private String region;
-    private String type;
+    private String transformerType;
+    private String details;
 
     @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ThermalImage> thermalImages;

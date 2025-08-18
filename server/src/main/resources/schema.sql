@@ -12,7 +12,7 @@ CREATE TABLE TRANSFORMER (
     transformer_id VARCHAR(255),
     pole_id VARCHAR(255),
     region VARCHAR(255),
-    type DOUBLE
+    transformer_type VARCHAR(255)
 );
 
 -- Recreate the child table with the foreign key

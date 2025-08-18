@@ -19,7 +19,7 @@ const TransformerTable = ({ transformers }) => {
                         <td>{transformer.transformerId}</td>
                         <td>{transformer.poleId}</td>
                         <td>{transformer.region}</td>
-                        <td>{transformer.type}</td>
+                        <td>{transformer.transformerType}</td>
                         <td>
                             <Link to={`/transformers/${transformer.id}`} className="btn btn-primary btn-sm">
                                 View

@@ -14,7 +14,7 @@ const TransformerInfoCard = ({ transformer }) => {
                 <p><strong>Database ID:</strong> {transformer.id}</p>
                 <p><strong>Pole ID:</strong> {transformer.poleId}</p>
                 <p><strong>Region:</strong> {transformer.region}</p>
-                <p><strong>Type:</strong> {transformer.type}</p>
+                <p><strong>Type:</strong> {transformer.transformerType}</p>
             </div>
         </div>
     );

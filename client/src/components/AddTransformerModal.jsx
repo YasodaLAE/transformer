@@ -8,7 +8,7 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
     const [transformerId, setTransformerId] = useState('');
     const [region, setRegion] = useState('');
     const [poleId, setPoleId] = useState('');
-    const [tType, setType] = useState('');
+    const [transformerType, setTransformerType] = useState('');
     const [text, setText] = useState('');
     const [error, setError] = useState('');
     const transformerTypes = ['Bulk', 'Distribution'];
@@ -21,7 +21,7 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
             transformerId,
             poleId,
             region,
-            tType
+            transformerType
         };
 
         try {
@@ -30,7 +30,7 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
             setTransformerId('');
             setRegion('');
             setPoleId('');
-            setType('');
+            setTransformerType('');
             // Notify parent component to refresh the list
             onTransformerAdded();
             // Close the modal
@@ -74,12 +74,13 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
                     <Form.Group className="mb-3">
                         <Form.Label>Region</Form.Label>
                         <Form.Select
-                            type="text"
-                            placeholder="Type"
+                            type="region"
+                            placeholder="Region"
                             value={region}
                             onChange={(e) => setRegion(e.target.value)}
                             required
                         >
+                        <option value="" disabled hidden>Select Region</option>
                             {regions.map(type => (
                                 <option key={type} value={type}>{type}</option>
                                 ))}
@@ -88,12 +89,13 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
                     <Form.Group className="mb-3">
                         <Form.Label>Type</Form.Label>
                         <Form.Select
-                            type="text"
-                            placeholder="Type"
-                            value={tType}
-                            onChange={(e) => setType(e.target.value)}
+                            type="transformerType"
+                            placeholder="transformerType"
+                            value={transformerType}
+                            onChange={(e) => setTransformerType(e.target.value)}
                             required
                         >
+                        <option value="" disabled hidden>Select Type</option>
                             {transformerTypes.map(type => (
                                 <option key={type} value={type}>{type}</option>
                                 ))}
@@ -103,7 +105,7 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
                     <Form.Group className="mb-3">
                         <Form.Label>Location Details</Form.Label>
                         <Form.Control
-                            type="text"
+                            type="details"
                             placeholder="Location Details"
                             value={text}
                             onChange={(e) => setText(e.target.value)}
