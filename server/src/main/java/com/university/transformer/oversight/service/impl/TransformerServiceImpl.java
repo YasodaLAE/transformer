@@ -55,8 +55,9 @@ public class TransformerServiceImpl implements TransformerService {
                 .orElseThrow(() -> new RuntimeException("Transformer not found with id: " + id));
 
         transformer.setTransformerId(transformerDetails.getTransformerId());
-        transformer.setLocation(transformerDetails.getLocation());
-        transformer.setCapacity(transformerDetails.getCapacity());
+        transformer.setPoleId(transformerDetails.getPoleId());
+        transformer.setRegion(transformerDetails.getRegion());
+        transformer.setType(transformerDetails.getType());
 
         return transformerRepository.save(transformer);
     }
