@@ -1,0 +1,16 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.main-container {
+  display: flex;
+  flex-grow: 1;
+  overflow: hidden;
+}
+.content-area {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background-color: #f4f7f6;
+}
