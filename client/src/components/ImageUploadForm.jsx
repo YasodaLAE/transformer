@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { uploadImage } from '../services/apiService';
 
 const ImageUploadForm = ({ transformerId }) => {
-    const = useState(null);
+    const [transformerId, setTransformerId] = useState(null);
     const = useState('BASELINE');
     const [condition, setCondition] = useState('SUNNY');
     const [message, setMessage] = useState('');

@@ -13,10 +13,10 @@ public class Transformer {
     private Long id; // Primary key for the database
 
     @Column(unique = true, nullable = false)
-    private String transformerId; // Business ID like 'AZ-8890'
-
-    private String location;
-    private Double capacity; // e.g., in kVA
+    private String transformerId;
+    private String poleId;
+    private String region;
+    private Double type;
 
     @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ThermalImage> thermalImages;

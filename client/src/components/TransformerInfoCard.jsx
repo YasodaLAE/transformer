@@ -12,8 +12,9 @@ const TransformerInfoCard = ({ transformer }) => {
             </div>
             <div className="card-body">
                 <p><strong>Database ID:</strong> {transformer.id}</p>
-                <p><strong>Location:</strong> {transformer.location}</p>
-                <p><strong>Capacity:</strong> {transformer.capacity} kVA</p>
+                <p><strong>Pole ID:</strong> {transformer.poleId}</p>
+                <p><strong>Region:</strong> {transformer.region}</p>
+                <p><strong>Type:</strong> {transformer.type}</p>
             </div>
         </div>
     );

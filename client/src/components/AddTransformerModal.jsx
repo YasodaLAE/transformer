@@ -6,8 +6,9 @@ import { createTransformer } from '../services/apiService';
 const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
     const [transformer, setTransformer] = useState(null);
     const [transformerId, setTransformerId] = useState(null);
-    const [location, setLocation] = useState('');
-    const [capacity, setCapacity] = useState('');
+    const [region, setRegion] = useState('');
+    const [poleId, setPoleId] = useState('');
+    const [tType, setType] = useState('');
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
@@ -16,16 +17,18 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
 
         const newTransformer = {
             transformerId,
-            location,
-            capacity: parseFloat(capacity)
+            poleId,
+            region,
+            type
         };
 
         try {
             await createTransformer(newTransformer);
             // Clear form
             setTransformerId('');
-            setLocation('');
-            setCapacity('');
+            setRegion('');
+            setPoleId('');
+            setType('');
             // Notify parent component to refresh the list
             onTransformerAdded();
             // Close the modal
@@ -60,17 +63,27 @@ const AddTransformerModal = ({ show, handleClose, onTransformerAdded }) => {
                             type="text"
                             placeholder="e.g., Nugegoda"
                             value={location}
-                            onChange={(e) => setLocation(e.target.value)}
+                            onChange={(e) => setRegion(e.target.value)}
                             required
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
-                        <Form.Label>Capacity (kVA)</Form.Label>
+                        <Form.Label>Pole No.</Form.Label>
+                        <Form.Control
+                            type="text"
+                            placeholder="e.g., EN-xxxx"
+                            value={poleId}
+                            onChange={(e) => setPoleId(e.target.value)}
+                            required
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Type</Form.Label>
                         <Form.Control
                             type="number"
                             placeholder="e.g., 100.0"
-                            value={capacity}
-                            onChange={(e) => setCapacity(e.target.value)}
+                            value={tType}
+                            onChange={(e) => setType(e.target.value)}
                             required
                         />
                     </Form.Group>

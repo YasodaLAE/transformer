@@ -7,17 +7,19 @@ const TransformerTable = ({ transformers }) => {
             <thead>
                 <tr>
                     <th>Transformer No.</th>
-                    <th>Location</th>
-                    <th>Capacity (kVA)</th>
-                    <th>Actions</th>
+                    <th>Pole No.</th>
+                    <th>Region</th>
+                    <th>Type</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {transformers.map((transformer) => (
                     <tr key={transformer.id}>
                         <td>{transformer.transformerId}</td>
-                        <td>{transformer.location}</td>
-                        <td>{transformer.capacity}</td>
+                        <td>{transformer.poleId}</td>
+                        <td>{transformer.region}</td>
+                        <td>{transformer.type}</td>
                         <td>
                             <Link to={`/transformers/${transformer.id}`} className="btn btn-primary btn-sm">
                                 View
