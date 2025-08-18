@@ -1,5 +1,11 @@
 package com.university.transformer.oversight.model;
 
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.time.LocalDate;
+
 @Entity
 public class Inspection {
 
@@ -18,6 +24,8 @@ public class Inspection {
     private String status;
 
     // The many-to-one relationship with Transformer
+    @Getter
+    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transformer_id")
     private Transformer transformer;

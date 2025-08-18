@@ -2,8 +2,9 @@
 
 -- Drop the child table first to remove the foreign key constraint
 DROP TABLE IF EXISTS thermal_image;
+DROP TABLE IF EXISTS inspection; -- This table references 'transformer', so it must be dropped before it
 
--- Now, you can safely drop the parent table
+-- Step 2: Now, you can safely drop the parent table
 DROP TABLE IF EXISTS TRANSFORMER;
 
 -- Recreate the parent table
@@ -13,6 +14,16 @@ CREATE TABLE TRANSFORMER (
     pole_id VARCHAR(255),
     region VARCHAR(255),
     transformer_type VARCHAR(255)
+);
+
+CREATE TABLE inspection (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    inspection_no VARCHAR(255),
+    inspected_date DATE,
+    maintenance_date DATE,
+    status VARCHAR(255),
+    transformer_id BIGINT,
+    FOREIGN KEY (transformer_id) REFERENCES transformer(id)
 );
 
 -- Recreate the child table with the foreign key
