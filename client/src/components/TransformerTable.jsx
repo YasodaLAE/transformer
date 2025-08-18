@@ -17,6 +17,7 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
 ));
 
 const TransformerTable = ({ transformers, onDelete }) => {
+    const showActions = !!onDelete; // Check if the onDelete prop exists
     return (
         <table className="table table-striped">
             <thead>
@@ -25,8 +26,8 @@ const TransformerTable = ({ transformers, onDelete }) => {
                     <th>Pole No.</th>
                     <th>Region</th>
                     <th>Type</th>
-                    <th></th>
-                    <th></th>
+                    {showActions && <th></th>}
+                    {showActions && <th></th>}
                 </tr>
             </thead>
             <tbody>
@@ -40,6 +41,7 @@ const TransformerTable = ({ transformers, onDelete }) => {
                         <Link to={`/transformers/${transformer.id}`} className="btn btn-primary btn-sm">View
                         </Link>
                         </td>
+                        {showActions && (
                         <td>
                           <Dropdown>
                             <Dropdown.Toggle as={CustomToggle} id="dropdown-custom">
@@ -56,6 +58,7 @@ const TransformerTable = ({ transformers, onDelete }) => {
                             </Dropdown.Menu>
                           </Dropdown>
                         </td>
+                        )}
                     </tr>
                 ))}
             </tbody>
