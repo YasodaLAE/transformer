@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getInspectionsByTransformer, createInspection } from '../services/apiService';
 import { Button } from 'react-bootstrap';
 import AddInspectionModal from '../components/AddInspectionModal';
-import InspectionTable from '../components/InspectionTable'; // We'll create this next
+import InspectionTable from '../components/InspectionTable';
 
 const InspectionPage = () => {
     const { transformerId } = useParams();

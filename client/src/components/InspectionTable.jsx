@@ -1,9 +1,26 @@
 import React from 'react';
 import { Table } from 'react-bootstrap';
+import Dropdown from 'react-bootstrap/Dropdown';
+import { useAuth } from '../hooks/AuthContext';
+import {deleteInspection} from '../services/apiService'
+import { Link } from "react-router-dom";
+import { Button } from 'react-bootstrap';
 
-const InspectionTable = ({ inspections }) => {
+const InspectionTable = ({ inspections, onInspectionDeleted }) => {
+    const { isAdmin } = useAuth();
+    const handleDelete = async (inspectionId) => {
+            // Confirmation dialog for the user
+            if (window.confirm('Are you sure you want to delete this inspection?')) {
+                try {
+                    await deleteInspection(inspectionId);
+                    onInspectionDeleted(); // This function will trigger a data refresh
+                } catch (error) {
+                    console.error('Failed to delete inspection:', error);
+                }
+    }
+     };
     return (
-        <Table striped bordered hover responsive>
+        <table className="table table-striped">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -14,7 +31,6 @@ const InspectionTable = ({ inspections }) => {
                 </tr>
             </thead>
             <tbody>
-                {/* Ensure inspections is an array and map is called correctly */}
                 {Array.isArray(inspections) && inspections.length > 0 ? (
                     inspections.map((inspection) => (
                         <tr key={inspection.id}>
@@ -23,6 +39,24 @@ const InspectionTable = ({ inspections }) => {
                             <td>{inspection.inspectedDate}</td>
                             <td>{inspection.maintenanceDate || 'N/A'}</td>
                             <td>{inspection.status}</td>
+                            <td>
+                                <Link to={`/inspections/by-transformers/${inspection.id}`}>
+                                    <Button variant="info" size="sm" className="me-2">View</Button>
+                                </Link>
+
+                                {isAdmin && (
+                                    <Dropdown className="d-inline">
+                                        <Dropdown.Toggle variant="secondary" id={`dropdown-${inspection.id}`}>
+                                            &#8230;
+                                        </Dropdown.Toggle>
+                                        <Dropdown.Menu>
+                                            <Dropdown.Item onClick={() => handleDelete(inspection.id)}>
+                                                Delete
+                                            </Dropdown.Item>
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                )}
+                            </td>
                         </tr>
                     ))
                 ) : (
@@ -31,7 +65,7 @@ const InspectionTable = ({ inspections }) => {
                     </tr>
                 )}
             </tbody>
-        </Table>
+        </table>
     );
 };
 

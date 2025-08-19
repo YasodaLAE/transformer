@@ -1,6 +1,7 @@
 import React from 'react';
+import { Table, Dropdown, Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
-import Dropdown from 'react-bootstrap/Dropdown';
+import { useAuth } from '../hooks/AuthContext'; // Import the useAuth hook
 
 const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
   <button
@@ -17,48 +18,51 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
 ));
 
 const TransformerTable = ({ transformers, onDelete }) => {
-    const showActions = !!onDelete; // Check if the onDelete prop exists
+    const { isAdmin } = useAuth(); // Access the isAdmin state
+
     return (
         <table className="table table-striped">
             <thead>
                 <tr>
-                    <th>Transformer No.</th>
-                    <th>Pole No.</th>
+                    <th>ID</th>
                     <th>Region</th>
+                    <th>Pole ID</th>
                     <th>Type</th>
                     <th></th>
-                    {showActions && <th></th>}
+                    {isAdmin && <th></th>}
                 </tr>
             </thead>
             <tbody>
                 {transformers.map((transformer) => (
                     <tr key={transformer.id}>
                         <td>{transformer.transformerId}</td>
-                        <td>{transformer.poleId}</td>
                         <td>{transformer.region}</td>
+                        <td>{transformer.poleId}</td>
                         <td>{transformer.transformerType}</td>
                         <td>
-                        <Link to={`/inspections/by-transformer/${transformer.id}`} className="btn btn-primary btn-sm">View
-                        </Link>
+                            <Link to={`/inspections/by-transformer/${transformer.id}`} className="btn btn-primary btn-sm">View
+                            </Link>
                         </td>
-                        {showActions && (
-                        <td>
-                          <Dropdown>
-                            <Dropdown.Toggle as={CustomToggle} id="dropdown-custom">
-                              &#x22EE; {/* just the three vertical dots */}
-                            </Dropdown.Toggle>
 
-                            <Dropdown.Menu>
-                              <Dropdown.Item
-                                onClick={() => onDelete(transformer.id)}
-                                className="text-danger"
-                              >
-                                Delete
-                              </Dropdown.Item>
-                            </Dropdown.Menu>
-                          </Dropdown>
-                        </td>
-                        )}
+                            {/* This is the key part: conditionally render the dropdown based on isAdmin */}
+                            {isAdmin && (
+                                <td>
+                                  <Dropdown>
+                                    <Dropdown.Toggle as={CustomToggle} id="dropdown-custom">
+                                      &#x22EE; {/* just the three vertical dots */}
+                                    </Dropdown.Toggle>
+
+                                    <Dropdown.Menu>
+                                      <Dropdown.Item
+                                        onClick={() => onDelete(transformer.id)}
+                                        className="text-danger"
+                                      >
+                                        Delete
+                                      </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                  </Dropdown>
+                                </td>
+                            )}
                     </tr>
                 ))}
             </tbody>

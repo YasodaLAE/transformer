@@ -5,9 +5,11 @@ import TransformerDetailPage from './pages/TransformerDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import Layout from './components/Layout';
 import InspectionPage from './pages/InspectionPage'
+import { AuthProvider } from './hooks/AuthContext'; // Import the provider
 
 function App() {
     return (
+        <AuthProvider>
         <Router>
             <Layout>
                 <Routes>
@@ -18,6 +20,7 @@ function App() {
                 </Routes>
             </Layout>
         </Router>
+        </AuthProvider>
     );
 }
 

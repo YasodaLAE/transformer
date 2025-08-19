@@ -41,3 +41,7 @@ export const deleteTransformer = (id) => {
 export const createInspection = (inspectionData) => {
     return apiClient.post('/api/inspections', inspectionData);
 };
+
+export const deleteInspection = (id) => {
+    return apiClient.delete(`/api/inspections/${id}`);
+};

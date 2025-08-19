@@ -19,4 +19,8 @@ public class InspectionService {
     public Inspection saveInspection(Inspection inspection) {
         return inspectionRepository.save(inspection);
     }
+
+    public void deleteInspection(Long id) {
+        inspectionRepository.deleteById(id);
+ }
 }

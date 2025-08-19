@@ -26,4 +26,10 @@ public class InspectionController {
         List<Inspection> inspections = inspectionService.getInspectionsByTransformer(transformerId);
         return ResponseEntity.ok(inspections);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteInspection(@PathVariable Long id) {
+        inspectionService.deleteInspection(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 }
