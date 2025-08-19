@@ -1,11 +1,16 @@
 package com.university.transformer.oversight.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
+import java.util.Set;
 
 @Entity
-@Data // Lombok annotation to generate getters, setters, toString, etc.
+@Data
+@NoArgsConstructor
 public class Transformer {
 
     @Id
@@ -16,8 +21,16 @@ public class Transformer {
     private String transformerId;
     private String poleId;
     private String region;
-    private Double type;
+    private String transformerType;
+    private String details;
 
-    @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch=FetchType.EAGER, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Inspection> inspections;
+
+    @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch=FetchType.LAZY)
+    @JsonManagedReference
     private List<ThermalImage> thermalImages;
+
+
 }

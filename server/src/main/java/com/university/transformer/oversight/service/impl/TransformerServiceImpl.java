@@ -44,10 +44,10 @@ public class TransformerServiceImpl implements TransformerService {
         return transformerRepository.findById(id);
     }
 
-    @Override
-    public Optional<Transformer> findByTransformerId(String transformerId) {
-        return transformerRepository.findByTransformerId(transformerId);
-    }
+//    @Override
+//    public Optional<Transformer> findByTransformerId(String transformerId) {
+//        return transformerRepository.findByTransformerId(transformerId);
+//    }
 
     @Override
     public Transformer updateTransformer(Long id, Transformer transformerDetails) {
@@ -57,7 +57,7 @@ public class TransformerServiceImpl implements TransformerService {
         transformer.setTransformerId(transformerDetails.getTransformerId());
         transformer.setPoleId(transformerDetails.getPoleId());
         transformer.setRegion(transformerDetails.getRegion());
-        transformer.setType(transformerDetails.getType());
+        transformer.setTransformerType(transformerDetails.getTransformerType());
 
         return transformerRepository.save(transformer);
     }

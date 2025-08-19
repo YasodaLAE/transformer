@@ -3,15 +3,15 @@ import React, { useState } from 'react';
 import { uploadImage } from '../services/apiService';
 
 const ImageUploadForm = ({ transformerId }) => {
-//     const = useState(null);
-//     const = useState('BASELINE');
+    const [selectedFile, setSelectedFile]= useState(null);
+    const [imageType, setImageType]= useState('BASELINE');
     const [transformer, setTransformer] = useState(null);
     const [condition, setCondition] = useState('SUNNY');
     const [message, setMessage] = useState('');
     const [isUploading, setIsUploading] = useState(false);
 
     const handleFileChange = (event) => {
-        setSelectedFile(event.target.files);
+        setSelectedFile(event.target.files[0]);
     };
 
     const handleSubmit = async (event) => {

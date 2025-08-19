@@ -1,5 +1,6 @@
 package com.university.transformer.oversight.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -37,5 +38,6 @@ public class ThermalImage {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transformer_id", nullable = false)
+    @JsonBackReference
     private Transformer transformer;
 }
