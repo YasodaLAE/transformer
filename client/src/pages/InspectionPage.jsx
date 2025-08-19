@@ -4,6 +4,7 @@ import { getInspectionsByTransformer, createInspection } from '../services/apiSe
 import { Button } from 'react-bootstrap';
 import AddInspectionModal from '../components/AddInspectionModal';
 import InspectionTable from '../components/InspectionTable';
+import { useAuth } from '../hooks/AuthContext'; // Import the useAuth hook
 
 const InspectionPage = () => {
     const { transformerId } = useParams();
@@ -11,6 +12,7 @@ const InspectionPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showAddModal, setShowAddModal] = useState(false);
+    const { isAdmin, login, logout } = useAuth();
 
     const fetchInspections = useCallback(async () => {
         try {
@@ -46,10 +48,19 @@ const InspectionPage = () => {
         <div className="container-fluid">
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2>Inspections for Transformer ID: {transformerId}</h2>
+                {isAdmin ? (
+                    <>
                 <Button onClick={() => setShowAddModal(true)}>Add Inspection</Button>
+                </>
+                ) : (<p> </p> )}
+
             </div>
             {inspections.length > 0 ? (
-                <InspectionTable inspections={inspections} />
+                <InspectionTable
+                    inspections={inspections}
+                    onInspectionDeleted={fetchInspections}
+                />
+
             ) : (
                 <p>No inspections found for this transformer.</p>
             )}
