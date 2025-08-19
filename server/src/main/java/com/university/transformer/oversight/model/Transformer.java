@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Data
@@ -23,6 +22,7 @@ public class Transformer {
     private String region;
     private String transformerType;
     private String details;
+    private String baselineImageName;
 
     @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch=FetchType.EAGER, orphanRemoval = true)
     @JsonManagedReference
@@ -31,6 +31,5 @@ public class Transformer {
     @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch=FetchType.LAZY)
     @JsonManagedReference
     private List<ThermalImage> thermalImages;
-
 
 }

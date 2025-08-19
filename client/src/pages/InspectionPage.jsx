@@ -5,7 +5,7 @@ import { Button, Card, Row, Col } from 'react-bootstrap';
 import AddInspectionModal from '../components/AddInspectionModal';
 import InspectionTable from '../components/InspectionTable';
 import { useAuth } from '../hooks/AuthContext'; // Import the useAuth hook
-
+import BaselineImageUploader from '../components/BaselineImageUploader';
 
 const InspectionPage = () => {
     const { transformerId } = useParams();
@@ -15,6 +15,7 @@ const InspectionPage = () => {
     const [showAddModal, setShowAddModal] = useState(false);
     const { isAdmin, login, logout } = useAuth();
     const [transformer, setTransformer] = useState(null);
+    const [baselineImageName, setBaselineImageName] = useState(null); // New state for the filename
 
     const fetchInspections = useCallback(async () => {
         try {
@@ -25,6 +26,7 @@ const InspectionPage = () => {
 
                         setInspections(inspectionsResponse.data);
                         setTransformer(transformerResponse.data);
+                        setBaselineImageName(transformerResponse.data.baselineImageName);
                         setLoading(false);
                        setError(null);
         } catch (err) {
@@ -44,6 +46,10 @@ const InspectionPage = () => {
         setShowAddModal(false);
     };
 
+    const handleBaselineUploadSuccess = (fileName) => {
+            setBaselineImageName(fileName);
+    };
+
     if (loading) {
         return <p>Loading inspections...</p>;
     }
@@ -54,15 +60,32 @@ const InspectionPage = () => {
 
     return (
         <div className="container-fluid">
-            {transformer && (
+        {transformer && (
                 <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
-                        <div className="d-flex align-items-start mb-2">
-                            <h3 className="me-3 fw-bold">{transformer.transformerId}</h3>
-                            <div className="d-flex align-items-center mt-1">
-                                <span className="text-muted">{transformer.region}</span>
-                                <span className="ms-2 text-primary">📍</span>
-                                <span className="text-muted">{transformer.details}</span>
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                            <div className="d-flex flex-column">
+                                <h3 className="fw-bold">{transformer.transformerId}</h3>
+                                <div className="d-flex align-items-center mt-1">
+                                    <span className="text-muted me-2">{transformer.region}</span>
+                                    <span className="text-primary me-1">📍</span>
+                                    <span className="text-muted">{transformer.details}</span>
+                                </div>
+                            </div>
+
+                            {/* New upload component in the top-right corner */}
+                            <div className="d-flex flex-column align-items-end">
+                                {isAdmin && (
+                                    <BaselineImageUploader
+                                        transformerId={transformerId}
+                                        onUploadSuccess={handleBaselineUploadSuccess}
+                                    />
+                                )}
+                                {baselineImageName && (
+                                    <small className="text-muted mt-2">
+                                        Baseline: <span className="text-primary">{baselineImageName}</span>
+                                    </small>
+                                )}
                             </div>
                         </div>
                         <Row className="text-center">
@@ -85,7 +108,7 @@ const InspectionPage = () => {
                         </Row>
                     </Card.Body>
                 </Card>
-                        )}
+            )}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2>Transformer Inspections</h2>
                 {isAdmin ? (

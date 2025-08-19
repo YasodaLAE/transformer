@@ -15,4 +15,5 @@ public interface TransformerService {
     Transformer updateTransformer(Long id, Transformer transformerDetails);
     void deleteTransformer(Long id);
     void addImageToTransformer(String transformerId, MultipartFile file, ImageType imageType, EnvironmentalCondition condition, String uploaderId);
+    void saveBaselineImage(Long transformerId, MultipartFile file);
 }

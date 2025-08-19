@@ -63,6 +63,20 @@ public class TransformerController {
         }
     }
 
+    @PostMapping("/{transformerId}/baseline-image")
+    public ResponseEntity<String> uploadBaselineImage(
+            @PathVariable Long transformerId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            transformerService.saveBaselineImage(transformerId, file);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Baseline image uploaded successfully for transformer: " + transformerId);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not upload the file: " + e.getMessage());
+        }
+    }
+
     // FR1.2 & FR1.3: Upload thermal image with tagging
     @PostMapping("/{transformerId}/images")
     public ResponseEntity<String> uploadImage(

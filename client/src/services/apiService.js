@@ -45,3 +45,11 @@ export const createInspection = (inspectionData) => {
 export const deleteInspection = (id) => {
     return apiClient.delete(`/api/inspections/${id}`);
 };
+
+export const uploadBaselineImage = (transformerId, formData) => {
+    return apiClient.post(`/api/transformers/${transformerId}/baseline-image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};

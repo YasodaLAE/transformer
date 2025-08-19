@@ -13,6 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -68,6 +72,31 @@ public class TransformerServiceImpl implements TransformerService {
             throw new RuntimeException("Transformer not found with id: " + id);
         }
         transformerRepository.deleteById(id);
+    }
+
+    @Override
+    public void saveBaselineImage(Long transformerId, MultipartFile file) {
+        Transformer transformer = transformerRepository.findById(transformerId)
+                .orElseThrow(() -> new RuntimeException("Transformer not found with ID: " + transformerId));
+
+        try {
+            // Define the directory to store images (create it if it doesn't exist)
+            String uploadDir = "uploads/baseline-images/";
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // Save the file to the file system
+            Path filePath = uploadPath.resolve(file.getOriginalFilename());
+            Files.copy(file.getInputStream(), filePath);
+
+            // Update the transformer entity with the image's filename
+            transformer.setBaselineImageName(file.getOriginalFilename());
+            transformerRepository.save(transformer);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
+        }
     }
 
     @Override
