@@ -6,6 +6,20 @@ import {deleteInspection} from '../services/apiService'
 import { Link } from "react-router-dom";
 import { Button } from 'react-bootstrap';
 
+const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
+  <button
+    ref={ref}
+    onClick={(e) => {
+      e.preventDefault();
+      onClick(e);
+    }}
+    className="btn btn-light shadow-sm border"
+    style={{ padding: "4px 8px" }}
+  >
+    {children}
+  </button>
+));
+
 const InspectionTable = ({ inspections, onInspectionDeleted }) => {
     const { isAdmin } = useAuth();
     const handleDelete = async (inspectionId) => {
@@ -40,14 +54,14 @@ const InspectionTable = ({ inspections, onInspectionDeleted }) => {
                             <td>{inspection.maintenanceDate || 'N/A'}</td>
                             <td>{inspection.status}</td>
                             <td>
-                                <Link to={`/inspections/by-transformers/${inspection.id}`}>
-                                    <Button variant="info" size="sm" className="me-2">View</Button>
+                                <Link to={`/inspections/by-transformers/${inspection.id}`}className="btn btn-primary btn-sm">View
                                 </Link>
-
+                            </td>
                                 {isAdmin && (
-                                    <Dropdown className="d-inline">
-                                        <Dropdown.Toggle variant="secondary" id={`dropdown-${inspection.id}`}>
-                                            &#8230;
+                                    <td>
+                                    <Dropdown >
+                                        <Dropdown.Toggle as={CustomToggle} id="dropdown-custom">
+                                            &#x22EE;
                                         </Dropdown.Toggle>
                                         <Dropdown.Menu>
                                             <Dropdown.Item onClick={() => handleDelete(inspection.id)}>
@@ -55,8 +69,8 @@ const InspectionTable = ({ inspections, onInspectionDeleted }) => {
                                             </Dropdown.Item>
                                         </Dropdown.Menu>
                                     </Dropdown>
+                                    </td>
                                 )}
-                            </td>
                         </tr>
                     ))
                 ) : (
