@@ -47,7 +47,7 @@ export const deleteInspection = (id) => {
 };
 
 export const uploadBaselineImage = (transformerId, formData) => {
-    return apiClient.post(`/api/transformers/${transformerId}/baseline-image`, formData, {
+    return apiClient.post(`${API_BASE_URL}/api/transformers/${transformerId}/baseline-image`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },

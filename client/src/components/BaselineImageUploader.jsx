@@ -7,6 +7,7 @@ const BaselineImageUploader = ({ transformerId, onUploadSuccess }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
+    const [condition, setCondition] = useState(''); // New state for the condition
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
@@ -22,8 +23,14 @@ const BaselineImageUploader = ({ transformerId, onUploadSuccess }) => {
             return;
         }
 
+        if (!condition) {
+            setError("Please select an environmental condition.");
+            return;
+        }
+
         const formData = new FormData();
         formData.append('file', selectedFile);
+        formData.append('condition', condition); // Add the condition formdata
 
         try {
             await uploadBaselineImage(transformerId, formData);
@@ -55,6 +62,15 @@ const BaselineImageUploader = ({ transformerId, onUploadSuccess }) => {
                     {error && <Alert variant="danger">{error}</Alert>}
                     {success && <Alert variant="success">{success}</Alert>}
                     <Form onSubmit={handleUpload}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Select Environmental Condition</Form.Label>
+                            <Form.Select onChange={(e) => setCondition(e.target.value)} required>
+                                <option value="">-- Select Condition --</option>
+                                <option value="Sunny">Sunny</option>
+                                <option value="Cloudy">Cloudy</option>
+                                <option value="Rainy">Rainy</option>
+                            </Form.Select>
+                         </Form.Group>
                         <Form.Group className="mb-3">
                             <Form.Label>Select Image File</Form.Label>
                             <Form.Control type="file" onChange={handleFileChange} required />

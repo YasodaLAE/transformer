@@ -23,6 +23,7 @@ public class Transformer {
     private String transformerType;
     private String details;
     private String baselineImageName;
+    private String baselineImageCondition;
 
     @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch=FetchType.EAGER, orphanRemoval = true)
     @JsonManagedReference

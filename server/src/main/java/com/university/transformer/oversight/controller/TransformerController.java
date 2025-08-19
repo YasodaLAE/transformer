@@ -63,13 +63,14 @@ public class TransformerController {
         }
     }
 
-    @PostMapping("/{transformerId}/baseline-image")
+    @PostMapping("/{id}/baseline-image")
     public ResponseEntity<String> uploadBaselineImage(
-            @PathVariable Long transformerId,
-            @RequestParam("file") MultipartFile file) {
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("condition") String condition) {
         try {
-            transformerService.saveBaselineImage(transformerId, file);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Baseline image uploaded successfully for transformer: " + transformerId);
+            transformerService.saveBaselineImage(id, file, condition);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Baseline image uploaded successfully for transformer: " + id);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {

@@ -75,7 +75,7 @@ public class TransformerServiceImpl implements TransformerService {
     }
 
     @Override
-    public void saveBaselineImage(Long transformerId, MultipartFile file) {
+    public void saveBaselineImage(Long transformerId, MultipartFile file, String condition) {
         Transformer transformer = transformerRepository.findById(transformerId)
                 .orElseThrow(() -> new RuntimeException("Transformer not found with ID: " + transformerId));
 
@@ -93,6 +93,7 @@ public class TransformerServiceImpl implements TransformerService {
 
             // Update the transformer entity with the image's filename
             transformer.setBaselineImageName(file.getOriginalFilename());
+            transformer.setBaselineImageCondition(condition); // Set the new condition
             transformerRepository.save(transformer);
         } catch (IOException e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
