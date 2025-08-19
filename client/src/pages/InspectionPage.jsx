@@ -72,10 +72,10 @@ const InspectionPage = () => {
                                     <span className="text-muted">{transformer.details}</span>
                                 </div>
                             </div>
-
                             {/* New upload component in the top-right corner */}
                             <div className="d-flex flex-column align-items-end">
-                                {isAdmin && (
+                                {/* Only show the uploader button if the user is an admin AND a baseline image has NOT been uploaded */}
+                                {isAdmin && !baselineImageName && (
                                     <BaselineImageUploader
                                         transformerId={transformerId}
                                         onUploadSuccess={handleBaselineUploadSuccess}
