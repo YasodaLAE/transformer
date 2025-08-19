@@ -8,13 +8,23 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null); // Will store user object
     const [isAdmin, setIsAdmin] = useState(false); // Flag for admin status
 
-    // Function to handle login with a basic check
+    // Define a list of valid admin credentials
+    const adminCredentials = {
+        'admin': '1',
+        'admin2': '2', // Example new admin
+        'admin3': '3'  // Another example new admin
+    };
+
+    // Function to handle login with a basic check against the adminCredentials list
     const login = (username, password) => {
-        if (username === 'admin' && password === 'admin') {
-            setUser({ username: 'admin' });
+        // Check if the provided username exists in the adminCredentials list
+        // AND if the provided password matches the stored password for that username.
+        if (adminCredentials[username] === password) {
+            setUser({ username });
             setIsAdmin(true);
             return true; // Login successful
         }
+
         return false; // Login failed
     };
 

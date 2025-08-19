@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import java.net.MalformedURLException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,6 +22,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.net.MalformedURLException;
 
 @Service
 public class TransformerServiceImpl implements TransformerService {
@@ -51,10 +51,66 @@ public class TransformerServiceImpl implements TransformerService {
         return transformerRepository.findById(id);
     }
 
-//    @Override
-//    public Optional<Transformer> findByTransformerId(String transformerId) {
-//        return transformerRepository.findByTransformerId(transformerId);
-//    }
+    @Override
+    public Transformer updateTransformer(Long id, Transformer transformerDetails) {
+        Transformer transformer = transformerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Transformer not found with id: " + id));
+
+        transformer.setTransformerId(transformerDetails.getTransformerId());
+        transformer.setPoleId(transformerDetails.getPoleId());
+        transformer.setRegion(transformerDetails.getRegion());
+        transformer.setTransformerType(transformerDetails.getTransformerType());
+
+        return transformerRepository.save(transformer);
+    }
+
+    @Override
+    public void deleteTransformer(Long id) {
+        if (!transformerRepository.existsById(id)) {
+            throw new RuntimeException("Transformer not found with id: " + id);
+        }
+        transformerRepository.deleteById(id);
+    }
+
+    @Override
+    public void saveBaselineImage(Long transformerId, MultipartFile file, String condition, String uploader) {
+        Transformer transformer = transformerRepository.findById(transformerId)
+                .orElseThrow(() -> new RuntimeException("Transformer not found with ID: " + transformerId));
+
+        try {
+            String uploadDir = "uploads/baseline-images/";
+            Path uploadPath = Paths.get(uploadDir);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+
+            String uniqueFileName = String.format(
+                    "transformer-%d_%s_%d%s",
+                    transformerId,
+                    condition.replaceAll("\\s+", "_"),
+                    System.currentTimeMillis(),
+                    extension
+            );
+
+            Path filePath = uploadPath.resolve(uniqueFileName);
+            Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            transformer.setBaselineImageName(uniqueFileName);
+            transformer.setBaselineImageCondition(condition);
+            transformer.setBaselineImageUploader(uploader);
+            transformer.setBaselineImageUploadTimestamp(LocalDateTime.now());
+            transformerRepository.save(transformer);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
+        }
+    }
 
     @Override
     @Transactional
@@ -66,11 +122,11 @@ public class TransformerServiceImpl implements TransformerService {
         if (fileName != null && !fileName.isEmpty()) {
             try {
                 Path filePath = Paths.get("uploads/baseline-images/").resolve(fileName);
-                Files.delete(filePath); // Delete file from filesystem
-
-                // Clear the fields from the database
+                Files.delete(filePath);
                 transformer.setBaselineImageName(null);
                 transformer.setBaselineImageCondition(null);
+                transformer.setBaselineImageUploader(null); // Clear uploader
+                transformer.setBaselineImageUploadTimestamp(null); // Clear timestamp
                 transformerRepository.save(transformer);
             } catch (IOException e) {
                 throw new RuntimeException("Could not delete the file: " + fileName);
@@ -103,82 +159,17 @@ public class TransformerServiceImpl implements TransformerService {
     }
 
     @Override
-    public Transformer updateTransformer(Long id, Transformer transformerDetails) {
-        Transformer transformer = transformerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Transformer not found with id: " + id));
-
-        transformer.setTransformerId(transformerDetails.getTransformerId());
-        transformer.setPoleId(transformerDetails.getPoleId());
-        transformer.setRegion(transformerDetails.getRegion());
-        transformer.setTransformerType(transformerDetails.getTransformerType());
-
-        return transformerRepository.save(transformer);
-    }
-
-    @Override
-    public void deleteTransformer(Long id) {
-        if (!transformerRepository.existsById(id)) {
-            throw new RuntimeException("Transformer not found with id: " + id);
-        }
-        transformerRepository.deleteById(id);
-    }
-
-    @Override
-    public void saveBaselineImage(Long transformerId, MultipartFile file, String condition) {
-        Transformer transformer = transformerRepository.findById(transformerId)
-                .orElseThrow(() -> new RuntimeException("Transformer not found with ID: " + transformerId));
-
-        try {
-            // Ensure the upload directory exists
-            String uploadDir = "uploads/baseline-images/";
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            // Extract file extension
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-
-            // Build unique filename
-            String uniqueFileName = String.format(
-                    "transformer-%d_%s_%d%s",
-                    transformerId,
-                    condition.replaceAll("\\s+", "_"), // remove spaces
-                    System.currentTimeMillis(),        // timestamp
-                    extension
-            );
-
-            // Save the file
-            Path filePath = uploadPath.resolve(uniqueFileName);
-            Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-            // Update transformer entity
-            transformer.setBaselineImageName(uniqueFileName);
-            transformer.setBaselineImageCondition(condition);
-            transformerRepository.save(transformer);
-
-        } catch (IOException e) {
-            throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
-        }
-    }
-
-
-    @Override
     @Transactional
     public void addImageToTransformer(String transformerId, MultipartFile file, ImageType imageType, EnvironmentalCondition condition, String uploaderId) {
-        // 1. Find the transformer by its business ID
+        // Find the transformer by its business ID
         Transformer transformer = transformerRepository.findByTransformerId(transformerId)
                 .orElseThrow(() -> new RuntimeException("Transformer not found with ID: " + transformerId));
 
-        // 2. Store the physical file using the storage service
+        // Store the physical file using the storage service
         String fileName = fileStorageService.store(file);
-        String filePath = "uploads/" + fileName; // Or a more dynamic path
+        String filePath = "uploads/" + fileName;
 
-        // 3. Create and save the metadata entity
+        // Create and save the metadata entity
         ThermalImage thermalImage = new ThermalImage();
         thermalImage.setFileName(fileName);
         thermalImage.setFilePath(filePath);

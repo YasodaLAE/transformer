@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Button, Form, Modal, Alert } from 'react-bootstrap';
+import { Button, Form, Modal, Alert, ProgressBar } from 'react-bootstrap';
 import { uploadBaselineImage } from '../services/apiService';
+import { useAuth } from '../hooks/AuthContext'; // Import useAuth hook
 
 const BaselineImageUploader = ({ transformerId, onUploadSuccess }) => {
     const [showModal, setShowModal] = useState(false);
@@ -8,6 +9,8 @@ const BaselineImageUploader = ({ transformerId, onUploadSuccess }) => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
     const [condition, setCondition] = useState(''); // New state for the condition
+
+    const { user } = useAuth();
 
     const handleFileChange = (e) => {
         setSelectedFile(e.target.files[0]);
@@ -31,6 +34,7 @@ const BaselineImageUploader = ({ transformerId, onUploadSuccess }) => {
         const formData = new FormData();
         formData.append('file', selectedFile);
         formData.append('condition', condition); // Add the condition formdata
+        formData.append('uploader', user.username);
 
         try {
             await uploadBaselineImage(transformerId, formData);

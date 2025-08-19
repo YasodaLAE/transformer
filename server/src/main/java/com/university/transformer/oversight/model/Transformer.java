@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -24,6 +25,8 @@ public class Transformer {
     private String details;
     private String baselineImageName;
     private String baselineImageCondition;
+    private String baselineImageUploader; // New field for the uploader
+    private LocalDateTime baselineImageUploadTimestamp; // New field for the timestamp
 
     @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch=FetchType.EAGER, orphanRemoval = true)
     @JsonManagedReference

@@ -95,9 +95,10 @@ public class TransformerController {
     public ResponseEntity<String> uploadBaselineImage(
             @PathVariable Long id,
             @RequestParam("file") MultipartFile file,
-            @RequestParam("condition") String condition) {
+            @RequestParam("condition") String condition,
+            @RequestParam("uploader") String uploader) {
         try {
-            transformerService.saveBaselineImage(id, file, condition);
+            transformerService.saveBaselineImage(id, file, condition, uploader);
             return ResponseEntity.status(HttpStatus.CREATED).body("Baseline image uploaded successfully for transformer: " + id);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
