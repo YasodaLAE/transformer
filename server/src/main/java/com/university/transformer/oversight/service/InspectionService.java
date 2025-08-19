@@ -15,4 +15,8 @@ public class InspectionService {
     public List<Inspection> getInspectionsByTransformer(Long transformerId) {
         return inspectionRepository.findByTransformerId(transformerId);
     }
+
+    public Inspection saveInspection(Inspection inspection) {
+        return inspectionRepository.save(inspection);
+    }
 }
