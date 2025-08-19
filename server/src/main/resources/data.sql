@@ -1,10 +1,10 @@
 -- Insert 5 sample transformers
-INSERT INTO TRANSFORMER (id, transformer_id, pole_id, region, transformer_type) VALUES
-(1, 'AZ-8890', 'EN-122A', 'Nugegoda', 'Bulk'),
-(2, 'AZ-1649', 'EN-123A', 'Nugegoda', 'Bulk'),
-(3, 'AZ-7316', 'EN-123A', 'Maharagama', 'Distribution'),
-(4, 'AZ-4613', 'EN-123B', 'Maharagama', 'Bulk'),
-(5, 'AX-8993', 'EN-122B', 'Kottawa', 'Distribution');
+INSERT INTO TRANSFORMER (id, transformer_id, pole_id, region, transformer_type, details) VALUES
+(1, 'AZ-8890', 'EN-122A', 'Nugegoda', 'Bulk', 'Im detail 1'),
+(2, 'AZ-1649', 'EN-123A', 'Nugegoda', 'Bulk', 'Im detail 2'),
+(3, 'AZ-7316', 'EN-123A', 'Maharagama', 'Distribution', 'Im detail 3'),
+(4, 'AZ-4613', 'EN-123B', 'Maharagama', 'Bulk', 'Im detail 4'),
+(5, 'AX-8993', 'EN-122B', 'Kottawa', 'Distribution', 'Im detail 5');
 
 -- Assuming your transformers have IDs 1 through 5
 INSERT INTO inspection (inspection_no, inspected_date, maintenance_date, status, transformer_id)
