@@ -9,6 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.util.List;
 
@@ -47,6 +52,29 @@ public class TransformerController {
         try {
             Transformer updatedTransformer = transformerService.updateTransformer(id, transformerDetails);
             return ResponseEntity.ok(updatedTransformer);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{transformerId}/baseline-image/view")
+    public ResponseEntity<Resource> viewBaselineImage(@PathVariable Long transformerId) {
+        try {
+            Resource file = transformerService.loadBaselineImageAsResource(transformerId);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
+                    .contentType(MediaType.IMAGE_PNG) // Adjust content type as needed
+                    .body(file);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{transformerId}/baseline-image")
+    public ResponseEntity<Void> deleteBaselineImage(@PathVariable Long transformerId) {
+        try {
+            transformerService.deleteBaselineImage(transformerId);
+            return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }

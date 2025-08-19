@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionsByTransformer, createInspection, getTransformerById } from '../services/apiService';
+import { getInspectionsByTransformer, createInspection, getTransformerById, deleteBaselineImage } from '../services/apiService';
 import { Button, Card, Row, Col } from 'react-bootstrap';
 import AddInspectionModal from '../components/AddInspectionModal';
 import InspectionTable from '../components/InspectionTable';
@@ -50,6 +50,26 @@ const InspectionPage = () => {
             setBaselineImageName(fileName);
     };
 
+    const handleViewBaselineImage = () => {
+            // Construct the URL to the image on the server
+            const imageUrl = `http://localhost:8080/api/transformers/${transformerId}/baseline-image/view`;
+            window.open(imageUrl, '_blank'); // Open in a new tab
+        };
+
+    const handleDeleteBaselineImage = async () => {
+        if (window.confirm("Are you sure you want to delete this baseline image?")) {
+            try {
+                await deleteBaselineImage(transformerId);
+                // On success, reset the baseline image name state
+                setBaselineImageName(null);
+                alert("Baseline image deleted successfully!");
+            } catch (error) {
+                console.error("Failed to delete baseline image:", error);
+                alert("Failed to delete baseline image. Please try again.");
+            }
+        }
+    };
+
     if (loading) {
         return <p>Loading inspections...</p>;
     }
@@ -82,9 +102,32 @@ const InspectionPage = () => {
                                     />
                                 )}
                                 {baselineImageName && (
-                                    <small className="text-muted mt-2">
-                                        Baseline: <span className="text-primary">{baselineImageName}</span>
-                                    </small>
+                                    <small className="text-muted mt-2 d-flex align-items-center">
+                                        Baseline:
+                                        <span className="text-primary ms-2 me-2">{baselineImageName}</span>
+                                        <div className="d-flex align-items-center">
+                                            {/* View button (eye icon) */}
+                                            <Button
+                                                variant="outline-info"
+                                                size="sm"
+                                                onClick={handleViewBaselineImage}
+                                                className="me-2 d-flex align-items-center py-1 px-2"
+                                                title="View Baseline Image"
+                                            >
+                                                <i className="bi bi-eye-fill"></i>
+                                            </Button>
+                                            {/* Delete button (trash bin icon) */}
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                onClick={handleDeleteBaselineImage}
+                                                className="d-flex align-items-center py-1 px-2"
+                                                title="Delete Baseline Image"
+                                            >
+                                                <i className="bi bi-trash-fill"></i>
+                                            </Button>
+                                        </div>
+                                </small>
                                 )}
                             </div>
                         </div>

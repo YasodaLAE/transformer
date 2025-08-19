@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import java.net.MalformedURLException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,6 +55,52 @@ public class TransformerServiceImpl implements TransformerService {
 //    public Optional<Transformer> findByTransformerId(String transformerId) {
 //        return transformerRepository.findByTransformerId(transformerId);
 //    }
+
+    @Override
+    @Transactional
+    public void deleteBaselineImage(Long transformerId) {
+        Transformer transformer = transformerRepository.findById(transformerId)
+                .orElseThrow(() -> new RuntimeException("Transformer not found with ID: " + transformerId));
+
+        String fileName = transformer.getBaselineImageName();
+        if (fileName != null && !fileName.isEmpty()) {
+            try {
+                Path filePath = Paths.get("uploads/baseline-images/").resolve(fileName);
+                Files.delete(filePath); // Delete file from filesystem
+
+                // Clear the fields from the database
+                transformer.setBaselineImageName(null);
+                transformer.setBaselineImageCondition(null);
+                transformerRepository.save(transformer);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not delete the file: " + fileName);
+            }
+        }
+    }
+
+    @Override
+    public Resource loadBaselineImageAsResource(Long transformerId) {
+        try {
+            Transformer transformer = transformerRepository.findById(transformerId)
+                    .orElseThrow(() -> new RuntimeException("Transformer not found with ID: " + transformerId));
+
+            String fileName = transformer.getBaselineImageName();
+            if (fileName == null || fileName.isEmpty()) {
+                throw new RuntimeException("No baseline image found for this transformer.");
+            }
+
+            Path filePath = Paths.get("uploads/baseline-images/").resolve(fileName).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists() || resource.isReadable()) {
+                return resource;
+            } else {
+                throw new RuntimeException("Could not read the file: " + fileName);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Error loading file: " + e.getMessage());
+        }
+    }
 
     @Override
     public Transformer updateTransformer(Long id, Transformer transformerDetails) {

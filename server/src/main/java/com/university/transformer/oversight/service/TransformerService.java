@@ -6,6 +6,7 @@ import com.university.transformer.oversight.model.Transformer;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.core.io.Resource;
 
 public interface TransformerService {
     Transformer saveTransformer(Transformer transformer);
@@ -16,4 +17,6 @@ public interface TransformerService {
     void deleteTransformer(Long id);
     void addImageToTransformer(String transformerId, MultipartFile file, ImageType imageType, EnvironmentalCondition condition, String uploaderId);
     void saveBaselineImage(Long transformerId, MultipartFile file, String condition);
+    void deleteBaselineImage(Long transformerId);
+    Resource loadBaselineImageAsResource(Long transformerId);
 }
