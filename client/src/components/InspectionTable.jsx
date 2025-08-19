@@ -42,6 +42,8 @@ const InspectionTable = ({ inspections, onInspectionDeleted }) => {
                     <th>Inspected Date</th>
                     <th>Maintenance Date</th>
                     <th>Status</th>
+                    <th></th>
+                    {isAdmin && <th></th>}
                 </tr>
             </thead>
             <tbody>
