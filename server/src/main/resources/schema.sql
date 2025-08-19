@@ -13,7 +13,8 @@ CREATE TABLE TRANSFORMER (
     transformer_id VARCHAR(255),
     pole_id VARCHAR(255),
     region VARCHAR(255),
-    transformer_type VARCHAR(255)
+    transformer_type VARCHAR(255),
+    details VARCHAR(255)
 );
 
 CREATE TABLE inspection (
