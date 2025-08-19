@@ -80,25 +80,43 @@ public class TransformerServiceImpl implements TransformerService {
                 .orElseThrow(() -> new RuntimeException("Transformer not found with ID: " + transformerId));
 
         try {
-            // Define the directory to store images (create it if it doesn't exist)
+            // Ensure the upload directory exists
             String uploadDir = "uploads/baseline-images/";
             Path uploadPath = Paths.get(uploadDir);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            // Save the file to the file system
-            Path filePath = uploadPath.resolve(file.getOriginalFilename());
-            Files.copy(file.getInputStream(), filePath);
+            // Extract file extension
+            String originalFilename = file.getOriginalFilename();
+            String extension = "";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
 
-            // Update the transformer entity with the image's filename
-            transformer.setBaselineImageName(file.getOriginalFilename());
-            transformer.setBaselineImageCondition(condition); // Set the new condition
+            // Build unique filename
+            String uniqueFileName = String.format(
+                    "transformer-%d_%s_%d%s",
+                    transformerId,
+                    condition.replaceAll("\\s+", "_"), // remove spaces
+                    System.currentTimeMillis(),        // timestamp
+                    extension
+            );
+
+            // Save the file
+            Path filePath = uploadPath.resolve(uniqueFileName);
+            Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+            // Update transformer entity
+            transformer.setBaselineImageName(uniqueFileName);
+            transformer.setBaselineImageCondition(condition);
             transformerRepository.save(transformer);
+
         } catch (IOException e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }
     }
+
 
     @Override
     @Transactional
