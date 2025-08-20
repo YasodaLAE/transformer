@@ -181,4 +181,40 @@ public class TransformerServiceImpl implements TransformerService {
 
         thermalImageRepository.save(thermalImage);
     }
+    @Override
+    public void saveThermalImage(String transformerId, MultipartFile file, EnvironmentalCondition condition, String uploader) throws Exception {
+        // 1. Find the transformer this image belongs to
+//        Transformer transformer = transformerRepository.findById(transformerId)
+        Transformer transformer = transformerRepository.findByTransformerId(transformerId)
+                .orElseThrow(() -> new RuntimeException("Error: Transformer not found with id: " + transformerId));
+
+        // 2. Store the physical file on the server
+        String filename = fileStorageService.store(file);
+
+        // 3. Create a new database record for the thermal image
+        ThermalImage thermalImage = new ThermalImage();
+        thermalImage.setFileName(filename);
+        thermalImage.setFilePath(fileStorageService.getRootLocation().resolve(filename).toString());
+        thermalImage.setEnvironmentalCondition(condition);
+        thermalImage.setImageType(ThermalImage.ImageType.MAINTENANCE); // Set the type
+        thermalImage.setUploadTimestamp(LocalDateTime.now());
+        thermalImage.setUploaderId(uploader);
+        thermalImage.setTransformer(transformer); // Link it to the parent transformer
+
+        // 4. Save the record to the database
+        thermalImageRepository.save(thermalImage);
+    }
+
+    @Override
+    public void deleteThermalImage(Long imageId) {
+        // Find the image record in the database
+        ThermalImage thermalImage = thermalImageRepository.findById(imageId)
+                .orElseThrow(() -> new RuntimeException("ThermalImage not found with id: " + imageId));
+
+        // Delete the physical file from the server
+        fileStorageService.delete(thermalImage.getFileName());
+
+        // Delete the record from the database
+        thermalImageRepository.delete(thermalImage);
+    }
 }

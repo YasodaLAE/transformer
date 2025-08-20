@@ -60,3 +60,8 @@ export const deleteBaselineImage = (transformerId) => {
 export const getInspectionById = (id) => {
     return axios.get(`${API_BASE_URL}/api/inspections/${id}`);
 };
+
+// In apiService.js
+export const deleteThermalImage = (imageId) => {
+    return axios.delete(`http://localhost:8080/api/transformers/thermal-image/${imageId}`);
+};

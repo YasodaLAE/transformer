@@ -36,4 +36,9 @@ public class Transformer {
     @JsonManagedReference
     private List<ThermalImage> thermalImages;
 
+    public List<ThermalImage> getThermalImages() {
+        return thermalImages;
+    }
+
+
 }

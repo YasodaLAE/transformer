@@ -1,6 +1,7 @@
 package com.university.transformer.oversight.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -14,10 +15,20 @@ public class ThermalImage {
         MAINTENANCE
     }
 
+// Replace your entire enum block with this
+
     public enum EnvironmentalCondition {
         SUNNY,
         CLOUDY,
-        RAINY
+        RAINY; // <-- Make sure there's a semicolon here
+
+        @JsonCreator
+        public static EnvironmentalCondition fromString(String value) {
+            if (value == null) {
+                return null;
+            }
+            return EnvironmentalCondition.valueOf(value.toUpperCase());
+        }
     }
 
     @Id

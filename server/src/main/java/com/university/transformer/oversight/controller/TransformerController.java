@@ -108,21 +108,59 @@ public class TransformerController {
     }
 
     // FR1.2 & FR1.3: Upload thermal image with tagging
-    @PostMapping("/{transformerId}/images")
-    public ResponseEntity<String> uploadImage(
+//    @PostMapping("/{transformerId}/images")
+//    public ResponseEntity<String> uploadImage(
+//            @PathVariable String transformerId,
+//            @RequestParam("file") MultipartFile file,
+//            @RequestParam("imageType") ImageType imageType,
+//            @RequestParam("condition") EnvironmentalCondition condition) {
+//        try {
+//            // In a real app, uploaderId would come from security context
+//            String uploaderId = "admin";
+//            transformerService.addImageToTransformer(transformerId, file, imageType, condition, uploaderId);
+//            return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully for transformer: " + transformerId);
+//        } catch (RuntimeException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not upload the file: " + e.getMessage());
+//        }
+//    }
+    // FR1.2 & FR1.3: Upload thermal image with tagging
+    @PostMapping("/{transformerId}/thermal-image")
+    public ResponseEntity<String> uploadThermalImage(
             @PathVariable String transformerId,
             @RequestParam("file") MultipartFile file,
-            @RequestParam("imageType") ImageType imageType,
-            @RequestParam("condition") EnvironmentalCondition condition) {
+            @RequestParam("condition") String condition) { // <-- 1. Change this to String
+
         try {
-            // In a real app, uploaderId would come from security context
-            String uploaderId = "admin";
-            transformerService.addImageToTransformer(transformerId, file, imageType, condition, uploaderId);
-            return ResponseEntity.status(HttpStatus.CREATED).body("File uploaded successfully for transformer: " + transformerId);
+            // 2. Convert the String to an Enum inside the method
+            EnvironmentalCondition envCondition = EnvironmentalCondition.valueOf(condition.toUpperCase());
+
+            String uploader = "Olivera Queen";
+            transformerService.saveThermalImage(transformerId, file, envCondition, uploader); // <-- 3. Pass the converted enum
+
+            return ResponseEntity.status(HttpStatus.CREATED).body("Thermal image uploaded successfully.");
+        } catch (IllegalArgumentException e) {
+            // This catches errors if the string doesn't match an enum value
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid condition value: " + condition);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not upload the file: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Could not upload file: " + e.getMessage());
         }
     }
+
+    // In TransformerController.java
+
+    @DeleteMapping("/thermal-image/{imageId}")
+    public ResponseEntity<Void> deleteThermalImage(@PathVariable Long imageId) {
+        try {
+            transformerService.deleteThermalImage(imageId);
+            return ResponseEntity.noContent().build(); // Standard response for a successful delete
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
 }

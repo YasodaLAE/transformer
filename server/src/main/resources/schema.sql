@@ -14,7 +14,11 @@ CREATE TABLE TRANSFORMER (
     pole_id VARCHAR(255),
     region VARCHAR(255),
     transformer_type VARCHAR(255),
-    details VARCHAR(255)
+    details VARCHAR(255),
+    baseline_image_condition VARCHAR(255),
+    baseline_image_name VARCHAR(255),
+    baseline_image_upload_timestamp TIMESTAMP,
+    baseline_image_uploader VARCHAR(255)
 );
 
 CREATE TABLE inspection (

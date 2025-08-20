@@ -1,4 +1,5 @@
 package com.university.transformer.oversight.controller;
+import com.university.transformer.oversight.dto.InspectionDTO;
 
 import com.university.transformer.oversight.model.Inspection;
 import com.university.transformer.oversight.service.InspectionService;
@@ -32,4 +33,12 @@ public class InspectionController {
         inspectionService.deleteInspection(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+    @GetMapping("/{id}")
+    public ResponseEntity<InspectionDTO> getInspectionById(@PathVariable Long id) {
+        return inspectionService.findInspectionById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+
 }

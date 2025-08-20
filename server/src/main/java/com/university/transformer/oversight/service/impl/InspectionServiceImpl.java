@@ -1,4 +1,5 @@
 package com.university.transformer.oversight.service.impl;
+import com.university.transformer.oversight.dto.InspectionDTO;
 
 
 import com.university.transformer.oversight.model.Inspection;
@@ -40,8 +41,10 @@ public class InspectionServiceImpl extends InspectionService {
     }
 
 
-    public Optional<Inspection> findInspectionById(Long id) {
-        return inspectionRepository.findById(id);
+    @Override
+    public Optional<InspectionDTO> findInspectionById(Long id) {
+        return inspectionRepository.findById(id)
+                .map(InspectionDTO::new); // Find the entity, then map it to a new DTO
     }
 
 
