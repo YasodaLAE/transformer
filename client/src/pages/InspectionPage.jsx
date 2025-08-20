@@ -6,6 +6,7 @@ import AddInspectionModal from '../components/AddInspectionModal';
 import InspectionTable from '../components/InspectionTable';
 import { useAuth } from '../hooks/AuthContext'; // Import the useAuth hook
 import BaselineImageUploader from '../components/BaselineImageUploader';
+import ThermalImageUpload from '../components/ThermalImageUpload'; // Adjust the path if necessary
 
 const InspectionPage = () => {
     const { transformerId } = useParams();
@@ -152,6 +153,7 @@ const InspectionPage = () => {
                     </Card.Body>
                 </Card>
             )}
+
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2>Transformer Inspections</h2>
                 {isAdmin ? (

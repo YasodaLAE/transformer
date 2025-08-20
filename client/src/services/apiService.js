@@ -57,3 +57,6 @@ export const uploadBaselineImage = (transformerId, formData) => {
 export const deleteBaselineImage = (transformerId) => {
     return apiClient.delete(`/api/transformers/${transformerId}/baseline-image`);
 };
+export const getInspectionById = (id) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${id}`);
+};
