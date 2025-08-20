@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Button, Form, Alert, Spinner } from 'react-bootstrap';
+import { uploadThermalImage } from '../services/apiService';
 
 const ThermalImageUpload = ({ transformerId, onUploadSuccess }) => {
     const [file, setFile] = useState(null);
@@ -15,6 +16,12 @@ const ThermalImageUpload = ({ transformerId, onUploadSuccess }) => {
             setError('Please select a file to upload.');
             return;
         }
+        // Check file size (e.g., 10MB limit)
+        const fileSizeInMB = file.size / 1024 / 1024;
+        if (fileSizeInMB > 10) {
+            setError('File is too large. Please select a file smaller than 10MB.');
+            return;
+        }
 
         const formData = new FormData();
         formData.append('file', file);
@@ -25,11 +32,7 @@ const ThermalImageUpload = ({ transformerId, onUploadSuccess }) => {
         setIsLoading(true);
 
         try {
-            await axios.post(
-                `http://localhost:8080/api/transformers/${transformerId}/thermal-image`,
-                formData,
-                { headers: { 'Content-Type': 'multipart/form-data' } }
-            );
+             await uploadThermalImage(transformerId, formData);
             setMessage('Upload successful!');
             if (onUploadSuccess) {
                 onUploadSuccess(); // This will refresh the parent page's data

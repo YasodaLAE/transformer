@@ -1,53 +1,44 @@
-// src/services/apiService.js
 import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080'; // The Spring Boot backend URL
 
-const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+// Note: It's good practice to create a single, configured client.
+// However, since some of your calls use axios directly, we'll keep it consistent.
 
 export const getAllTransformers = () => {
-    return apiClient.get('/api/transformers');
+    return axios.get(`${API_BASE_URL}/api/transformers`);
 };
 
 export const getTransformerById = (id) => {
-    return apiClient.get(`/api/transformers/${id}`);
+    return axios.get(`${API_BASE_URL}/api/transformers/${id}`);
 };
 
 export const getInspectionsByTransformer = (transformerId) => {
-    return apiClient.get(`/api/inspections/by-transformer/${transformerId}`);
+    return axios.get(`${API_BASE_URL}/api/inspections/by-transformer/${transformerId}`);
 };
 
 export const createTransformer = (transformerData) => {
-    return apiClient.post('/api/transformers', transformerData);
-};
-
-export const uploadImage = (transformerId, formData) => {
-    return apiClient.post(`/api/transformers/${transformerId}/images`, formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    return axios.post(`${API_BASE_URL}/api/transformers`, transformerData);
 };
 
 export const deleteTransformer = (id) => {
-    return apiClient.delete(`/api/transformers/${id}`);
+    return axios.delete(`${API_BASE_URL}/api/transformers/${id}`);
 };
 
 export const createInspection = (inspectionData) => {
-    return apiClient.post('/api/inspections', inspectionData);
+    return axios.post(`${API_BASE_URL}/api/inspections`, inspectionData);
 };
 
 export const deleteInspection = (id) => {
-    return apiClient.delete(`/api/inspections/${id}`);
+    return axios.delete(`${API_BASE_URL}/api/inspections/${id}`);
+};
+
+export const getInspectionById = (id) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${id}`);
 };
 
 export const uploadBaselineImage = (transformerId, formData) => {
-    return apiClient.post(`/api/transformers/${transformerId}/baseline-image`, formData, {
+    return axios.post(`${API_BASE_URL}/api/transformers/${transformerId}/baseline-image`, formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -55,13 +46,20 @@ export const uploadBaselineImage = (transformerId, formData) => {
 };
 
 export const deleteBaselineImage = (transformerId) => {
-    return apiClient.delete(`/api/transformers/${transformerId}/baseline-image`);
-};
-export const getInspectionById = (id) => {
-    return axios.get(`${API_BASE_URL}/api/inspections/${id}`);
+    return axios.delete(`${API_BASE_URL}/api/transformers/${transformerId}/baseline-image`);
 };
 
-// In apiService.js
+// --- CORRECTED THERMAL IMAGE FUNCTIONS ---
+
+export const uploadThermalImage = (transformerId, formData) => {
+    return axios.post(`http://localhost:8080/api/thermal-images/upload/${transformerId}`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};
+
 export const deleteThermalImage = (imageId) => {
-    return axios.delete(`http://localhost:8080/api/transformers/thermal-image/${imageId}`);
+    // Update the URL to point to the new ThermalImageController
+    return axios.delete(`${API_BASE_URL}/api/thermal-images/${imageId}`);
 };

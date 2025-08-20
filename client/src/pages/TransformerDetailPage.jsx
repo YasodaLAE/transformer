@@ -1,6 +1,6 @@
 // src/components/ImageUploadForm.jsx
 import React, { useState } from 'react';
-import { uploadImage } from '../services/apiService';
+import { uploadThermalImage } from '../services/apiService';
 
 const ImageUploadForm = ({ transformerId }) => {
     const [selectedFile, setSelectedFile]= useState(null);

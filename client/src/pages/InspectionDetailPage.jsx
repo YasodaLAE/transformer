@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { getInspectionById } from '../services/apiService';
+import { useParams, Link } from 'react-router-dom';
+import { getInspectionById, deleteThermalImage, deleteBaselineImage } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
-import { Card, Row, Col, ListGroup } from 'react-bootstrap';
+import BaselineImageUploader from '../components/BaselineImageUploader';
+import { Card, Row, Col, Button } from 'react-bootstrap';
 
 const InspectionDetailPage = () => {
     const { inspectionId } = useParams();
     const [inspection, setInspection] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showBaselineModal, setShowBaselineModal] = useState(false);
 
     const fetchInspectionDetails = async () => {
         try {
             setLoading(true);
             const response = await getInspectionById(inspectionId);
             setInspection(response.data);
-            console.log('*************************************')
-             console.log('API Response Data:', response.data);
         } catch (err) {
             setError('Failed to fetch inspection details.');
         } finally {
@@ -28,6 +28,30 @@ const InspectionDetailPage = () => {
         fetchInspectionDetails();
     }, [inspectionId]);
 
+    const handleDelete = async (imageId) => {
+        if (window.confirm("Are you sure you want to delete this thermal image?")) {
+            try {
+                await deleteThermalImage(imageId);
+                fetchInspectionDetails();
+            } catch (err) {
+                console.error("Failed to delete image:", err);
+                alert("Failed to delete image.");
+            }
+        }
+    };
+
+    const handleDeleteBaseline = async (transformerId) => {
+        if (window.confirm("Are you sure you want to delete the baseline image?")) {
+            try {
+                await deleteBaselineImage(transformerId);
+                fetchInspectionDetails();
+            } catch (err) {
+                console.error("Failed to delete baseline image:", err);
+                alert("Failed to delete baseline image.");
+            }
+        }
+    };
+
     if (loading) return <p>Loading...</p>;
     if (error) return <p className="text-danger">{error}</p>;
     if (!inspection) return <p>Inspection not found.</p>;
@@ -36,42 +60,53 @@ const InspectionDetailPage = () => {
     const thermalImage = hasThermalImage ? inspection.thermalImages[0] : null;
     const hasBaselineImage = inspection.transformerBaselineImageName;
 
-    // Construct the image URLs
-    const baselineImageUrl = `http://localhost:8080/api/transformers/${inspection.transformerDbId}/baseline-image/view`;
+    const baselineImageUrl = `http://localhost:8080/api/transformers/${inspection.transformerDbId}/baseline-image/view?timestamp=${new Date().getTime()}`;
     const thermalImageUrl = hasThermalImage ? `http://localhost:8080/files/${thermalImage.fileName}` : '';
 
     return (
         <div className="container-fluid">
-            <Card className="mb-4"><Card.Body><Card.Title>Details for Inspection No: {inspection.inspectionNo}</Card.Title><Card.Text><strong>Status:</strong> {inspection.status}</Card.Text></Card.Body></Card>
+            <Card className="mb-4"><Card.Body><Card.Title>Details for Inspection No: {inspection.inspectionNo}</Card.Title></Card.Body></Card>
 
-            {/* --- Conditional Logic for Thermal Image Section --- */}
             {hasThermalImage ? (
-                // If an image is uploaded, show the Comparison View
                 <Card className="rounded-4 shadow-sm">
                     <Card.Body>
-                        <h4>Thermal Image Comparison</h4>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                             <h4>Thermal Image Comparison</h4>
+                             {/* Button has been moved from here */}
+                        </div>
                         <Row>
-                            {/* Left Side: Baseline Image */}
                             <Col md={6}>
                                 <Card>
-                                    <Card.Header>Baseline</Card.Header>
+                                    <Card.Header className="d-flex justify-content-between align-items-center">
+                                        Baseline
+                                        {hasBaselineImage && (
+                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(inspection.transformerDbId)}>
+                                                Delete
+                                            </Button>
+                                        )}
+                                    </Card.Header>
                                     <Card.Body className="text-center">
                                         {hasBaselineImage ? (
-                                            <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%', height: 'auto' }} />
+                                            <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
                                         ) : (
                                             <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
-                                                <p className="text-muted">Please upload a baseline image for comparison.</p>
+                                                <span>Please upload a baseline image to view the comparison</span>
                                             </div>
                                         )}
                                     </Card.Body>
                                 </Card>
                             </Col>
-                            {/* Right Side: Current Thermal Image */}
                             <Col md={6}>
                                 <Card>
-                                     <Card.Header>Current</Card.Header>
+                                    {/* The "Current" card header is updated here */}
+                                    <Card.Header className="d-flex justify-content-between align-items-center">
+                                        Current
+                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>
+                                            Delete
+                                        </Button>
+                                    </Card.Header>
                                     <Card.Body>
-                                        <img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%', height: 'auto' }} />
+                                        <img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%' }} />
                                     </Card.Body>
                                 </Card>
                             </Col>
@@ -79,7 +114,6 @@ const InspectionDetailPage = () => {
                     </Card.Body>
                 </Card>
             ) : (
-                // Otherwise, show the Upload Form
                 <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
                         <ThermalImageUpload
@@ -88,6 +122,15 @@ const InspectionDetailPage = () => {
                         />
                     </Card.Body>
                 </Card>
+            )}
+
+            {!hasBaselineImage && (
+                <BaselineImageUploader
+                    show={showBaselineModal}
+                    handleClose={() => setShowBaselineModal(false)}
+                    onUploadSuccess={fetchInspectionDetails}
+                    transformerId={inspection.transformerDbId}
+                />
             )}
         </div>
     );
