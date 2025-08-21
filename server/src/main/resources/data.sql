@@ -1,0 +1,24 @@
+
+
+-- Insert 5 sample transformers
+INSERT INTO TRANSFORMER (id, transformer_id, pole_id, region, transformer_type, details) VALUES
+(1, 'AZ-8890', 'EN-122A', 'Nugegoda', 'Bulk', 'Im detail 1'),
+(2, 'AZ-1649', 'EN-123A', 'Nugegoda', 'Bulk', 'Im detail 2'),
+(3, 'AZ-7316', 'EN-123A', 'Maharagama', 'Distribution', 'Im detail 3'),
+(4, 'AZ-4613', 'EN-123B', 'Maharagama', 'Bulk', 'Im detail 4'),
+(5, 'AX-8993', 'EN-122B', 'Kottawa', 'Distribution', 'Im detail 5');
+
+-- Assuming your transformers have IDs 1 through 5
+INSERT INTO inspection (inspection_no, inspected_date, maintenance_date, status, transformer_id)
+VALUES
+('000123589', '2025-07-02', '2025-08-02', 'In Progress', 2),
+('000123590', '2025-07-01', NULL, 'In Progress', 1),
+('000123591', '2025-06-13', NULL, 'Pending', 3),
+('000123592', '2025-06-06', '2025-08-08', 'Completed', 4),
+('000123593', '2025-04-25', '2025-08-08', 'Completed',5);
+
+-- Re-inserting the thermal images with the new column value
+INSERT INTO thermal_image (image_url, baseline_image_condition, transformer_id, pole_id)
+VALUES
+('/path/to/image1.jpg', 'Normal', 1, 'uploader1'),
+('/path/to/image2.jpg', 'Normal', 2, 'uploader2');
