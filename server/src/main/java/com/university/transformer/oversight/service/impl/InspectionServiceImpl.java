@@ -40,6 +40,23 @@ public class InspectionServiceImpl implements InspectionService {
     }
 
     @Override
+    public Inspection updateInspection(Long id, Inspection updatedInspection) {
+        // Find the existing inspection by its ID
+        return inspectionRepository.findById(id)
+                .map(inspection -> {
+                    // Update the fields with the new values
+                    inspection.setInspectionNo(updatedInspection.getInspectionNo());
+                    inspection.setInspectedDate(updatedInspection.getInspectedDate());
+                    inspection.setMaintenanceDate(updatedInspection.getMaintenanceDate());
+                    inspection.setStatus(updatedInspection.getStatus());
+
+                    // Save the updated inspection
+                    return inspectionRepository.save(inspection);
+                })
+                .orElseThrow(() -> new RuntimeException("Inspection not found with id: " + id));
+    }
+
+    @Override
     public Optional<InspectionDTO> findInspectionById(Long id) {
         return inspectionRepository.findById(id).map(InspectionDTO::new);
     }

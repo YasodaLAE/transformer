@@ -17,11 +17,9 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
   </button>
 ));
 
-// The component now receives 'onDelete' from the parent page
-const InspectionTable = ({ inspections, onDelete }) => {
+// The component now receives 'onDelete' and 'onEdit' from the parent page
+const InspectionTable = ({ inspections, onDelete, onEdit }) => {
     const { isAdmin } = useAuth();
-
-    // The handleDelete function has been removed from here and moved to InspectionPage.jsx
 
     return (
         <table className="table table-striped">
@@ -46,7 +44,6 @@ const InspectionTable = ({ inspections, onDelete }) => {
                             <td>{inspection.maintenanceDate || 'N/A'}</td>
                             <td>{inspection.status}</td>
                             <td>
-                                {/* This is your original, correct link for the View button */}
                                 <Link to={`/inspections/by-transformers/${inspection.id}`} className="btn btn-primary btn-sm">View</Link>
                             </td>
                             {isAdmin && (
@@ -56,6 +53,10 @@ const InspectionTable = ({ inspections, onDelete }) => {
                                         &#x22EE;
                                     </Dropdown.Toggle>
                                     <Dropdown.Menu>
+                                        {/* Add this Dropdown.Item for the Edit button */}
+                                        <Dropdown.Item onClick={() => onEdit(inspection)}>
+                                            Edit
+                                        </Dropdown.Item>
                                         {/* This now calls the 'onDelete' function passed from the parent page */}
                                         <Dropdown.Item onClick={() => onDelete(inspection.id)} className="text-danger">
                                             Delete

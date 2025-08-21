@@ -4,19 +4,20 @@ import { getInspectionsByTransformer, createInspection, getTransformerById, dele
 import { Button, Card, Row, Col } from 'react-bootstrap';
 import AddInspectionModal from '../components/AddInspectionModal';
 import InspectionTable from '../components/InspectionTable';
-import { useAuth } from '../hooks/AuthContext'; // Import the useAuth hook
+import { useAuth } from '../hooks/AuthContext';
 import BaselineImageUploader from '../components/BaselineImageUploader';
-import ThermalImageUpload from '../components/ThermalImageUpload'; // Adjust the path if necessary
+import ThermalImageUpload from '../components/ThermalImageUpload';
 
 const InspectionPage = () => {
     const { transformerId } = useParams();
     const [inspections, setInspections] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showAddModal, setShowAddModal] = useState(false);
-    const { isAdmin, login, logout } = useAuth();
+    const [showModal, setShowModal] = useState(false); // Changed name to be more generic
+    const [inspectionToEdit, setInspectionToEdit] = useState(null); // New state for editing
+    const { isAdmin } = useAuth();
     const [transformer, setTransformer] = useState(null);
-    const [baselineImageName, setBaselineImageName] = useState(null); // New state for the filename
+    const [baselineImageName, setBaselineImageName] = useState(null);
 
     const fetchInspections = useCallback(async () => {
         try {
@@ -24,12 +25,11 @@ const InspectionPage = () => {
                             getInspectionsByTransformer(transformerId),
                             getTransformerById(transformerId)
                         ]);
-
-                        setInspections(inspectionsResponse.data);
-                        setTransformer(transformerResponse.data);
-                        setBaselineImageName(transformerResponse.data.baselineImageName);
-                        setLoading(false);
-                       setError(null);
+            setInspections(inspectionsResponse.data);
+            setTransformer(transformerResponse.data);
+            setBaselineImageName(transformerResponse.data.baselineImageName);
+            setLoading(false);
+            setError(null);
         } catch (err) {
             setError('Failed to fetch inspections.');
             setLoading(false);
@@ -41,41 +41,50 @@ const InspectionPage = () => {
         fetchInspections();
     }, [fetchInspections]);
 
-    const handleInspectionAdded = () => {
-        // After an inspection is added, re-fetch the list to update the table
-        fetchInspections();
-        setShowAddModal(false);
+    // Handle opening the modal in "add" mode
+    const handleOpenAddModal = () => {
+        setInspectionToEdit(null); // Set to null to trigger "add" mode in the modal
+        setShowModal(true);
     };
 
-const handleDelete = async (inspectionId) => {
-    if (window.confirm('Are you sure you want to delete this inspection?')) {
-        try {
-            await deleteInspection(inspectionId);
-            // Update the state directly by filtering out the deleted inspection
-            setInspections(inspections.filter(inspection => inspection.id !== inspectionId));
-        } catch (error) {
-            console.error('Failed to delete inspection:', error);
-            // Optional: You could show a user-facing error message here
-            setError('Failed to delete inspection. Please try again.');
+    // Handle opening the modal in "edit" mode
+    const handleOpenEditModal = (inspection) => {
+        setInspectionToEdit(inspection); // Set the inspection to edit
+        setShowModal(true);
+    };
+
+    // Handle closing the modal and refreshing data
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setInspectionToEdit(null); // Reset the state
+        fetchInspections(); // Re-fetch the data to ensure the list is up-to-date
+    };
+
+    const handleDelete = async (inspectionId) => {
+        if (window.confirm('Are you sure you want to delete this inspection?')) {
+            try {
+                await deleteInspection(inspectionId);
+                setInspections(inspections.filter(inspection => inspection.id !== inspectionId));
+            } catch (error) {
+                console.error('Failed to delete inspection:', error);
+                setError('Failed to delete inspection. Please try again.');
+            }
         }
-    }
-};
+    };
 
     const handleBaselineUploadSuccess = (fileName) => {
-            setBaselineImageName(fileName);
+        setBaselineImageName(fileName);
     };
 
     const handleViewBaselineImage = () => {
-            // Construct the URL to the image on the server
-            const imageUrl = `http://localhost:8080/api/transformers/${transformerId}/baseline-image/view`;
-            window.open(imageUrl, '_blank'); // Open in a new tab
-        };
+        const imageUrl = `http://localhost:8080/api/transformers/${transformerId}/baseline-image/view`;
+        window.open(imageUrl, '_blank');
+    };
 
     const handleDeleteBaselineImage = async () => {
         if (window.confirm("Are you sure you want to delete this baseline image?")) {
             try {
                 await deleteBaselineImage(transformerId);
-                // On success, reset the baseline image name state
                 setBaselineImageName(null);
                 alert("Baseline image deleted successfully!");
             } catch (error) {
@@ -95,7 +104,7 @@ const handleDelete = async (inspectionId) => {
 
     return (
         <div className="container-fluid">
-        {transformer && (
+            {transformer && (
                 <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
                         <div className="d-flex justify-content-between align-items-start mb-2">
@@ -107,9 +116,7 @@ const handleDelete = async (inspectionId) => {
                                     <span className="text-muted">{transformer.details}</span>
                                 </div>
                             </div>
-                            {/* New upload component in the top-right corner */}
                             <div className="d-flex flex-column align-items-end">
-                                {/* Only show the uploader button if the user is an admin AND a baseline image has NOT been uploaded */}
                                 {isAdmin && !baselineImageName && (
                                     <BaselineImageUploader
                                         transformerId={transformerId}
@@ -121,7 +128,6 @@ const handleDelete = async (inspectionId) => {
                                         Baseline:
                                         <span className="text-primary ms-2 me-2">{baselineImageName}</span>
                                         <div className="d-flex align-items-center">
-                                            {/* View button (eye icon) */}
                                             <Button
                                                 variant="outline-info"
                                                 size="sm"
@@ -131,7 +137,6 @@ const handleDelete = async (inspectionId) => {
                                             >
                                                 <i className="bi bi-eye-fill"></i>
                                             </Button>
-                                            {/* Delete button (trash bin icon) */}
                                             <Button
                                                 variant="outline-danger"
                                                 size="sm"
@@ -142,7 +147,7 @@ const handleDelete = async (inspectionId) => {
                                                 <i className="bi bi-trash-fill"></i>
                                             </Button>
                                         </div>
-                                </small>
+                                    </small>
                                 )}
                             </div>
                         </div>
@@ -170,28 +175,25 @@ const handleDelete = async (inspectionId) => {
 
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2>Transformer Inspections</h2>
-                {isAdmin ? (
-                    <>
-                <Button onClick={() => setShowAddModal(true)}>Add Inspection</Button>
-                </>
-                ) : (<p> </p> )}
-
+                {isAdmin && (
+                    <Button onClick={handleOpenAddModal}>Add Inspection</Button>
+                )}
             </div>
             {inspections.length > 0 ? (
                 <InspectionTable
                     inspections={inspections}
-//                     onInspectionDeleted={fetchInspections}
                     onDelete={handleDelete}
+                    onEdit={handleOpenEditModal} // Pass the new onEdit handler
                 />
-
             ) : (
                 <p>No inspections found for this transformer.</p>
             )}
             <AddInspectionModal
-                show={showAddModal}
-                handleClose={() => setShowAddModal(false)}
-                onInspectionAdded={handleInspectionAdded}
+                show={showModal}
+                handleClose={handleCloseModal}
+                onInspectionAdded={fetchInspections}
                 transformerId={transformerId}
+                inspectionToEdit={inspectionToEdit} // Pass the inspection to the modal
             />
         </div>
     );

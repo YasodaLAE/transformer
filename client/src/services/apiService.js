@@ -41,6 +41,10 @@ export const uploadBaselineImage = (transformerId, formData) => {
     });
 };
 
+export const updateInspection = (id, inspectionData) => {
+    return axios.put(`${API_BASE_URL}/api/inspections/${id}`, inspectionData);
+};
+
 export const deleteBaselineImage = (transformerId) => {
     return axios.delete(`${API_BASE_URL}/api/transformers/${transformerId}/baseline-image`);
 };

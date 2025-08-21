@@ -1,43 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import { createInspection } from '../services/apiService';
+// Make sure to add 'updateInspection' to your imports
+import { createInspection, updateInspection } from '../services/apiService';
 
-const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerId }) => {
-    const [inspectionNo, setInspectionNo] = useState('');
-    const [inspectedDate, setInspectedDate] = useState('');
-    const [maintenanceDate, setMaintenanceDate] = useState('');
-    const [status, setStatus] = useState('');
+// The component now accepts an optional 'inspectionToEdit' prop
+const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerId, inspectionToEdit }) => {
+    const [formData, setFormData] = useState({
+        inspectionNo: '',
+        inspectedDate: '',
+        maintenanceDate: '',
+        status: '',
+    });
     const [error, setError] = useState(null);
+
+    // This effect runs when inspectionToEdit changes.
+    // It populates the form for editing or resets it for adding.
+    useEffect(() => {
+        if (inspectionToEdit) {
+            setFormData({
+                inspectionNo: inspectionToEdit.inspectionNo,
+                inspectedDate: inspectionToEdit.inspectedDate,
+                maintenanceDate: inspectionToEdit.maintenanceDate || '',
+                status: inspectionToEdit.status,
+            });
+        } else {
+            setFormData({
+                inspectionNo: '',
+                inspectedDate: '',
+                maintenanceDate: '',
+                status: '',
+            });
+        }
+    }, [inspectionToEdit]);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
 
-        const newInspection = {
-            inspectionNo,
-            inspectedDate,
-            maintenanceDate,
-            status,
-            // The transformer object is needed to link the inspection
-            transformer: {
-                id: transformerId,
-            },
-        };
-
         try {
-            await createInspection(newInspection);
-            onInspectionAdded(); // Function to refresh the list of inspections
-            handleClose(); // Close the modal
+            if (inspectionToEdit) {
+                // If in Edit mode, call the update API
+                const updatedData = { ...formData, id: inspectionToEdit.id };
+                await updateInspection(updatedData.id, updatedData);
+            } else {
+                // If in Add mode, call the create API
+                const newData = { ...formData, transformer: { id: transformerId } };
+                await createInspection(newData);
+            }
+            onInspectionAdded(); // This will re-fetch data and close the modal
+            handleClose();
         } catch (err) {
-            console.error("Failed to add inspection:", err);
-            setError('Failed to add inspection. Please check the form data.');
+            console.error("Failed to save inspection:", err);
+            setError('Failed to save inspection. Please check the form data.');
         }
     };
 
     return (
         <Modal show={show} onHide={handleClose}>
             <Modal.Header closeButton>
-                <Modal.Title>Add New Inspection</Modal.Title>
+                <Modal.Title>{inspectionToEdit ? 'Edit Inspection' : 'Add New Inspection'}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {error && <div className="alert alert-danger">{error}</div>}
@@ -46,8 +71,9 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                         <Form.Label>Inspection No.</Form.Label>
                         <Form.Control
                             type="text"
-                            value={inspectionNo}
-                            onChange={(e) => setInspectionNo(e.target.value)}
+                            name="inspectionNo"
+                            value={formData.inspectionNo}
+                            onChange={handleChange}
                             required
                         />
                     </Form.Group>
@@ -55,8 +81,9 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                         <Form.Label>Inspected Date</Form.Label>
                         <Form.Control
                             type="date"
-                            value={inspectedDate}
-                            onChange={(e) => setInspectedDate(e.target.value)}
+                            name="inspectedDate"
+                            value={formData.inspectedDate}
+                            onChange={handleChange}
                             required
                         />
                     </Form.Group>
@@ -64,16 +91,18 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                         <Form.Label>Maintenance Date</Form.Label>
                         <Form.Control
                             type="date"
-                            value={maintenanceDate}
-                            onChange={(e) => setMaintenanceDate(e.target.value)}
+                            name="maintenanceDate"
+                            value={formData.maintenanceDate}
+                            onChange={handleChange}
                         />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Status</Form.Label>
                         <Form.Control
                             as="select"
-                            value={status}
-                            onChange={(e) => setStatus(e.target.value)}
+                            name="status"
+                            value={formData.status}
+                            onChange={handleChange}
                             required
                         >
                             <option value="">Select Status</option>
@@ -87,7 +116,7 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                             Cancel
                         </Button>
                         <Button variant="primary" type="submit">
-                            Save Inspection
+                            {inspectionToEdit ? 'Save Changes' : 'Save Inspection'}
                         </Button>
                     </div>
                 </Form>

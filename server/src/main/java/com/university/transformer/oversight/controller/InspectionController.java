@@ -67,4 +67,14 @@ public class InspectionController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Inspection> updateInspection(@PathVariable Long id, @RequestBody Inspection updatedInspection) {
+        try {
+            Inspection savedInspection = inspectionService.updateInspection(id, updatedInspection);
+            return ResponseEntity.ok(savedInspection);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

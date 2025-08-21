@@ -9,6 +9,7 @@ import java.util.Optional;
 public interface InspectionService {
     List<Inspection> getInspectionsByTransformer(Long transformerId);
     Inspection saveInspection(Inspection inspection);
+    Inspection updateInspection(Long id, Inspection updatedInspection);
     void deleteInspection(Long id);
     Optional<InspectionDTO> findInspectionById(Long id);
 
