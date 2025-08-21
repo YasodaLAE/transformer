@@ -1,10 +1,7 @@
 import React from 'react';
-import { Table } from 'react-bootstrap';
-import Dropdown from 'react-bootstrap/Dropdown';
+import { Table, Dropdown } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
-import {deleteInspection} from '../services/apiService'
 import { Link } from "react-router-dom";
-import { Button } from 'react-bootstrap';
 
 const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
   <button
@@ -20,19 +17,12 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
   </button>
 ));
 
-const InspectionTable = ({ inspections, onInspectionDeleted }) => {
+// The component now receives 'onDelete' from the parent page
+const InspectionTable = ({ inspections, onDelete }) => {
     const { isAdmin } = useAuth();
-    const handleDelete = async (inspectionId) => {
-            // Confirmation dialog for the user
-            if (window.confirm('Are you sure you want to delete this inspection?')) {
-                try {
-                    await deleteInspection(inspectionId);
-                    onInspectionDeleted(); // This function will trigger a data refresh
-                } catch (error) {
-                    console.error('Failed to delete inspection:', error);
-                }
-    }
-     };
+
+    // The handleDelete function has been removed from here and moved to InspectionPage.jsx
+
     return (
         <table className="table table-striped">
             <thead>
@@ -56,23 +46,24 @@ const InspectionTable = ({ inspections, onInspectionDeleted }) => {
                             <td>{inspection.maintenanceDate || 'N/A'}</td>
                             <td>{inspection.status}</td>
                             <td>
-                                <Link to={`/inspections/by-transformers/${inspection.id}`}className="btn btn-primary btn-sm">View
-                                </Link>
+                                {/* This is your original, correct link for the View button */}
+                                <Link to={`/inspections/by-transformers/${inspection.id}`} className="btn btn-primary btn-sm">View</Link>
                             </td>
-                                {isAdmin && (
-                                    <td>
-                                    <Dropdown >
-                                        <Dropdown.Toggle as={CustomToggle} id="dropdown-custom">
-                                            &#x22EE;
-                                        </Dropdown.Toggle>
-                                        <Dropdown.Menu>
-                                            <Dropdown.Item onClick={() => handleDelete(inspection.id)}>
-                                                Delete
-                                            </Dropdown.Item>
-                                        </Dropdown.Menu>
-                                    </Dropdown>
-                                    </td>
-                                )}
+                            {isAdmin && (
+                                <td>
+                                <Dropdown>
+                                    <Dropdown.Toggle as={CustomToggle} id="dropdown-custom">
+                                        &#x22EE;
+                                    </Dropdown.Toggle>
+                                    <Dropdown.Menu>
+                                        {/* This now calls the 'onDelete' function passed from the parent page */}
+                                        <Dropdown.Item onClick={() => onDelete(inspection.id)} className="text-danger">
+                                            Delete
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                                </td>
+                            )}
                         </tr>
                     ))
                 ) : (

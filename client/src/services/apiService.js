@@ -30,6 +30,7 @@ export const deleteInspection = (id) => {
     return axios.delete(`${API_BASE_URL}/api/inspections/${id}`);
 };
 
+
 export const getInspectionById = (id) => {
     return axios.get(`${API_BASE_URL}/api/inspections/${id}`);
 };
@@ -57,3 +58,8 @@ export const deleteThermalImage = (imageId) => {
     // URL now points to the InspectionController
     return axios.delete(`${API_BASE_URL}/api/inspections/thermal-image/${imageId}`);
 };
+
+export const updateTransformer = (id, transformerData) => {
+    return axios.put(`http://localhost:8080/api/transformers/${id}`, transformerData);
+};
+

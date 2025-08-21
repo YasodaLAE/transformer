@@ -32,7 +32,7 @@ public class InspectionController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteInspection(@PathVariable Long id) {
         inspectionService.deleteInspection(id);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}")

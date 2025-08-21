@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionsByTransformer, createInspection, getTransformerById, deleteBaselineImage } from '../services/apiService';
+import { getInspectionsByTransformer, createInspection, getTransformerById, deleteBaselineImage, deleteInspection } from '../services/apiService';
 import { Button, Card, Row, Col } from 'react-bootstrap';
 import AddInspectionModal from '../components/AddInspectionModal';
 import InspectionTable from '../components/InspectionTable';
@@ -46,6 +46,20 @@ const InspectionPage = () => {
         fetchInspections();
         setShowAddModal(false);
     };
+
+const handleDelete = async (inspectionId) => {
+    if (window.confirm('Are you sure you want to delete this inspection?')) {
+        try {
+            await deleteInspection(inspectionId);
+            // Update the state directly by filtering out the deleted inspection
+            setInspections(inspections.filter(inspection => inspection.id !== inspectionId));
+        } catch (error) {
+            console.error('Failed to delete inspection:', error);
+            // Optional: You could show a user-facing error message here
+            setError('Failed to delete inspection. Please try again.');
+        }
+    }
+};
 
     const handleBaselineUploadSuccess = (fileName) => {
             setBaselineImageName(fileName);
@@ -166,7 +180,8 @@ const InspectionPage = () => {
             {inspections.length > 0 ? (
                 <InspectionTable
                     inspections={inspections}
-                    onInspectionDeleted={fetchInspections}
+//                     onInspectionDeleted={fetchInspections}
+                    onDelete={handleDelete}
                 />
 
             ) : (

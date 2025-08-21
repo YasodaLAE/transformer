@@ -1,58 +1,75 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { getAllTransformers, deleteTransformer } from '../services/apiService';
+import React, { useState, useEffect } from 'react';
 import TransformerTable from '../components/TransformerTable';
-import FilterBar from '../components/FilterBar';
-import AddTransformerModal from '../components/AddTransformerModal';
+import TransformerModal from '../components/TransformerModal'; // Use the new reusable modal
 import Login from '../components/Login';
+import { getAllTransformers, createTransformer, updateTransformer, deleteTransformer } from '../services/apiService';
 import { Modal, Button } from 'react-bootstrap';
-import { useAuth } from '../hooks/AuthContext'; // Import the useAuth hook
+import { useAuth } from '../hooks/AuthContext';
 
 const TransformerListPage = () => {
     const [transformers, setTransformers] = useState([]);
-    const [showModal, setShowModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [editingTransformer, setEditingTransformer] = useState(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const { isAdmin, logout } = useAuth();
 
-    // Use the useAuth hook to get isAdmin and login/logout functions
-    const { isAdmin, login, logout } = useAuth();
-
-    const fetchTransformers = useCallback(async () => {
+    const fetchTransformers = async () => {
         try {
             setLoading(true);
             const response = await getAllTransformers();
             setTransformers(response.data);
             setError(null);
         } catch (err) {
-            setError('Failed to fetch transformers. Please ensure the backend is running and accessible.');
-            console.error(err);
+            setError('Failed to fetch transformers.');
         } finally {
             setLoading(false);
         }
-    }, []);
-
-    const handleTransformerAdded = () => {
-        fetchTransformers();
-    };
-
-    const handleDelete = async (id) => {
-        try {
-            await deleteTransformer(id);
-            fetchTransformers();
-        } catch (err) {
-            console.error("Failed to delete transformer:", err);
-            setError('Failed to delete transformer. Please try again.');
-        }
-    };
-
-    const handleLoginSuccess = () => {
-        // This function is called when the Login component successfully logs in
-        setShowLoginModal(false); // Close the login modal
     };
 
     useEffect(() => {
         fetchTransformers();
-    }, [fetchTransformers]);
+    }, []);
+
+    const handleOpenAddModal = () => {
+        setEditingTransformer(null);
+        setShowModal(true);
+    };
+
+    const handleOpenEditModal = (transformer) => {
+        setEditingTransformer(transformer);
+        setShowModal(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm("Are you sure you want to delete this transformer?")) {
+            try {
+                await deleteTransformer(id);
+                fetchTransformers();
+            } catch (err) {
+                console.error("Failed to delete transformer:", err);
+            }
+        }
+    };
+
+    const handleSave = async (transformerData) => {
+        try {
+            if (transformerData.id) {
+                await updateTransformer(transformerData.id, transformerData);
+            } else {
+                await createTransformer(transformerData);
+            }
+            fetchTransformers();
+            setShowModal(false);
+        } catch (err) {
+            console.error("Failed to save transformer:", err);
+        }
+    };
+
+    const handleLoginSuccess = () => {
+        setShowLoginModal(false);
+    };
 
     return (
         <div className="container-fluid">
@@ -61,22 +78,14 @@ const TransformerListPage = () => {
                 <div>
                     {isAdmin ? (
                         <>
-                            <Button className="btn btn-primary me-2" onClick={() => setShowModal(true)}>
-                                Add Transformer
-                            </Button>
-                            <Button className="btn btn-secondary" onClick={logout}>
-                                Logout
-                            </Button>
+                            <Button className="btn btn-primary me-2" onClick={handleOpenAddModal}>Add Transformer</Button>
+                            <Button className="btn btn-secondary" onClick={logout}>Logout</Button>
                         </>
                     ) : (
-                        <Button variant="outline-primary" onClick={() => setShowLoginModal(true)}>
-                            Admin Login
-                        </Button>
+                        <Button variant="outline-primary" onClick={() => setShowLoginModal(true)}>Admin Login</Button>
                     )}
                 </div>
             </div>
-
-            <FilterBar />
 
             {loading && <p>Loading transformers...</p>}
             {error && <p className="text-danger">{error}</p>}
@@ -85,23 +94,20 @@ const TransformerListPage = () => {
                 <TransformerTable
                     transformers={transformers}
                     onDelete={handleDelete}
+                    onEdit={handleOpenEditModal}
                 />
             )}
 
-            <AddTransformerModal
+            <TransformerModal
                 show={showModal}
                 handleClose={() => setShowModal(false)}
-                onTransformerAdded={handleTransformerAdded}
+                onSave={handleSave}
+                transformer={editingTransformer}
             />
 
             <Modal show={showLoginModal} onHide={() => setShowLoginModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Admin Login</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {/* Pass the onLoginSuccess function to the Login component */}
-                    <Login onLoginSuccess={handleLoginSuccess} />
-                </Modal.Body>
+                <Modal.Header closeButton><Modal.Title>Admin Login</Modal.Title></Modal.Header>
+                <Modal.Body><Login onLoginSuccess={handleLoginSuccess} /></Modal.Body>
             </Modal>
         </div>
     );
