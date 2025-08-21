@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "inspection")
@@ -18,8 +19,8 @@ public class Inspection {
     private Long id;
 
     private String inspectionNo;
-    private LocalDate inspectedDate;
-    private LocalDate maintenanceDate;
+    private LocalDateTime inspectedDate; // Changed from LocalDate
+    private LocalDateTime maintenanceDate; // Changed from LocalDate
     private String status;
 
     @ManyToOne(fetch = FetchType.EAGER)

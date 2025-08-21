@@ -3,14 +3,15 @@ package com.university.transformer.oversight.dto;
 import com.university.transformer.oversight.model.Inspection;
 import lombok.Data;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 public class InspectionDTO {
     // Inspection fields
     private Long id;
     private String inspectionNo;
-    private LocalDate inspectedDate;
-    private LocalDate maintenanceDate;
+    private LocalDateTime inspectedDate; // Changed to LocalDateTime
+    private LocalDateTime maintenanceDate;
     private String status;
 
     // Transformer fields

@@ -77,25 +77,25 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                             required
                         />
                     </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Inspected Date</Form.Label>
-                        <Form.Control
-                            type="date"
-                            name="inspectedDate"
-                            value={formData.inspectedDate}
-                            onChange={handleChange}
-                            required
-                        />
-                    </Form.Group>
-                    <Form.Group className="mb-3">
-                        <Form.Label>Maintenance Date</Form.Label>
-                        <Form.Control
-                            type="date"
-                            name="maintenanceDate"
-                            value={formData.maintenanceDate}
-                            onChange={handleChange}
-                        />
-                    </Form.Group>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Inspected Date</Form.Label>
+                                        <Form.Control
+                                            type="datetime-local"
+                                            name="inspectedDate"
+                                            value={formData.inspectedDate}
+                                            onChange={handleChange}
+                                            required
+                                        />
+                                    </Form.Group>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Maintenance Date</Form.Label>
+                                        <Form.Control
+                                            type="datetime-local"
+                                            name="maintenanceDate"
+                                            value={formData.maintenanceDate}
+                                            onChange={handleChange}
+                                        />
+                                    </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Status</Form.Label>
                         <Form.Control

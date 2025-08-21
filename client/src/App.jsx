@@ -18,7 +18,7 @@ function App() {
                     <Route path="/transformers" element={<TransformerListPage />} />
                     <Route path="/transformers/:id" element={<TransformerDetailPage />} />
                     <Route path="inspections/by-transformer/:transformerId" element={<InspectionPage/>}/>
-                    <Route path="/inspections/by-transformers/:inspectionId" element={<InspectionDetailPage />} />
+                    <Route path="/inspections/by-inspection/:inspectionId" element={<InspectionDetailPage />} />
                 </Routes>
             </Layout>
         </Router>
