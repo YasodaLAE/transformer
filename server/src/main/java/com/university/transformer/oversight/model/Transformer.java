@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,7 +14,7 @@ public class Transformer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; // Primary key for the database
+    private Long id;
 
     @Column(unique = true, nullable = false)
     private String transformerId;
@@ -25,20 +24,12 @@ public class Transformer {
     private String details;
     private String baselineImageName;
     private String baselineImageCondition;
-    private String baselineImageUploader; // New field for the uploader
-    private LocalDateTime baselineImageUploadTimestamp; // New field for the timestamp
+    private String baselineImageUploader;
+    private LocalDateTime baselineImageUploadTimestamp;
 
-    @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch=FetchType.EAGER, orphanRemoval = true)
+    @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JsonManagedReference
     private List<Inspection> inspections;
 
-    @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch=FetchType.LAZY)
-    @JsonManagedReference
-    private List<ThermalImage> thermalImages;
-
-    public List<ThermalImage> getThermalImages() {
-        return thermalImages;
-    }
-
-
+    // The thermalImages list has been removed from this class.
 }

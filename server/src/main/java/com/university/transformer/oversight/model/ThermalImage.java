@@ -15,18 +15,14 @@ public class ThermalImage {
         MAINTENANCE
     }
 
-// Replace your entire enum block with this
-
     public enum EnvironmentalCondition {
         SUNNY,
         CLOUDY,
-        RAINY; // <-- Make sure there's a semicolon here
+        RAINY;
 
         @JsonCreator
         public static EnvironmentalCondition fromString(String value) {
-            if (value == null) {
-                return null;
-            }
+            if (value == null) { return null; }
             return EnvironmentalCondition.valueOf(value.toUpperCase());
         }
     }
@@ -45,10 +41,11 @@ public class ThermalImage {
     private EnvironmentalCondition environmentalCondition;
 
     private LocalDateTime uploadTimestamp;
-    private String uploaderId; // Or a reference to a User entity in a future phase
+    private String uploaderId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "transformer_id", nullable = false)
+    // --- RELATIONSHIP CHANGED ---
+    @OneToOne
+    @JoinColumn(name = "inspection_id", unique = true)
     @JsonBackReference
-    private Transformer transformer;
+    private Inspection inspection;
 }

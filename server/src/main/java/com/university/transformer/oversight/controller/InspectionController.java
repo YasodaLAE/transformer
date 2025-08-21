@@ -1,12 +1,13 @@
 package com.university.transformer.oversight.controller;
-import com.university.transformer.oversight.dto.InspectionDTO;
 
+import com.university.transformer.oversight.dto.InspectionDTO;
 import com.university.transformer.oversight.model.Inspection;
 import com.university.transformer.oversight.service.InspectionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
@@ -16,7 +17,7 @@ public class InspectionController {
     @Autowired
     private InspectionService inspectionService;
 
-    @PostMapping // This method handles the POST request
+    @PostMapping
     public ResponseEntity<Inspection> createInspection(@RequestBody Inspection inspection) {
         Inspection newInspection = inspectionService.saveInspection(inspection);
         return new ResponseEntity<>(newInspection, HttpStatus.CREATED);
@@ -33,6 +34,7 @@ public class InspectionController {
         inspectionService.deleteInspection(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
     @GetMapping("/{id}")
     public ResponseEntity<InspectionDTO> getInspectionById(@PathVariable Long id) {
         return inspectionService.findInspectionById(id)
@@ -40,5 +42,29 @@ public class InspectionController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // --- NEW ENDPOINTS FOR THERMAL IMAGES ---
 
+    @PostMapping("/{inspectionId}/thermal-image")
+    public ResponseEntity<String> uploadThermalImage(
+            @PathVariable Long inspectionId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("condition") String condition) {
+        try {
+            String uploader = "Olivera Queen"; // Placeholder
+            inspectionService.addThermalImageToInspection(inspectionId, file, condition, uploader);
+            return ResponseEntity.status(HttpStatus.CREATED).body("Thermal image added to inspection.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/thermal-image/{imageId}")
+    public ResponseEntity<Void> deleteThermalImage(@PathVariable Long imageId) {
+        try {
+            inspectionService.deleteThermalImage(imageId);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

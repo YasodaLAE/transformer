@@ -22,7 +22,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())  // enable CORS support
                 .csrf(csrf -> csrf.disable())     // disable CSRF for testing
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/api/**","/files/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
