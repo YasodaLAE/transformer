@@ -1,38 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { getInspectionById, deleteThermalImage, deleteBaselineImage } from '../services/apiService';
+import { useParams } from 'react-router-dom';
+import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button } from 'react-bootstrap';
+import { useAuth } from '../hooks/AuthContext';
 
 const InspectionDetailPage = () => {
     const { inspectionId } = useParams();
     const [inspection, setInspection] = useState(null);
+    const [transformer, setTransformer] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showBaselineModal, setShowBaselineModal] = useState(false);
+    const { isAdmin } = useAuth();
 
-    const fetchInspectionDetails = async () => {
+    const fetchData = async () => {
         try {
             setLoading(true);
-            const response = await getInspectionById(inspectionId);
-            setInspection(response.data);
+            const inspectionResponse = await getInspectionById(inspectionId);
+            setInspection(inspectionResponse.data);
+
+            if (inspectionResponse.data.transformerDbId) {
+                const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
+                setTransformer(transformerResponse.data);
+            }
         } catch (err) {
             setError('Failed to fetch inspection details.');
+            console.error(err);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchInspectionDetails();
+        fetchData();
     }, [inspectionId]);
 
     const handleDelete = async (imageId) => {
-        if (window.confirm("Are you sure you want to delete this thermal image?")) {
+        if (confirm("Are you sure you want to delete this thermal image?")) {
             try {
                 await deleteThermalImage(imageId);
-                fetchInspectionDetails();
+                fetchData();
             } catch (err) {
                 console.error("Failed to delete image:", err);
                 alert("Failed to delete image.");
@@ -41,14 +50,21 @@ const InspectionDetailPage = () => {
     };
 
     const handleDeleteBaseline = async (transformerId) => {
-        if (window.confirm("Are you sure you want to delete the baseline image?")) {
+        if (confirm("Are you sure you want to delete the baseline image?")) {
             try {
                 await deleteBaselineImage(transformerId);
-                fetchInspectionDetails();
+                fetchData();
             } catch (err) {
                 console.error("Failed to delete baseline image:", err);
                 alert("Failed to delete baseline image.");
             }
+        }
+    };
+
+    const handleViewBaselineImage = () => {
+        if (transformer) {
+            const imageUrl = `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view`;
+            window.open(imageUrl, "_blank");
         }
     };
 
@@ -58,74 +74,172 @@ const InspectionDetailPage = () => {
 
     const hasThermalImage = inspection.thermalImage;
     const thermalImage = inspection.thermalImage;
-    const hasBaselineImage = inspection.transformerBaselineImageName;
+    const hasBaselineImage = transformer && transformer.baselineImageName;
 
-    const baselineImageUrl = `http://localhost:8080/api/transformers/${inspection.transformerDbId}/baseline-image/view?timestamp=${new Date().getTime()}`;
+    const baselineImageUrl = hasBaselineImage
+        ? `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view?timestamp=${new Date().getTime()}`
+        : '';
     const thermalImageUrl = hasThermalImage ? `http://localhost:8080/files/${thermalImage.fileName}` : '';
+
+    const getStatusBadgeColor = (status) => {
+        switch (status.toLowerCase()) {
+            case 'completed':
+                return 'bg-primary';
+            case 'in progress':
+                return 'bg-success';
+            case 'pending':
+                return 'bg-danger';
+            default:
+                return 'bg-secondary';
+        }
+    };
 
     return (
         <div className="container-fluid">
-            <Card className="mb-4"><Card.Body><Card.Title>Details for Inspection No: {inspection.inspectionNo}</Card.Title></Card.Body></Card>
-
-            {hasThermalImage ? (
-                <Card className="rounded-4 shadow-sm">
+            {transformer && (
+                <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                             <h4>Thermal Image Comparison</h4>
+                        {/* Unified Header with Flexbox */}
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                            {/* Left side: Inspection Details */}
+                            <div className="d-flex flex-column">
+                                <h3 className="fw-bold">{inspection.inspectionNo}</h3>
+                                <div className="d-flex align-items-center mt-1">
+                                    <small className="text-muted mt-2 d-flex align-items-center">
+                                        Last updated:
+                                        <span className="text-primary ms-2">
+                                            {inspection.lastUpdated ? new Date(inspection.lastUpdated).toLocaleString() : 'N/A'}
+                                        </span>
+                                    </small>
+                                </div>
+                            </div>
+                            {/* Right side: Status and Baseline Image Section */}
+                            <div className="d-flex flex-column align-items-end">
+                                <div className={`badge rounded-pill text-white ${getStatusBadgeColor(inspection.status)} mb-2`}>
+                                    {inspection.status}
+                                </div>
+                                {isAdmin && !hasBaselineImage && (
+                                    <BaselineImageUploader
+                                        transformerId={transformer.id}
+                                        onUploadSuccess={fetchData}
+                                    />
+                                )}
+                                {hasBaselineImage && (
+                                    <small className="d-flex align-items-center mt-2">
+                                        Baseline Image
+                                        <div className="d-flex align-items-center ms-2">
+                                            {/* View button */}
+                                            <Button
+                                                variant="outline-info"
+                                                size="sm"
+                                                onClick={handleViewBaselineImage}
+                                                className="me-2 d-flex align-items-center py-1 px-2"
+                                                title="View Baseline Image"
+                                            >
+                                                <i className="bi bi-eye-fill"></i>
+                                            </Button>
+                                            {/* Delete button */}
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                onClick={() => handleDeleteBaseline(transformer.id)}
+                                                className="d-flex align-items-center py-1 px-2"
+                                                title="Delete Baseline Image"
+                                            >
+                                                <i className="bi bi-trash-fill"></i>
+                                            </Button>
+                                        </div>
+                                    </small>
+                                )}
+                            </div>
                         </div>
-                        <Row>
-                            <Col md={6}>
-                                <Card>
-                                    <Card.Header className="d-flex justify-content-between align-items-center">
-                                        Baseline
-                                        {hasBaselineImage && (<Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(inspection.transformerDbId)}>Delete</Button>)}
-                                    </Card.Header>
-                                    <Card.Body className="text-center">
-                                        {hasBaselineImage ? (<img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />) : (<div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}><p className="text-muted">No baseline image available.</p></div>)}
-                                    </Card.Body>
-                                </Card>
+
+                        {/* Summary Details Row */}
+                        <Row className="text-center">
+                            <Col className="border-end py-2">
+                                <h6 className="mb-0 fw-bold">{transformer ? transformer.transformerId : inspection.transformerNo}</h6>
+                                <small className="text-muted">Transformer No</small>
                             </Col>
-                            <Col md={6}>
-                                <Card>
-                                    <Card.Header className="d-flex justify-content-between align-items-center">
-                                        Current
-                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
-                                    </Card.Header>
-                                    <Card.Body><img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%' }} /></Card.Body>
-                                </Card>
+                            <Col className="border-end py-2">
+                                <h6 className="mb-0 fw-bold">{transformer ? transformer.poleId : inspection.poleNo}</h6>
+                                <small className="text-muted">Pole No</small>
+                            </Col>
+                            <Col className="border-end py-2">
+                                <h6 className="mb-0 fw-bold">{transformer ? transformer.region : inspection.branch}</h6>
+                                <small className="text-muted">Branch</small>
+                            </Col>
+                            <Col className="py-2">
+                                <h6 className="mb-0 fw-bold">{inspection.inspectedBy}</h6>
+                                <small className="text-muted">Inspected By</small>
                             </Col>
                         </Row>
                     </Card.Body>
                 </Card>
-            ) : (
-                <Card className="mb-4 rounded-4 shadow-sm">
-                    <Card.Body>
-                        <ThermalImageUpload
-                            inspectionId={inspection.id}
-                            onUploadSuccess={fetchInspectionDetails}
-                        />
-                    </Card.Body>
-                </Card>
             )}
 
-            {/* --- UPDATED SECTION --- */}
-            {/* The button and the modal it controls are now inside the same conditional block */}
-            {hasThermalImage && !hasBaselineImage && (
+            {/* Thermal Image Comparison Section */}
+            {hasThermalImage ? (
                 <>
-                    <Card className="mt-4">
+                    <Card className="rounded-4 shadow-sm">
                         <Card.Body>
-                            <p>A baseline image is required for a full comparison.</p>
-                            <BaselineImageUploader
-                                                    show={showBaselineModal}
-                                                    handleClose={() => setShowBaselineModal(false)}
-                                                    onUploadSuccess={fetchInspectionDetails}
-                                                    transformerId={inspection.transformerDbId}
-                                                />
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Thermal Image Comparison</h4>
+                            </div>
+                            <Row>
+                                <Col md={6}>
+                                    <Card>
+                                        <Card.Header className="d-flex justify-content-between align-items-center">
+                                            Baseline
+                                            {hasBaselineImage && (
+                                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)}>Delete</Button>
+                                            )}
+                                        </Card.Header>
+                                        <Card.Body className="text-center">
+                                            {hasBaselineImage ? (
+                                                <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
+                                            ) : (
+                                                <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
+                                                    <p className="text-muted">No baseline image available.</p>
+                                                </div>
+                                            )}
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                <Col md={6}>
+                                    <Card>
+                                        <Card.Header className="d-flex justify-content-between align-items-center">
+                                            Current
+                                            <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
+                                        </Card.Header>
+                                        <Card.Body>
+                                            <img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%' }} />
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                            </Row>
                         </Card.Body>
                     </Card>
 
-
+{/*                     {!hasBaselineImage && ( */}
+{/*                         <Card className="mt-4 rounded-4 shadow-sm"> */}
+{/*                             <Card.Body> */}
+{/*                                 <p>A baseline image is required for a full comparison.</p> */}
+{/*                                 <BaselineImageUploader */}
+{/*                                     show={showBaselineModal} */}
+{/*                                     handleClose={() => setShowBaselineModal(false)} */}
+{/*                                     onUploadSuccess={fetchData} */}
+{/*                                     transformerId={inspection.transformerDbId} */}
+{/*                                 /> */}
+{/*                             </Card.Body> */}
+{/*                         </Card> */}
+{/*                     )} */}
                 </>
+            ) : (
+                <Card className="mb-4 rounded-4 shadow-sm">
+                    <Card.Body>
+                        <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={fetchData} />
+                    </Card.Body>
+                </Card>
             )}
         </div>
     );
