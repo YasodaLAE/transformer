@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { uploadThermalImage } from '../services/apiService';
 
-const ThermalImageUpload = ({ transformerId, onUploadSuccess }) => {
+const ThermalImageUpload = ({ inspectionId, onUploadSuccess }) => { // <-- Prop changed
     const [file, setFile] = useState(null);
     const [condition, setCondition] = useState('Sunny');
     const [message, setMessage] = useState('');
@@ -16,7 +15,7 @@ const ThermalImageUpload = ({ transformerId, onUploadSuccess }) => {
             setError('Please select a file to upload.');
             return;
         }
-        // Check file size (e.g., 10MB limit)
+
         const fileSizeInMB = file.size / 1024 / 1024;
         if (fileSizeInMB > 10) {
             setError('File is too large. Please select a file smaller than 10MB.');
@@ -32,10 +31,10 @@ const ThermalImageUpload = ({ transformerId, onUploadSuccess }) => {
         setIsLoading(true);
 
         try {
-             await uploadThermalImage(transformerId, formData);
+             await uploadThermalImage(inspectionId, formData); // <-- Prop changed
             setMessage('Upload successful!');
             if (onUploadSuccess) {
-                onUploadSuccess(); // This will refresh the parent page's data
+                onUploadSuccess();
             }
         } catch (err) {
             setError('Upload failed. Please try again.');
@@ -48,7 +47,7 @@ const ThermalImageUpload = ({ transformerId, onUploadSuccess }) => {
     return (
         <div>
             <h4>Thermal Image</h4>
-            <p className="text-muted">Upload a thermal image of the transformer to identify potential issues.</p>
+            <p className="text-muted">Upload a thermal image for this inspection to identify potential issues.</p>
             <Form onSubmit={handleSubmit}>
                 <Form.Group controlId="condition-select" className="mb-3">
                     <Form.Label>Weather Condition</Form.Label>

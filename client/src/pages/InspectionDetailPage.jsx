@@ -56,8 +56,8 @@ const InspectionDetailPage = () => {
     if (error) return <p className="text-danger">{error}</p>;
     if (!inspection) return <p>Inspection not found.</p>;
 
-    const hasThermalImage = inspection.thermalImages && inspection.thermalImages.length > 0;
-    const thermalImage = hasThermalImage ? inspection.thermalImages[0] : null;
+    const hasThermalImage = inspection.thermalImage;
+    const thermalImage = inspection.thermalImage;
     const hasBaselineImage = inspection.transformerBaselineImageName;
 
     const baselineImageUrl = `http://localhost:8080/api/transformers/${inspection.transformerDbId}/baseline-image/view?timestamp=${new Date().getTime()}`;
@@ -72,42 +72,26 @@ const InspectionDetailPage = () => {
                     <Card.Body>
                         <div className="d-flex justify-content-between align-items-center mb-3">
                              <h4>Thermal Image Comparison</h4>
-                             {/* Button has been moved from here */}
                         </div>
                         <Row>
                             <Col md={6}>
                                 <Card>
                                     <Card.Header className="d-flex justify-content-between align-items-center">
                                         Baseline
-                                        {hasBaselineImage && (
-                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(inspection.transformerDbId)}>
-                                                Delete
-                                            </Button>
-                                        )}
+                                        {hasBaselineImage && (<Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(inspection.transformerDbId)}>Delete</Button>)}
                                     </Card.Header>
                                     <Card.Body className="text-center">
-                                        {hasBaselineImage ? (
-                                            <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
-                                        ) : (
-                                            <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
-                                                <span>Please upload a baseline image to view the comparison</span>
-                                            </div>
-                                        )}
+                                        {hasBaselineImage ? (<img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />) : (<div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}><p className="text-muted">No baseline image available.</p></div>)}
                                     </Card.Body>
                                 </Card>
                             </Col>
                             <Col md={6}>
                                 <Card>
-                                    {/* The "Current" card header is updated here */}
                                     <Card.Header className="d-flex justify-content-between align-items-center">
                                         Current
-                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>
-                                            Delete
-                                        </Button>
+                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
                                     </Card.Header>
-                                    <Card.Body>
-                                        <img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%' }} />
-                                    </Card.Body>
+                                    <Card.Body><img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%' }} /></Card.Body>
                                 </Card>
                             </Col>
                         </Row>
@@ -117,20 +101,31 @@ const InspectionDetailPage = () => {
                 <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
                         <ThermalImageUpload
-                            transformerId={inspection.transformerBusinessId}
+                            inspectionId={inspection.id}
                             onUploadSuccess={fetchInspectionDetails}
                         />
                     </Card.Body>
                 </Card>
             )}
 
-            {!hasBaselineImage && (
-                <BaselineImageUploader
-                    show={showBaselineModal}
-                    handleClose={() => setShowBaselineModal(false)}
-                    onUploadSuccess={fetchInspectionDetails}
-                    transformerId={inspection.transformerDbId}
-                />
+            {/* --- UPDATED SECTION --- */}
+            {/* The button and the modal it controls are now inside the same conditional block */}
+            {hasThermalImage && !hasBaselineImage && (
+                <>
+                    <Card className="mt-4">
+                        <Card.Body>
+                            <p>A baseline image is required for a full comparison.</p>
+                            <BaselineImageUploader
+                                                    show={showBaselineModal}
+                                                    handleClose={() => setShowBaselineModal(false)}
+                                                    onUploadSuccess={fetchInspectionDetails}
+                                                    transformerId={inspection.transformerDbId}
+                                                />
+                        </Card.Body>
+                    </Card>
+
+
+                </>
             )}
         </div>
     );
