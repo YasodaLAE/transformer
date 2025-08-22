@@ -137,6 +137,7 @@ const InspectionPage = () => {
                                             >
                                                 <i className="bi bi-eye-fill"></i>
                                             </Button>
+                                            {isAdmin && (
                                             <Button
                                                 variant="outline-danger"
                                                 size="sm"
@@ -145,7 +146,7 @@ const InspectionPage = () => {
                                                 title="Delete Baseline Image"
                                             >
                                                 <i className="bi bi-trash-fill"></i>
-                                            </Button>
+                                            </Button> )}
                                         </div>
                                     </small>
                                 )}
