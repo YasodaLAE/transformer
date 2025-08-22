@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
-import { Card, Row, Col, Button } from 'react-bootstrap';
+import { Card, Row, Col, Button, Spinner } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 
 const InspectionDetailPage = () => {
@@ -14,7 +14,7 @@ const InspectionDetailPage = () => {
     const [error, setError] = useState(null);
     const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
-    const { isAdmin } = useAuth();
+    const { user, isAdmin } = useAuth();
 
     const fetchData = async () => {
         try {
@@ -194,7 +194,7 @@ const InspectionDetailPage = () => {
                                     <Card>
                                         <Card.Header className="d-flex justify-content-between align-items-center">
                                             Baseline
-                                            {hasBaselineImage && (
+                                            {isAdmin && hasBaselineImage && (
                                                 <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)}>Delete</Button>
                                             )}
                                         </Card.Header>
@@ -213,7 +213,9 @@ const InspectionDetailPage = () => {
                                     <Card>
                                         <Card.Header className="d-flex justify-content-between align-items-center">
                                             Current
+                                            {isAdmin && (
                                             <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
+                                            )}
                                         </Card.Header>
                                         <Card.Body>
                                             <img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%' }} />
@@ -241,7 +243,13 @@ const InspectionDetailPage = () => {
             ) : (
                 <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
+                        {isAdmin ? (
                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={fetchData} />
+                        ) : (
+                            <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
+                                <p className="text-muted text-center">No thermal images uploaded yet.</p>
+                            </div>
+                        )}
                     </Card.Body>
                 </Card>
             )}
