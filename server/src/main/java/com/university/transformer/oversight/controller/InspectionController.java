@@ -17,6 +17,12 @@ public class InspectionController {
     @Autowired
     private InspectionService inspectionService;
 
+    @GetMapping
+    public ResponseEntity<List<Inspection>> getAllInspections() {
+        List<Inspection> inspections = inspectionService.getAllInspections();
+        return ResponseEntity.ok(inspections);
+    }
+
     @PostMapping
     public ResponseEntity<Inspection> createInspection(@RequestBody Inspection inspection) {
         Inspection newInspection = inspectionService.saveInspection(inspection);
@@ -41,8 +47,6 @@ public class InspectionController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    // --- NEW ENDPOINTS FOR THERMAL IMAGES ---
 
     @PostMapping("/{inspectionId}/thermal-image")
     public ResponseEntity<String> uploadThermalImage(

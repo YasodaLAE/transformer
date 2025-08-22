@@ -13,8 +13,8 @@ public interface InspectionService {
     void deleteInspection(Long id);
     Optional<InspectionDTO> findInspectionById(Long id);
 
-    // Methods for thermal images now live here
+    // Methods for thermal images
     void addThermalImageToInspection(Long inspectionId, MultipartFile file, String condition, String uploader) throws Exception;
     void deleteThermalImage(Long imageId);
-
+    List<Inspection> getAllInspections();
 }

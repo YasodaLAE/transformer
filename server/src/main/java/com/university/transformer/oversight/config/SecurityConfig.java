@@ -9,6 +9,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.http.HttpMethod;
 
 import java.util.List;
 
@@ -22,8 +23,11 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())  // enable CORS support
                 .csrf(csrf -> csrf.disable())     // disable CSRF for testing
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/**","/files/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/inspections").permitAll()
                         .requestMatchers("/api/inspections").permitAll()
+                        // 2. Permit other necessary public paths (e.g., login, etc.)
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        .requestMatchers("/api/**","/files/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

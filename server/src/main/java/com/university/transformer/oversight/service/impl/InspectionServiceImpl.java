@@ -101,4 +101,9 @@ public class InspectionServiceImpl implements InspectionService {
         inspection.setThermalImage(null);
         inspectionRepository.save(inspection);
     }
+
+    @Override
+    public List<Inspection> getAllInspections() {
+        return inspectionRepository.findAll();
+    }
 }
