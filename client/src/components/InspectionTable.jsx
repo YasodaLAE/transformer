@@ -34,7 +34,7 @@ const InspectionTable = ({ inspections, onDelete, onEdit }) => {
        <table className="table table-striped">
                    <thead>
                        <tr>
-                           <th>ID</th>
+                           <th>Transformer No.</th>
                            <th>Inspection No.</th>
                            {/* Update headers to reflect date and time */}
                            <th>Inspected Date & Time</th>
@@ -48,12 +48,12 @@ const InspectionTable = ({ inspections, onDelete, onEdit }) => {
                        {Array.isArray(inspections) && inspections.length > 0 ? (
                            inspections.map((inspection) => (
                                <tr key={inspection.id}>
-                                   <td>{inspection.id}</td>
+                                   <td>{inspection.transformer ? inspection.transformer.id : 'N/A'}</td>
                                    <td>{inspection.inspectionNo}</td>
                                    {/* Display the full date-time string */}
                                    <td>{formatDateTime(inspection.inspectedDate)}</td>
-                                                               <td>{inspection.maintenanceDate ? formatDateTime(inspection.maintenanceDate) : 'N/A'}</td>
-                                                               <td>{inspection.status}</td>
+                                   <td>{inspection.maintenanceDate ? formatDateTime(inspection.maintenanceDate) : 'N/A'}</td>
+                                   <td>{inspection.status}</td>
                                    <td>
                                        <Link to={`/inspections/by-inspection/${inspection.id}`} className="btn btn-primary btn-sm">View</Link>
                                    </td>

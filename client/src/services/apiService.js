@@ -68,5 +68,5 @@ export const updateTransformer = (id, transformerData) => {
 };
 
 export const getAllInspections = async () => {
-    return axios.get(`${API_BASE_URL}/inspections`);
+    return axios.get(`${API_BASE_URL}/api/inspections`);
 };

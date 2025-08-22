@@ -4,6 +4,7 @@ import { getAllInspections, deleteInspection } from '../services/apiService';
 import { Button } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import AddInspectionModal from '../components/AddInspectionModal';
+import PageNavButtons from '../components/PageNavButtons'; // Import the navigation component
 
 const AllInspectionsPage = () => {
     const [inspections, setInspections] = useState([]);
@@ -74,10 +75,15 @@ const AllInspectionsPage = () => {
     return (
         <div className="content-card">
             <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2>All Inspections</h2>
-                {isAdmin && (
-                    <Button onClick={handleOpenAddModal}>Add Inspection</Button>
-                )}
+                <div className="d-flex align-items-center gap-2">
+                    <h2>All Inspections</h2>
+                    {isAdmin && (
+                        <Button onClick={handleOpenAddModal}>Add Inspection</Button>
+                    )}
+                </div>
+                <div className="d-flex align-items-center">
+                    <PageNavButtons activeTab="inspections" />
+                </div>
             </div>
             {inspections.length > 0 ? (
                 <InspectionTable
