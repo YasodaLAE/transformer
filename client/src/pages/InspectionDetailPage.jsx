@@ -13,6 +13,7 @@ const InspectionDetailPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showBaselineModal, setShowBaselineModal] = useState(false);
+    const [baselineImageName, setBaselineImageName] = useState(null);
     const { isAdmin } = useAuth();
 
     const fetchData = async () => {
@@ -24,7 +25,9 @@ const InspectionDetailPage = () => {
             if (inspectionResponse.data.transformerDbId) {
                 const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
                 setTransformer(transformerResponse.data);
+                setBaselineImageName(transformerResponse.data.baselineImageName);
             }
+        
         } catch (err) {
             setError('Failed to fetch inspection details.');
             console.error(err);
@@ -125,8 +128,9 @@ const InspectionDetailPage = () => {
                                     />
                                 )}
                                 {hasBaselineImage && (
-                                    <small className="d-flex align-items-center mt-2">
-                                        Baseline Image
+                                    <small className="text-muted mt-2 d-flex align-items-center">
+                                        Baseline:
+                                        <span className="text-primary ms-2 me-2">{baselineImageName}</span>
                                         <div className="d-flex align-items-center ms-2">
                                             {/* View button */}
                                             <Button
