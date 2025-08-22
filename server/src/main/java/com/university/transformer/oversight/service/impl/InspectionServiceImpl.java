@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class InspectionServiceImpl implements InspectionService {
@@ -37,6 +38,17 @@ public class InspectionServiceImpl implements InspectionService {
     @Override
     public void deleteInspection(Long id) {
         inspectionRepository.deleteById(id);
+    }
+
+    @Override
+    public List<InspectionDTO> getAllInspections() {
+        // Fetch inspections with transformers using the custom query
+        List<Inspection> inspections = inspectionRepository.findAll();
+
+        // Map the entities to DTOs before returning
+        return inspections.stream()
+                .map(InspectionDTO::new)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -102,8 +114,8 @@ public class InspectionServiceImpl implements InspectionService {
         inspectionRepository.save(inspection);
     }
 
-    @Override
-    public List<Inspection> getAllInspections() {
-        return inspectionRepository.findAll();
-    }
+//    @Override
+//    public <List<InspectionDTO>> getAllInspections() {
+//        return inspectionRepository.findAll();
+//    }
 }

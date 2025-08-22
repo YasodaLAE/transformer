@@ -16,5 +16,5 @@ public interface InspectionService {
     // Methods for thermal images
     void addThermalImageToInspection(Long inspectionId, MultipartFile file, String condition, String uploader) throws Exception;
     void deleteThermalImage(Long imageId);
-    List<Inspection> getAllInspections();
+    List<InspectionDTO> getAllInspections();
 }

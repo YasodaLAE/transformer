@@ -2,7 +2,6 @@ package com.university.transformer.oversight.dto;
 
 import com.university.transformer.oversight.model.Inspection;
 import lombok.Data;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,12 +15,12 @@ public class InspectionDTO {
 
     // Transformer fields
     private Long transformerDbId;
-    private String transformerBusinessId;
     private String region;
     private String poleId;
     private String transformerType;
     private String details;
     private String transformerBaselineImageName;
+    private String transformerId;
 
     // The single thermal image for this inspection
     private ThermalImageDTO thermalImage;
@@ -35,7 +34,7 @@ public class InspectionDTO {
 
         if (inspection.getTransformer() != null) {
             this.transformerDbId = inspection.getTransformer().getId();
-            this.transformerBusinessId = inspection.getTransformer().getTransformerId();
+            this.transformerId = inspection.getTransformer().getTransformerId();
             this.region = inspection.getTransformer().getRegion();
             this.poleId = inspection.getTransformer().getPoleId();
             this.transformerType = inspection.getTransformer().getTransformerType();

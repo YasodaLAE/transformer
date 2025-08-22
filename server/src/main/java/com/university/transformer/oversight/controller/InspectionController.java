@@ -18,8 +18,8 @@ public class InspectionController {
     private InspectionService inspectionService;
 
     @GetMapping
-    public ResponseEntity<List<Inspection>> getAllInspections() {
-        List<Inspection> inspections = inspectionService.getAllInspections();
+    public ResponseEntity<List<InspectionDTO>> getAllInspections() {
+        List<InspectionDTO> inspections = inspectionService.getAllInspections();
         return ResponseEntity.ok(inspections);
     }
 

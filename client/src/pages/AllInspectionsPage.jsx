@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/AuthContext';
 import AddInspectionModal from '../components/AddInspectionModal';
 import PageNavButtons from '../components/PageNavButtons'; // Import the navigation component
 
+
 const AllInspectionsPage = () => {
     const [inspections, setInspections] = useState([]);
     const [loading, setLoading] = useState(true);
