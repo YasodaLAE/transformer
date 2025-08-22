@@ -1,0 +1,24 @@
+.page-nav-buttons {
+    display: inline-flex;
+    border-radius: 8px; /* Matches the roundness from image */
+    overflow: hidden; /* Ensures the inner buttons stay within the border radius */
+    border: 1px solid #ccc;
+}
+
+.nav-button {
+    background-color: #fff;
+    color: #333;
+    padding: 8px 16px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.nav-button:first-child {
+    border-right: 1px solid #ccc;
+}
+
+.nav-button.active {
+    background-color: #3b3a63; /* Dark purple color */
+    color: #fff;
+}

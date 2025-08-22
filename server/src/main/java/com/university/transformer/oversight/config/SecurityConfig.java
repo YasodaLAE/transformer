@@ -23,6 +23,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())     // disable CSRF for testing
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/**","/files/**").permitAll()
+                        .requestMatchers("/api/inspections").permitAll()
                         .anyRequest().authenticated()
                 );
 

@@ -5,8 +5,9 @@ import TransformerDetailPage from './pages/TransformerDetailPage';
 import DashboardPage from './pages/DashboardPage';
 import Layout from './components/Layout';
 import InspectionPage from './pages/InspectionPage'
-import { AuthProvider } from './hooks/AuthContext'; // Import the provider
+import { AuthProvider } from './hooks/AuthContext';
 import InspectionDetailPage from './pages/InspectionDetailPage';
+import AllInspectionsPage from './pages/AllInspectionsPage';
 
 function App() {
     return (
@@ -19,6 +20,7 @@ function App() {
                     <Route path="/transformers/:id" element={<TransformerDetailPage />} />
                     <Route path="inspections/by-transformer/:transformerId" element={<InspectionPage/>}/>
                     <Route path="/inspections/by-inspection/:inspectionId" element={<InspectionDetailPage />} />
+                    <Route path="/inspections" element={<AllInspectionsPage />} />
                 </Routes>
             </Layout>
         </Router>

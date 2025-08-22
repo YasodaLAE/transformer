@@ -67,3 +67,6 @@ export const updateTransformer = (id, transformerData) => {
     return axios.put(`http://localhost:8080/api/transformers/${id}`, transformerData);
 };
 
+export const getAllInspections = async () => {
+    return axios.get(`${API_BASE_URL}/inspections`);
+};

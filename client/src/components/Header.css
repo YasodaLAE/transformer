@@ -1,16 +1,20 @@
-.app-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-  height: 60px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e0e0e0;
-  flex-shrink: 0;
-}
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
   color: #333;
   text-decoration: none;
+}
+
+.app-header {
+    background-color: #f8f9fa; /* Or the background color of your top bar */
+    padding: 1.5rem 20px; /* Adjust padding as needed */
+    border-bottom: 1px solid #dee2e6;
+    display: flex; /* This makes the children flexible containers */
+    justify-content: space-between; /* This pushes them to opposite ends */
+    align-items: center; /* This aligns them vertically in the middle */
+}
+
+
+.user-info {
+    /* No special styles needed here, the parent flexbox handles alignment */
 }
