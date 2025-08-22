@@ -77,4 +77,12 @@ public class InspectionController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    // In InspectionController.java
+
+    @GetMapping("/all")
+    public ResponseEntity<List<InspectionDTO>> getAllInspections() {
+        List<InspectionDTO> inspections = inspectionService.findAllInspections();
+        return ResponseEntity.ok(inspections);
+    }
 }

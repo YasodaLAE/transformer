@@ -9,12 +9,10 @@ import java.util.Optional;
 public interface InspectionService {
     List<Inspection> getInspectionsByTransformer(Long transformerId);
     Inspection saveInspection(Inspection inspection);
-    Inspection updateInspection(Long id, Inspection updatedInspection);
     void deleteInspection(Long id);
     Optional<InspectionDTO> findInspectionById(Long id);
-
-    // Methods for thermal images now live here
+    List<InspectionDTO> findAllInspections();
     void addThermalImageToInspection(Long inspectionId, MultipartFile file, String condition, String uploader) throws Exception;
     void deleteThermalImage(Long imageId);
-
+    Inspection updateInspection(Long id, Inspection updatedInspection);
 }

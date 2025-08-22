@@ -9,10 +9,12 @@ import com.university.transformer.oversight.service.FileStorageService;
 import com.university.transformer.oversight.service.InspectionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class InspectionServiceImpl implements InspectionService {
@@ -25,35 +27,33 @@ public class InspectionServiceImpl implements InspectionService {
     private FileStorageService fileStorageService;
 
     @Override
+    @Transactional
+    public void deleteInspection(Long id) {
+        // First, we must manually delete the physical file if it exists.
+        inspectionRepository.findById(id).ifPresent(inspection -> {
+            if (inspection.getThermalImage() != null) {
+                fileStorageService.delete(inspection.getThermalImage().getFileName());
+            }
+        });
+
+        // Now, we simply delete the inspection. The "cascade = CascadeType.ALL"
+        // setting in your Inspection.java model will automatically delete the
+        // thermal_image record from the database for us.
+        inspectionRepository.deleteById(id);
+    }
+
+
+    // --- All other methods are left as they were ---
+
+    @Override
     public List<Inspection> getInspectionsByTransformer(Long transformerId) {
         return inspectionRepository.findByTransformerId(transformerId);
     }
 
     @Override
+    @Transactional
     public Inspection saveInspection(Inspection inspection) {
         return inspectionRepository.save(inspection);
-    }
-
-    @Override
-    public void deleteInspection(Long id) {
-        inspectionRepository.deleteById(id);
-    }
-
-    @Override
-    public Inspection updateInspection(Long id, Inspection updatedInspection) {
-        // Find the existing inspection by its ID
-        return inspectionRepository.findById(id)
-                .map(inspection -> {
-                    // Update the fields with the new values
-                    inspection.setInspectionNo(updatedInspection.getInspectionNo());
-                    inspection.setInspectedDate(updatedInspection.getInspectedDate());
-                    inspection.setMaintenanceDate(updatedInspection.getMaintenanceDate());
-                    inspection.setStatus(updatedInspection.getStatus());
-
-                    // Save the updated inspection
-                    return inspectionRepository.save(inspection);
-                })
-                .orElseThrow(() -> new RuntimeException("Inspection not found with id: " + id));
     }
 
     @Override
@@ -62,16 +62,19 @@ public class InspectionServiceImpl implements InspectionService {
     }
 
     @Override
+    public List<InspectionDTO> findAllInspections() {
+        return inspectionRepository.findAll().stream().map(InspectionDTO::new).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
     public void addThermalImageToInspection(Long inspectionId, MultipartFile file, String condition, String uploader) throws Exception {
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Inspection not found with id: " + inspectionId));
-
         if (inspection.getThermalImage() != null) {
             throw new RuntimeException("This inspection already has a thermal image.");
         }
-
         String filename = fileStorageService.store(file);
-
         ThermalImage thermalImage = new ThermalImage();
         thermalImage.setFileName(filename);
         thermalImage.setFilePath(fileStorageService.getRootLocation().resolve(filename).toString());
@@ -80,25 +83,34 @@ public class InspectionServiceImpl implements InspectionService {
         thermalImage.setUploadTimestamp(LocalDateTime.now());
         thermalImage.setUploaderId(uploader);
         thermalImage.setInspection(inspection);
-
         thermalImageRepository.save(thermalImage);
     }
 
     @Override
+    @Transactional
     public void deleteThermalImage(Long imageId) {
-        // Find the image record in the database
         ThermalImage thermalImage = thermalImageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("ThermalImage not found with id: " + imageId));
-
-        // Get the parent inspection
         Inspection inspection = thermalImage.getInspection();
-
-        // Delete the physical file from the server
+        if (inspection != null) {
+            inspection.setThermalImage(null);
+            inspectionRepository.save(inspection);
+        }
         fileStorageService.delete(thermalImage.getFileName());
+        thermalImageRepository.deleteById(imageId);
+    }
 
-        // --- ADD THIS LOGIC ---
-        // Break the link from the parent inspection
-        inspection.setThermalImage(null);
-        inspectionRepository.save(inspection);
+    @Override
+    @Transactional
+    public Inspection updateInspection(Long id, Inspection updatedInspection) {
+        return inspectionRepository.findById(id)
+                .map(inspection -> {
+                    inspection.setInspectionNo(updatedInspection.getInspectionNo());
+                    inspection.setInspectedDate(updatedInspection.getInspectedDate());
+                    inspection.setMaintenanceDate(updatedInspection.getMaintenanceDate());
+                    inspection.setStatus(updatedInspection.getStatus());
+                    return inspectionRepository.save(inspection);
+                })
+                .orElseThrow(() -> new RuntimeException("Inspection not found with id: " + id));
     }
 }

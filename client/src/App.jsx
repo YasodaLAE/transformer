@@ -7,6 +7,8 @@ import Layout from './components/Layout';
 import InspectionPage from './pages/InspectionPage'
 import { AuthProvider } from './hooks/AuthContext'; // Import the provider
 import InspectionDetailPage from './pages/InspectionDetailPage';
+import AllInspectionsPage from './pages/AllInspectionsPage'; // <-- Import the new page
+
 
 function App() {
     return (
@@ -16,6 +18,7 @@ function App() {
                 <Routes>
                     <Route path="/" element={<DashboardPage />} />
                     <Route path="/transformers" element={<TransformerListPage />} />
+                    <Route path="/inspections" element={<AllInspectionsPage />} /> {/* <-- Add this new route */}
                     <Route path="/transformers/:id" element={<TransformerDetailPage />} />
                     <Route path="inspections/by-transformer/:transformerId" element={<InspectionPage/>}/>
                     <Route path="/inspections/by-inspection/:inspectionId" element={<InspectionDetailPage />} />

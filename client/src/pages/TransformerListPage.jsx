@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import PageHeader from '../components/PageHeader';
 import TransformerTable from '../components/TransformerTable';
-import TransformerModal from '../components/TransformerModal'; // Use the new reusable modal
+import TransformerModal from '../components/TransformerModal';
 import Login from '../components/Login';
 import { getAllTransformers, createTransformer, updateTransformer, deleteTransformer } from '../services/apiService';
-import { Modal, Button } from 'react-bootstrap';
-import { useAuth } from '../hooks/AuthContext';
+import { Modal } from 'react-bootstrap';
 
 const TransformerListPage = () => {
     const [transformers, setTransformers] = useState([]);
@@ -13,7 +13,6 @@ const TransformerListPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingTransformer, setEditingTransformer] = useState(null);
     const [showLoginModal, setShowLoginModal] = useState(false);
-    const { isAdmin, logout } = useAuth();
 
     const fetchTransformers = async () => {
         try {
@@ -67,25 +66,14 @@ const TransformerListPage = () => {
         }
     };
 
-    const handleLoginSuccess = () => {
-        setShowLoginModal(false);
-    };
-
     return (
         <div className="container-fluid">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <h2>Transformers</h2>
-                <div>
-                    {isAdmin ? (
-                        <>
-                            <Button className="btn btn-primary me-2" onClick={handleOpenAddModal}>Add Transformer</Button>
-                            <Button className="btn btn-secondary" onClick={logout}>Logout</Button>
-                        </>
-                    ) : (
-                        <Button variant="outline-primary" onClick={() => setShowLoginModal(true)}>Admin Login</Button>
-                    )}
-                </div>
-            </div>
+            <PageHeader
+                title="Transformers"
+                addLabel="Add Transformer"
+                onAdd={handleOpenAddModal}
+                onLogin={() => setShowLoginModal(true)}
+            />
 
             {loading && <p>Loading transformers...</p>}
             {error && <p className="text-danger">{error}</p>}
@@ -107,7 +95,7 @@ const TransformerListPage = () => {
 
             <Modal show={showLoginModal} onHide={() => setShowLoginModal(false)}>
                 <Modal.Header closeButton><Modal.Title>Admin Login</Modal.Title></Modal.Header>
-                <Modal.Body><Login onLoginSuccess={handleLoginSuccess} /></Modal.Body>
+                <Modal.Body><Login onLoginSuccess={() => setShowLoginModal(false)} /></Modal.Body>
             </Modal>
         </div>
     );

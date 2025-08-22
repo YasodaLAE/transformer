@@ -1,125 +1,106 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
-// Make sure to add 'updateInspection' to your imports
-import { createInspection, updateInspection } from '../services/apiService';
+import { Modal, Button, Form, Alert } from 'react-bootstrap';
+import { createInspection, updateInspection, getAllTransformers } from '../services/apiService';
 
-// The component now accepts an optional 'inspectionToEdit' prop
-const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerId, inspectionToEdit }) => {
-    const [formData, setFormData] = useState({
-        inspectionNo: '',
-        inspectedDate: '',
-        maintenanceDate: '',
-        status: '',
-    });
-    const [error, setError] = useState(null);
+const AddInspectionModal = ({ show, handleClose, onSave, transformerId, inspectionToEdit }) => {
+    const [formData, setFormData] = useState({});
+    const [transformers, setTransformers] = useState([]);
+    const [selectedTransformerId, setSelectedTransformerId] = useState(transformerId || '');
+    const [error, setError] = useState('');
 
-    // This effect runs when inspectionToEdit changes.
-    // It populates the form for editing or resets it for adding.
     useEffect(() => {
-        if (inspectionToEdit) {
-            setFormData({
-                inspectionNo: inspectionToEdit.inspectionNo,
-                inspectedDate: inspectionToEdit.inspectedDate,
-                maintenanceDate: inspectionToEdit.maintenanceDate || '',
-                status: inspectionToEdit.status,
-            });
-        } else {
-            setFormData({
-                inspectionNo: '',
-                inspectedDate: '',
-                maintenanceDate: '',
-                status: '',
-            });
+        if (show && !inspectionToEdit && !transformerId) {
+            const fetchTransformers = async () => {
+                try {
+                    const response = await getAllTransformers();
+                    setTransformers(response.data);
+                } catch (err) {
+                    console.error("Failed to fetch transformers", err);
+                }
+            };
+            fetchTransformers();
         }
-    }, [inspectionToEdit]);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
+        if (show) {
+            if (inspectionToEdit) {
+                setFormData({
+                    inspectionNo: inspectionToEdit.inspectionNo,
+                    inspectedDate: inspectionToEdit.inspectedDate,
+                    status: inspectionToEdit.status
+                });
+                setSelectedTransformerId(inspectionToEdit.transformerDbId);
+            } else {
+                setFormData({ inspectionNo: '', inspectedDate: '', status: 'Pending' });
+                setSelectedTransformerId(transformerId || '');
+            }
+            setError('');
+        }
+    }, [show, inspectionToEdit, transformerId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
+        setError('');
 
         try {
             if (inspectionToEdit) {
-                // If in Edit mode, call the update API
                 const updatedData = { ...formData, id: inspectionToEdit.id };
                 await updateInspection(updatedData.id, updatedData);
             } else {
-                // If in Add mode, call the create API
-                const newData = { ...formData, transformer: { id: transformerId } };
+                const newData = { ...formData, transformer: { id: selectedTransformerId } };
                 await createInspection(newData);
             }
-            onInspectionAdded(); // This will re-fetch data and close the modal
+            onSave();
             handleClose();
         } catch (err) {
-            console.error("Failed to save inspection:", err);
-            setError('Failed to save inspection. Please check the form data.');
+            setError('Failed to save inspection.');
         }
     };
 
     return (
-        <Modal show={show} onHide={handleClose}>
+        <Modal show={show} onHide={handleClose} centered>
             <Modal.Header closeButton>
-                <Modal.Title>{inspectionToEdit ? 'Edit Inspection' : 'Add New Inspection'}</Modal.Title>
+                <Modal.Title>{inspectionToEdit ? 'Edit Inspection' : 'Add Inspection'}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                {error && <div className="alert alert-danger">{error}</div>}
                 <Form onSubmit={handleSubmit}>
+                    {!transformerId && !inspectionToEdit && (
+                        <Form.Group className="mb-3">
+                            <Form.Label>Select Transformer</Form.Label>
+                            <Form.Select required value={selectedTransformerId} onChange={(e) => setSelectedTransformerId(e.target.value)}>
+                                <option value="">-- Select a Transformer --</option>
+                                {transformers.map(t => (
+                                    <option key={t.id} value={t.id}>{t.transformerId} - {t.region}</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+                    )}
                     <Form.Group className="mb-3">
                         <Form.Label>Inspection No.</Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="inspectionNo"
-                            value={formData.inspectionNo}
-                            onChange={handleChange}
-                            required
-                        />
+                        <Form.Control type="text" name="inspectionNo" value={formData.inspectionNo || ''} onChange={(e) => setFormData({...formData, inspectionNo: e.target.value})} required />
                     </Form.Group>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Inspected Date</Form.Label>
-                                        <Form.Control
-                                            type="datetime-local"
-                                            name="inspectedDate"
-                                            value={formData.inspectedDate}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </Form.Group>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Maintenance Date</Form.Label>
-                                        <Form.Control
-                                            type="datetime-local"
-                                            name="maintenanceDate"
-                                            value={formData.maintenanceDate}
-                                            onChange={handleChange}
-                                        />
-                                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Control
+                                type="datetime-local" // <-- Change this from "date"
+                                name="inspectedDate"
+                                value={formData.inspectedDate || ''}
+                                onChange={(e) => setFormData({...formData, inspectedDate: e.target.value})}
+                                required
+                            />
+                        </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Status</Form.Label>
-                        <Form.Control
-                            as="select"
-                            name="status"
-                            value={formData.status}
-                            onChange={handleChange}
-                            required
-                        >
-                            <option value="">Select Status</option>
+                        <Form.Select name="status" value={formData.status || ''} onChange={(e) => setFormData({...formData, status: e.target.value})} required>
+                            <option value="Pending">Pending</option>
                             <option value="In Progress">In Progress</option>
                             <option value="Completed">Completed</option>
-                            <option value="Pending">Pending</option>
-                        </Form.Control>
+                        </Form.Select>
                     </Form.Group>
-                    <div className="text-end">
-                        <Button variant="secondary" onClick={handleClose} className="me-2">
-                            Cancel
-                        </Button>
-                        <Button variant="primary" type="submit">
-                            {inspectionToEdit ? 'Save Changes' : 'Save Inspection'}
-                        </Button>
+                    <div className="d-flex justify-content-end">
+                        <Button variant="secondary" onClick={handleClose} className="me-2">Cancel</Button>
+                        <Button variant="primary" type="submit">Save</Button>
                     </div>
                 </Form>
+                {error && <Alert variant="danger" className="mt-3">{error}</Alert>}
             </Modal.Body>
         </Modal>
     );
