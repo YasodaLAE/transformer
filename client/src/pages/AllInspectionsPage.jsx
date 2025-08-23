@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import InspectionTable from '../components/InspectionTable';
-import { getAllInspections, deleteInspection } from '../services/apiService';
+import { getAllInspections, deleteInspection, getAllTransformers } from '../services/apiService';
 import { Button } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import AddInspectionModal from '../components/AddInspectionModal';
@@ -15,10 +15,26 @@ const AllInspectionsPage = () => {
     const [inspectionToEdit, setInspectionToEdit] = useState(null); // New state for editing
     const { isAdmin } = useAuth();
 
-    const fetchAllInspections = async () => {
+    const fetchAllData = async () => {
         try {
-            const response = await getAllInspections();
-            setInspections(response.data);
+        const [inspectionsResponse, transformersResponse] = await Promise.all([
+                getAllInspections(),
+                getAllTransformers()
+            ]);
+
+            // Create a lookup map for transformers
+            const transformerMap = transformersResponse.data.reduce((map, transformer) => {
+                map[transformer.transformerId] = transformer;
+                return map;
+            }, {});
+
+            // Combine inspections with their corresponding transformer data
+            const combinedInspections = inspectionsResponse.data.map(inspection => ({
+                ...inspection,
+                transformer: transformerMap[inspection.transformerId] // Attach the transformer object
+            }));
+
+            setInspections(combinedInspections);
             setLoading(false);
             setError(null);
         } catch (err) {
@@ -29,7 +45,7 @@ const AllInspectionsPage = () => {
     };
 
     useEffect(() => {
-        fetchAllInspections();
+        fetchAllData();
     }, []);
 
     // Handle opening the modal in "add" mode
@@ -48,7 +64,7 @@ const AllInspectionsPage = () => {
     const handleCloseModal = () => {
         setShowModal(false);
         setInspectionToEdit(null); // Reset the state
-        fetchAllInspections(); // Re-fetch all inspections to update the list
+        fetchAllData(); // Re-fetch all inspections to update the list
     };
 
     const handleDelete = async (inspectionId) => {
@@ -99,7 +115,7 @@ const AllInspectionsPage = () => {
             <AddInspectionModal
                 show={showModal}
                 handleClose={handleCloseModal}
-                onInspectionAdded={fetchAllInspections}
+                onInspectionAdded={fetchAllData}
                 // We pass the inspectionToEdit state to the modal
                 inspectionToEdit={inspectionToEdit}
                 // When adding a new inspection from here, the user needs to select a transformer.
