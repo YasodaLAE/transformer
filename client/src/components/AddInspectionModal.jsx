@@ -4,7 +4,7 @@ import { Modal, Button, Form } from 'react-bootstrap';
 import { createInspection, updateInspection } from '../services/apiService';
 
 // The component now accepts an optional 'inspectionToEdit' prop
-const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerId, inspectionToEdit }) => {
+const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerId, inspectionToEdit, allTransformers }) => {
     const [formData, setFormData] = useState({
         inspectionNo: '',
         inspectedDate: '',
@@ -12,6 +12,7 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
         status: '',
     });
     const [error, setError] = useState(null);
+    const [selectedTransformerId, setSelectedTransformerId] = useState('');
 
     // This effect runs when inspectionToEdit changes.
     // It populates the form for editing or resets it for adding.
@@ -23,6 +24,7 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                 maintenanceDate: inspectionToEdit.maintenanceDate || '',
                 status: inspectionToEdit.status,
             });
+        setSelectedTransformerId(inspectionToEdit.transformer ? inspectionToEdit.transformer.id:'');
         } else {
             setFormData({
                 inspectionNo: '',
@@ -30,6 +32,7 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                 maintenanceDate: '',
                 status: '',
             });
+        setSelectedTransformerId('');
         }
     }, [inspectionToEdit]);
 
@@ -37,21 +40,41 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handleTransformerChange = (e) => {
+            setSelectedTransformerId(e.target.value);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
 
         try {
+            let finalTransformerId;
+
             if (inspectionToEdit) {
-                // If in Edit mode, call the update API
-                const updatedData = { ...formData, id: inspectionToEdit.id };
+                finalTransformerId = inspectionToEdit.transformer ? inspectionToEdit.transformer.id:null;
+
+            } else if (transformerId){
+                finalTransformerId = transformerId;
+                }
+
+            else {
+                finalTransformerId = Number(selectedTransformerId);
+            }
+        if (!finalTransformerId) {
+                setError('Please select a transformer.');
+                return;
+            }
+
+            if (inspectionToEdit) {
+                const updatedData = { ...formData, id: inspectionToEdit.id, transformer: { id: finalTransformerId } };
                 await updateInspection(updatedData.id, updatedData);
             } else {
-                // If in Add mode, call the create API
-                const newData = { ...formData, transformer: { id: transformerId } };
+                const newData = { ...formData, transformer: { id: finalTransformerId } };
                 await createInspection(newData);
             }
-            onInspectionAdded(); // This will re-fetch data and close the modal
+
+            onInspectionAdded();
             handleClose();
         } catch (err) {
             console.error("Failed to save inspection:", err);
@@ -67,6 +90,25 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
             <Modal.Body>
                 {error && <div className="alert alert-danger">{error}</div>}
                 <Form onSubmit={handleSubmit}>
+                    {!inspectionToEdit && !transformerId && (
+                        <Form.Group className="mb-3">
+                            <Form.Label>Transformer</Form.Label>
+                            <Form.Control
+                                as="select"
+                                name="transformerId"
+                                value={selectedTransformerId}
+                                onChange={handleTransformerChange}
+                                required
+                            >
+                                <option value="">Select a Transformer</option>
+                                {Array.isArray(allTransformers) && allTransformers.map(transformer => (
+                                    <option key={transformer.id} value={transformer.id}>
+                                        {transformer.transformerId}
+                                    </option>
+                                ))}
+                            </Form.Control>
+                        </Form.Group>
+       )}
                     <Form.Group className="mb-3">
                         <Form.Label>Inspection No.</Form.Label>
                         <Form.Control
@@ -77,16 +119,16 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                             required
                         />
                     </Form.Group>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Inspected Date</Form.Label>
-                                        <Form.Control
-                                            type="datetime-local"
-                                            name="inspectedDate"
-                                            value={formData.inspectedDate}
-                                            onChange={handleChange}
-                                            required
-                                        />
-                                    </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Inspected Date</Form.Label>
+                            <Form.Control
+                                type="datetime-local"
+                                name="inspectedDate"
+                                value={formData.inspectedDate}
+                                onChange={handleChange}
+                                required
+                            />
+                        </Form.Group>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Maintenance Date</Form.Label>
                                         <Form.Control

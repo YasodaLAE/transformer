@@ -8,6 +8,7 @@ import PageNavButtons from '../components/PageNavButtons'; // Import the navigat
 
 
 const AllInspectionsPage = () => {
+    const [transformers, setTransformers] = useState([]);
     const [inspections, setInspections] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -22,6 +23,7 @@ const AllInspectionsPage = () => {
                 getAllTransformers()
             ]);
 
+            setTransformers(transformersResponse.data);
             // Create a lookup map for transformers
             const transformerMap = transformersResponse.data.reduce((map, transformer) => {
                 map[transformer.transformerId] = transformer;
@@ -120,6 +122,7 @@ const AllInspectionsPage = () => {
                 inspectionToEdit={inspectionToEdit}
                 // When adding a new inspection from here, the user needs to select a transformer.
                 // The modal needs to handle this. We will not pass a transformerId from here.
+                allTransformers={transformers}
             />
         </div>
     );
