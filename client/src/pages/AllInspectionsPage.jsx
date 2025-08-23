@@ -15,6 +15,7 @@ const AllInspectionsPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [inspectionToEdit, setInspectionToEdit] = useState(null); // New state for editing
     const { isAdmin } = useAuth();
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchAllData = async () => {
         try {
@@ -50,6 +51,10 @@ const AllInspectionsPage = () => {
     useEffect(() => {
         fetchAllData();
     }, []);
+
+    const filteredInspections = inspections.filter(inspection =>
+        (inspection.transformer?.transformerId?.toString().toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     // Handle opening the modal in "add" mode
     const handleOpenAddModal = () => {
@@ -98,37 +103,47 @@ const AllInspectionsPage = () => {
         return <p className="text-danger">{error}</p>;
     }
 
+
     return (
         <div className="content-card">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-                <div className="d-flex align-items-center gap-2">
-                    <h2>All Inspections</h2>
-                    {isAdmin && (
-                        <Button onClick={handleOpenAddModal}>Add Inspection</Button>
-                    )}
-                </div>
-                <div className="d-flex align-items-center">
-                    <PageNavButtons activeTab="inspections" />
-                </div>
-            </div>
+                 <div className="d-flex justify-content-between align-items-center mb-3">
+                     {/* Left-aligned group: Heading and Add button */}
+                     <div className="d-flex align-items-center gap-2">
+                         <h2 className="mb-0">All Inspections</h2>
+                         {isAdmin && (
+                             <Button onClick={handleOpenAddModal}>Add Inspection</Button>
+                         )}
+                     </div>
+
+                     {/* Right-aligned group: Search bar and Navigation buttons */}
+                     <div className="d-flex align-items-center gap-3">
+                         <input
+                             type="text"
+                             placeholder="Search by Transformer No."
+                             className="form-control"
+                             style={{ maxWidth: '300px' }}
+                             value={searchTerm}
+                             onChange={(e) => setSearchTerm(e.target.value)}
+                         />
+                         <div className="d-flex align-items-center">
+                         <PageNavButtons activeTab="inspections" />
+                         </div>
+                     </div>
+                 </div>
             {inspections.length > 0 ? (
                 <InspectionTable
-                    inspections={inspections}
+                    inspections={filteredInspections}
                     onDelete={handleDelete}
                     onEdit={handleOpenEditModal}
                 />
             ) : (
                 <p>No inspections found.</p>
             )}
-
             <AddInspectionModal
                 show={showModal}
                 handleClose={handleCloseModal}
                 onInspectionAdded={fetchAllData}
-                // We pass the inspectionToEdit state to the modal
                 inspectionToEdit={inspectionToEdit}
-                // When adding a new inspection from here, the user needs to select a transformer.
-                // The modal needs to handle this. We will not pass a transformerId from here.
                 allTransformers={transformers}
             />
         </div>

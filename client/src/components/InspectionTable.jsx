@@ -18,7 +18,7 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
 ));
 
 // The component now receives 'onDelete' and 'onEdit' from the parent page
-const InspectionTable = ({ inspections, onDelete, onEdit }) => {
+const InspectionTable = ({ inspections, onDelete, onEdit, showTransformerColumn = true }) => {
     const { isAdmin } = useAuth();
 
     // This helper function formats the date and time string
@@ -34,9 +34,8 @@ const InspectionTable = ({ inspections, onDelete, onEdit }) => {
        <table className="table table-striped">
                    <thead>
                        <tr>
-                            <th>Transformer No.</th>
+                           {showTransformerColumn && <th>Transformer No.</th>}
                            <th>Inspection No.</th>
-                           {/* Update headers to reflect date and time */}
                            <th>Inspected Date & Time</th>
                            <th>Maintenance Date & Time</th>
                            <th>Status</th>
@@ -48,7 +47,7 @@ const InspectionTable = ({ inspections, onDelete, onEdit }) => {
                        {Array.isArray(inspections) && inspections.length > 0 ? (
                            inspections.map((inspection) => (
                                <tr key={inspection.id}>
-                                    <td>{inspection.transformer ? inspection.transformer.transformerId : 'N/A'}</td> 
+                                   {showTransformerColumn && <td>{inspection.transformer?.transformerId}</td>}
                                    <td>{inspection.inspectionNo}</td>
                                    {/* Display the full date-time string */}
                                    <td>{formatDateTime(inspection.inspectedDate)}</td>

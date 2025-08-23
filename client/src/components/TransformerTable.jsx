@@ -21,9 +21,9 @@ const TransformerTable = ({ transformers, onDelete, onEdit }) => {
         <table className="table table-striped">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>Transformer No.</th>
                     <th>Region</th>
-                    <th>Pole ID</th>
+                    <th>Pole No.</th>
                     <th>Type</th>
                     <th></th>
                 </tr>

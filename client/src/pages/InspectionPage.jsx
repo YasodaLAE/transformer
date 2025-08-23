@@ -185,6 +185,7 @@ const InspectionPage = () => {
                     inspections={inspections}
                     onDelete={handleDelete}
                     onEdit={handleOpenEditModal} // Pass the new onEdit handler
+                    showTransformerColumn={false}
                 />
             ) : (
                 <p>No inspections found for this transformer.</p>
