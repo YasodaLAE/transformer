@@ -8,7 +8,7 @@ import Login from './Login'; // Assuming you have a Login component
 
 const Layout = ({ children }) => {
     const [showLoginModal, setShowLoginModal] = useState(false);
-    const { isAdmin, logout } = useAuth();
+    const { isAdmin, logout, user } = useAuth();
 
     const handleLoginSuccess = () => {
         setShowLoginModal(false);
@@ -19,7 +19,10 @@ const Layout = ({ children }) => {
             <Header
                 rightContent={
                     isAdmin ? (
-                        <Button className="btn btn-secondary" onClick={logout}>Logout</Button>
+                        <div className="d-flex align-items-center gap-2">
+                            {user && <span className="me-2 text-black">Welcome, {user.username}</span>}
+                            <Button className="btn btn-secondary" onClick={logout}>Logout</Button>
+                        </div>
                     ) : (
                         <Button variant="outline-primary" onClick={() => setShowLoginModal(true)}>Admin Login</Button>
                     )

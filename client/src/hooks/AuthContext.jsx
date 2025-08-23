@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
         // Check if the provided username exists in the adminCredentials list
         // AND if the provided password matches the stored password for that username.
         if (adminCredentials[username] === password) {
-            setUser({ username });
+            setUser({ username: username });
             setIsAdmin(true);
             return true; // Login successful
         }
