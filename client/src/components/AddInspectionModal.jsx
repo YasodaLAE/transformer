@@ -24,7 +24,7 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                 maintenanceDate: inspectionToEdit.maintenanceDate || '',
                 status: inspectionToEdit.status,
             });
-        setSelectedTransformerId(inspectionToEdit.transformer ? inspectionToEdit.transformer.id:'');
+        setSelectedTransformerId(inspectionToEdit.transformer?.id || '');
         } else {
             setFormData({
                 inspectionNo: '',
@@ -32,9 +32,9 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
                 maintenanceDate: '',
                 status: '',
             });
-        setSelectedTransformerId('');
+        setSelectedTransformerId(transformerId || '');
         }
-    }, [inspectionToEdit]);
+    }, [inspectionToEdit, transformerId]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -52,7 +52,7 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
             let finalTransformerId;
 
             if (inspectionToEdit) {
-                finalTransformerId = inspectionToEdit.transformer ? inspectionToEdit.transformer.id:null;
+                finalTransformerId = inspectionToEdit.transformer?.id || transformerId || selectedTransformerId;
 
             } else if (transformerId){
                 finalTransformerId = transformerId;

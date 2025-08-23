@@ -108,12 +108,12 @@ const InspectionDetailPage = () => {
                             <div className="d-flex flex-column">
                                 <h3 className="fw-bold">{inspection.inspectionNo}</h3>
                                 <div className="d-flex align-items-center mt-1">
-                                    <small className="text-muted mt-2 d-flex align-items-center">
-                                        Last updated:
-                                        <span className="text-primary ms-2">
-                                            {inspection.lastUpdated ? new Date(inspection.lastUpdated).toLocaleString() : 'N/A'}
-                                        </span>
-                                    </small>
+{/*                                     <small className="text-muted mt-2 d-flex align-items-center"> */}
+{/*                                         Last updated: */}
+{/*                                         <span className="text-primary ms-2"> */}
+{/*                                             {inspection.lastUpdated ? new Date(inspection.lastUpdated).toLocaleString() : 'N/A'} */}
+{/*                                         </span> */}
+{/*                                     </small> */}
                                 </div>
                             </div>
                             {/* Right side: Status and Baseline Image Section */}

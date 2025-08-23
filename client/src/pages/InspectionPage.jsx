@@ -7,6 +7,7 @@ import InspectionTable from '../components/InspectionTable';
 import { useAuth } from '../hooks/AuthContext';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import ThermalImageUpload from '../components/ThermalImageUpload';
+import { getAllTransformers } from '../services/apiService';
 
 const InspectionPage = () => {
     const { transformerId } = useParams();
@@ -18,16 +19,19 @@ const InspectionPage = () => {
     const { isAdmin } = useAuth();
     const [transformer, setTransformer] = useState(null);
     const [baselineImageName, setBaselineImageName] = useState(null);
+    const [allTransformers, setAllTransformers] = useState([]);
 
     const fetchInspections = useCallback(async () => {
         try {
-            const [inspectionsResponse, transformerResponse] = await Promise.all([
+            const [inspectionsResponse, transformerResponse, allTransformersResponse] = await Promise.all([
                             getInspectionsByTransformer(transformerId),
-                            getTransformerById(transformerId)
+                            getTransformerById(transformerId),
+                            getAllTransformers()
                         ]);
             setInspections(inspectionsResponse.data);
             setTransformer(transformerResponse.data);
             setBaselineImageName(transformerResponse.data.baselineImageName);
+            setAllTransformers(allTransformersResponse.data);
             setLoading(false);
             setError(null);
         } catch (err) {
@@ -195,7 +199,8 @@ const InspectionPage = () => {
                 handleClose={handleCloseModal}
                 onInspectionAdded={fetchInspections}
                 transformerId={transformerId}
-                inspectionToEdit={inspectionToEdit} // Pass the inspection to the modal
+                inspectionToEdit={inspectionToEdit}
+                allTransformers={allTransformers}
             />
         </div>
     );
