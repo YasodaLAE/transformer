@@ -33,6 +33,7 @@ const AllInspectionsPage = () => {
             // Combine inspections with their corresponding transformer data
             const combinedInspections = inspectionsResponse.data.map(inspection => ({
                 ...inspection,
+
                 transformer: transformerMap[inspection.transformerId] // Attach the transformer object
             }));
 
@@ -70,19 +71,24 @@ const AllInspectionsPage = () => {
     };
 
     const handleDelete = async (inspectionId) => {
-        if (window.confirm('Are you sure you want to delete this inspection?')) {
-            try {
-                await deleteInspection(inspectionId);
-                // If the deletion succeeds, update the state
-                setInspections(inspections.filter(inspection => inspection.id !== inspectionId));
-                alert('Inspection deleted successfully!');
-            } catch (error) {
-                // If the deletion fails (e.g., receives a 404), do not update state
-                console.error('Failed to delete inspection:', error);
-                alert('Failed to delete inspection. Please try again.');
+      if (window.confirm('Are you sure you want to delete this inspection?')) {
+        try {
+          await deleteInspection(inspectionId);
+
+          // Update state only after successful delete
+          setInspections((prevInspections) =>
+            prevInspections.filter((inspection) => inspection.id !== inspectionId)
+          );
+
+          alert('Inspection deleted successfully!');
+        } catch (error) {
+          console.error('Failed to delete inspection:', error);
+          alert('Failed to delete inspection. Please try again.');
+          fetchAllData(); // Restore correct data
+        }
       }
-    }
     };
+
 
     if (loading) {
         return <p>Loading all inspections...</p>;

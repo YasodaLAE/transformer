@@ -10,7 +10,8 @@ public interface InspectionService {
     List<Inspection> getInspectionsByTransformer(Long transformerId);
     Inspection saveInspection(Inspection inspection);
     Inspection updateInspection(Long id, Inspection updatedInspection);
-    boolean deleteInspection(Long id);
+    // The delete method is now void and throws an exception on failure
+    void deleteInspection(Long id);
     Optional<InspectionDTO> findInspectionById(Long id);
 
     // Methods for thermal images

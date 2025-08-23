@@ -36,12 +36,18 @@ public class InspectionController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteInspection(@PathVariable Long id) {
-        boolean isDeleted = inspectionService.deleteInspection(id);
-        if (isDeleted) {
-
+        try {
+            System.out.println("Calling deleteById for ID: " + id);
+            inspectionService.deleteInspection(id);
+            System.out.println("Delete executed.");
             return ResponseEntity.noContent().build();
-        } else {
-            return ResponseEntity.notFound().build();
+        } catch (RuntimeException e) {
+            // Log the exception to the console for debugging
+            e.printStackTrace();
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

@@ -8,13 +8,16 @@ import com.university.transformer.oversight.repository.ThermalImageRepository;
 import com.university.transformer.oversight.service.FileStorageService;
 import com.university.transformer.oversight.service.InspectionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.transaction.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class InspectionServiceImpl implements InspectionService {
@@ -25,6 +28,8 @@ public class InspectionServiceImpl implements InspectionService {
     private ThermalImageRepository thermalImageRepository;
     @Autowired
     private FileStorageService fileStorageService;
+
+    private static final Logger logger = LoggerFactory.getLogger(InspectionServiceImpl.class);
 
     @Override
     public List<Inspection> getInspectionsByTransformer(Long transformerId) {
@@ -38,14 +43,42 @@ public class InspectionServiceImpl implements InspectionService {
 
     @Override
     @Transactional
-    public boolean deleteInspection(Long id) {
-        if (!inspectionRepository.existsById(id)) {
-            // Throw an exception if the inspection does not exist
-            return false;
-//            throw new IllegalArgumentException("Inspection not found with ID: " + id);
+    public void deleteInspection(Long id) {
+        logger.info("Attempting to delete inspection with ID: {}", id);
+
+        try {
+            // Find the inspection to get its data before deleting the record
+            Optional<Inspection> inspectionOptional = inspectionRepository.findById(id);
+
+            if (inspectionOptional.isPresent()) {
+                logger.info("Inspection with ID {} found. Proceeding with native deletion.", id);
+
+                // Find the associated thermal image file to delete from the file system.
+                // We need to do this before the database record is gone.
+                Optional<ThermalImage> thermalImageOptional = thermalImageRepository.findByInspectionId(id);
+                if (thermalImageOptional.isPresent()) {
+                    fileStorageService.delete(thermalImageOptional.get().getFileName());
+                    logger.info("Associated thermal image file deleted successfully from file system.");
+                }
+
+                // First, delete the thermal image record using the native query
+                inspectionRepository.deleteThermalImageByInspectionId(id);
+
+                // Then, delete the inspection record using the native query
+                inspectionRepository.deleteInspectionById(id);
+
+                logger.info("Inspection with ID {} and associated records successfully deleted via native query.", id);
+            } else {
+                logger.warn("Attempted to delete non-existent inspection with ID {}.", id);
+                throw new RuntimeException("Inspection not found with id: " + id);
+            }
+        } catch (DataIntegrityViolationException e) {
+            logger.error("Failed to delete inspection due to foreign key constraint.", e);
+            throw new RuntimeException("Cannot delete inspection due to related records.", e);
+        } catch (Exception e) {
+            logger.error("Failed to delete inspection with ID {}.", id, e);
+            throw new RuntimeException("Failed to delete inspection due to an internal error.", e);
         }
-        inspectionRepository.deleteById(id);
-        return true;
     }
 
     @Override
@@ -117,14 +150,11 @@ public class InspectionServiceImpl implements InspectionService {
         // Delete the physical file from the server
         fileStorageService.delete(thermalImage.getFileName());
 
-        // --- ADD THIS LOGIC ---
         // Break the link from the parent inspection
         inspection.setThermalImage(null);
         inspectionRepository.save(inspection);
-    }
 
-//    @Override
-//    public <List<InspectionDTO>> getAllInspections() {
-//        return inspectionRepository.findAll();
-//    }
+        // Delete the ThermalImage entity from the database
+        thermalImageRepository.delete(thermalImage);
+    }
 }

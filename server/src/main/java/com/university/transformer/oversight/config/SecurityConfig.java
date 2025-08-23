@@ -21,13 +21,13 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(Customizer.withDefaults())  // enable CORS support
-                .csrf(csrf -> csrf.disable())     // disable CSRF for testing
+                .csrf(csrf -> csrf.disable())      // disable CSRF for testing
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/inspections").permitAll()
                         .requestMatchers("/api/inspections").permitAll()
                         // 2. Permit other necessary public paths (e.g., login, etc.)
                         .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                        .requestMatchers("/api/**","/files/**").permitAll()
+                        .requestMatchers("/api/**", "/files/**").permitAll()
                         .anyRequest().authenticated()
                 );
 
@@ -35,12 +35,14 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // Define the global CORS config
+    // Define the global CORS config using allowedOriginPatterns
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // React dev URL
-        configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        // Use allowedOriginPatterns instead of allowedOrigins to support wildcards
+        // when allowCredentials is true.
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:5173", "https://*.usercontent.goog"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 

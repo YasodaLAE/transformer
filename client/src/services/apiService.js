@@ -27,6 +27,7 @@ export const createInspection = (inspectionData) => {
 };
 
 export const deleteInspection = (id) => {
+    // Corrected to use axios for consistency.
     return axios.delete(`${API_BASE_URL}/api/inspections/${id}`);
 };
 
@@ -64,7 +65,7 @@ export const deleteThermalImage = (imageId) => {
 };
 
 export const updateTransformer = (id, transformerData) => {
-    return axios.put(`http://localhost:8080/api/transformers/${id}`, transformerData);
+    return axios.put(`${API_BASE_URL}/api/transformers/${id}`, transformerData);
 };
 
 export const getAllInspections = async () => {
