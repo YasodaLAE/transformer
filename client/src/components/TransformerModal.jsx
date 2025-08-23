@@ -11,7 +11,7 @@ const TransformerModal = ({ show, handleClose, onSave, transformer }) => {
             setFormData(transformer); // If a transformer is passed, populate the form for editing
         } else {
             // Otherwise, reset the form for adding a new one
-            setFormData({ transformerId: '', poleId: '', region: '', transformerType: '', details: '' });
+            setFormData({ transformerId: '', poleId: '', region: '', transformerType: '', details: '' , capacity: '', noOfFeeders: ''});
         }
     }, [transformer, show]);
 
@@ -53,6 +53,15 @@ const TransformerModal = ({ show, handleClose, onSave, transformer }) => {
                             <option value="">Select Type</option>
                             {transformerTypes.map(t => <option key={t} value={t}>{t}</option>)}
                         </Form.Select>
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label>Capacity (kVA)</Form.Label>
+                        <Form.Control type="number" name="capacity" value={formData.capacity || ''} onChange={handleChange} />
+                    </Form.Group>
+                    {/* New form group for Number of Feeders */}
+                    <Form.Group className="mb-3">
+                        <Form.Label>No. of Feeders</Form.Label>
+                        <Form.Control type="number" name="noOfFeeders" value={formData.noOfFeeders || ''} onChange={handleChange} />
                     </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Location Details</Form.Label>

@@ -53,6 +53,8 @@ public class TransformerServiceImpl implements TransformerService {
         transformer.setRegion(transformerDetails.getRegion());
         transformer.setTransformerType(transformerDetails.getTransformerType());
         transformer.setDetails(transformerDetails.getDetails());
+        transformer.setCapacity(transformerDetails.getCapacity());
+        transformer.setNoOfFeeders(transformerDetails.getNoOfFeeders());
 
         return transformerRepository.save(transformer);
     }

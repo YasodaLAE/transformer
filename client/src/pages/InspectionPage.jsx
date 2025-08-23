@@ -163,7 +163,7 @@ const InspectionPage = () => {
                             </Col>
                             <Col className="border-end py-2">
                                 <h6 className="mb-0 fw-bold">{transformer.capacity || 'N/A'}</h6>
-                                <small className="text-muted">Capacity</small>
+                                <small className="text-muted">Capacity (kVA)</small>
                             </Col>
                             <Col className="border-end py-2">
                                 <h6 className="mb-0 fw-bold">{transformer.transformerType}</h6>

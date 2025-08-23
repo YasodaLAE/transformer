@@ -20,6 +20,10 @@ public class Transformer {
     private String transformerId;
     private String poleId;
     private String region;
+    // The thermalImages list has been removed from this class.
+    private String capacity;
+    // Add a field for noOfFeeders
+    private String noOfFeeders;
     private String transformerType;
     private String details;
     private String baselineImageName;
@@ -31,5 +35,4 @@ public class Transformer {
     @JsonManagedReference
     private List<Inspection> inspections;
 
-    // The thermalImages list has been removed from this class.
 }
