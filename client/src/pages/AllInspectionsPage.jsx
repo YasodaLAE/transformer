@@ -73,14 +73,15 @@ const AllInspectionsPage = () => {
         if (window.confirm('Are you sure you want to delete this inspection?')) {
             try {
                 await deleteInspection(inspectionId);
-                // Optimistically update the UI by filtering out the deleted inspection
+                // If the deletion succeeds, update the state
                 setInspections(inspections.filter(inspection => inspection.id !== inspectionId));
                 alert('Inspection deleted successfully!');
             } catch (error) {
+                // If the deletion fails (e.g., receives a 404), do not update state
                 console.error('Failed to delete inspection:', error);
                 alert('Failed to delete inspection. Please try again.');
-            }
-        }
+      }
+    }
     };
 
     if (loading) {

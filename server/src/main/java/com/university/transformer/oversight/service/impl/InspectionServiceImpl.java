@@ -9,6 +9,7 @@ import com.university.transformer.oversight.service.FileStorageService;
 import com.university.transformer.oversight.service.InspectionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,8 +37,15 @@ public class InspectionServiceImpl implements InspectionService {
     }
 
     @Override
-    public void deleteInspection(Long id) {
+    @Transactional
+    public boolean deleteInspection(Long id) {
+        if (!inspectionRepository.existsById(id)) {
+            // Throw an exception if the inspection does not exist
+            return false;
+//            throw new IllegalArgumentException("Inspection not found with ID: " + id);
+        }
         inspectionRepository.deleteById(id);
+        return true;
     }
 
     @Override
@@ -97,6 +105,7 @@ public class InspectionServiceImpl implements InspectionService {
     }
 
     @Override
+    @Transactional
     public void deleteThermalImage(Long imageId) {
         // Find the image record in the database
         ThermalImage thermalImage = thermalImageRepository.findById(imageId)

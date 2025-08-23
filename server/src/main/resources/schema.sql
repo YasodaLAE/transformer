@@ -28,7 +28,7 @@ CREATE TABLE inspection (
     maintenance_date DATE,
     status VARCHAR(255),
     transformer_id BIGINT,
-    FOREIGN KEY (transformer_id) REFERENCES transformer(id)
+    FOREIGN KEY (transformer_id) REFERENCES transformer(id) ON DELETE CASCADE
 );
 
 -- Recreate the child table with the foreign key
@@ -39,5 +39,5 @@ CREATE TABLE thermal_image (
     -- And the foreign key that references the TRANSFORMER table
     transformer_id BIGINT,
     pole_id VARCHAR(255),
-    FOREIGN KEY (transformer_id) REFERENCES TRANSFORMER(id)
+    FOREIGN KEY (transformer_id) REFERENCES TRANSFORMER(id) ON DELETE CASCADE
 );
