@@ -31,7 +31,15 @@ status VARCHAR(255),
  FOREIGN KEY (transformer_id) REFERENCES transformer(id) ON DELETE CASCADE
 );
 
--- Recreate the thermal_image table with a foreign key to the transformer table
+-- Recreate the thermal_image table
 CREATE TABLE thermal_image (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  environmental_condition enum('CLOUDY','RAINY','SUNNY'),
+  file_name varchar(255),
+  file_path varchar(255),
+  image_type enum('BASELINE','MAINTENANCE'),
+  upload_timestamp datetime(6),
+  uploader_id varchar(255),
+  inspected_by bigint,
+  FOREIGN KEY (id) REFERENCES inspection(id) ON DELETE CASCADE
 );
