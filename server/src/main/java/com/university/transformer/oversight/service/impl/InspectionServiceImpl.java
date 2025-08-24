@@ -37,6 +37,7 @@ public class InspectionServiceImpl implements InspectionService {
     }
 
     @Override
+    @Transactional
     public Inspection saveInspection(Inspection inspection) {
         return inspectionRepository.save(inspection);
     }

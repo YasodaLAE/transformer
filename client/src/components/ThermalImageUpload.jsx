@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { uploadThermalImage } from '../services/apiService';
+import { useAuth } from '../hooks/AuthContext'; // Import useAuth hook
 
 const ThermalImageUpload = ({ inspectionId, onUploadSuccess }) => { // <-- Prop changed
     const [file, setFile] = useState(null);
@@ -8,6 +9,8 @@ const ThermalImageUpload = ({ inspectionId, onUploadSuccess }) => { // <-- Prop 
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    const { user } = useAuth();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -25,6 +28,7 @@ const ThermalImageUpload = ({ inspectionId, onUploadSuccess }) => { // <-- Prop 
         const formData = new FormData();
         formData.append('file', file);
         formData.append('condition', condition);
+        formData.append('uploader', user.username);
 
         setError('');
         setMessage('');

@@ -27,13 +27,11 @@ CREATE TABLE inspection (
  maintenance_date DATE,
 status VARCHAR(255),
  transformer_id BIGINT,
+ inspected_by VARCHAR(255),
  FOREIGN KEY (transformer_id) REFERENCES transformer(id) ON DELETE CASCADE
 );
 
 -- Recreate the thermal_image table with a foreign key to the transformer table
 CREATE TABLE thermal_image (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  image_url VARCHAR(255),
-  pole_id VARCHAR(255),
- transformer_id BIGINT
+  id BIGINT AUTO_INCREMENT PRIMARY KEY
 );

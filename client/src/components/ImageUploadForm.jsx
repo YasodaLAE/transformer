@@ -87,6 +87,7 @@ const BaselineImageUploader = ({ show, handleClose, onUploadSuccess, transformer
     const [condition, setCondition] = useState('Sunny');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const { user } = useAuth();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -98,7 +99,7 @@ const BaselineImageUploader = ({ show, handleClose, onUploadSuccess, transformer
         const formData = new FormData();
         formData.append('file', file);
         formData.append('condition', condition);
-        formData.append('uploader', 'Olivera Queen'); // Placeholder
+        formData.append('uploader', user.username); // Placeholder
 
         setIsLoading(true);
         setError('');

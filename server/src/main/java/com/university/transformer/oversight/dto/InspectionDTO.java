@@ -21,6 +21,7 @@ public class InspectionDTO {
     private String details;
     private String transformerBaselineImageName;
     private String transformerId;
+    private String inspectedBy;
 
     // The single thermal image for this inspection
     private ThermalImageDTO thermalImage;

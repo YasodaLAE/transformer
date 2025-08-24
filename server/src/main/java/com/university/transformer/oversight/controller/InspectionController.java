@@ -24,6 +24,7 @@ public class InspectionController {
 
     @PostMapping
     public ResponseEntity<Inspection> createInspection(@RequestBody Inspection inspection) {
+        System.out.println("Received raw JSON payload: " + inspection.toString());
         Inspection newInspection = inspectionService.saveInspection(inspection);
         return new ResponseEntity<>(newInspection, HttpStatus.CREATED);
     }
@@ -62,9 +63,10 @@ public class InspectionController {
     public ResponseEntity<String> uploadThermalImage(
             @PathVariable Long inspectionId,
             @RequestParam("file") MultipartFile file,
-            @RequestParam("condition") String condition) {
+            @RequestParam("condition") String condition,
+            @RequestParam("uploader") String uploader){
         try {
-            String uploader = "Olivera Queen"; // Placeholder
+
             inspectionService.addThermalImageToInspection(inspectionId, file, condition, uploader);
             return ResponseEntity.status(HttpStatus.CREATED).body("Thermal image added to inspection.");
         } catch (Exception e) {

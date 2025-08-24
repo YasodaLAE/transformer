@@ -2,10 +2,10 @@ package com.university.transformer.oversight.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -23,6 +23,9 @@ public class Inspection {
     private LocalDateTime maintenanceDate; // Changed from LocalDate
     private String status;
 
+    @JsonProperty("inspectedBy")
+    private String inspectedBy;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "transformer_id")
     @JsonBackReference
@@ -32,4 +35,15 @@ public class Inspection {
     @OneToOne(mappedBy = "inspection", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private ThermalImage thermalImage;
+
+    public void setInspectedBy(String inspectedBy) {
+        // Ensure the value is not an empty string or null before setting it.
+        if (inspectedBy != null && !inspectedBy.trim().isEmpty()) {
+            this.inspectedBy = inspectedBy;
+        } else {
+            // Optional: Log a message to see if an empty string is being received
+            System.out.println("Warning: Received a null or empty value for inspectedBy.");
+        }
+    }
+
 }

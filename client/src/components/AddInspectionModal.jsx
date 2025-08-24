@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-// Make sure to add 'updateInspection' to your imports
+import { useAuth } from '../hooks/AuthContext';
 import { createInspection, updateInspection } from '../services/apiService';
 
 // The component now accepts an optional 'inspectionToEdit' prop
-const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerId, inspectionToEdit, allTransformers }) => {
+const AddInspectionModal = ({ loggedInUser, show, handleClose, onInspectionAdded, transformerId, inspectionToEdit, allTransformers }) => {
     const [formData, setFormData] = useState({
         inspectionNo: '',
         inspectedDate: '',
         maintenanceDate: '',
-        status: '',
+        status: ''
     });
+
+    const { user } = useAuth();
     const [error, setError] = useState(null);
     const [selectedTransformerId, setSelectedTransformerId] = useState('');
 
@@ -47,35 +49,26 @@ const AddInspectionModal = ({ show, handleClose, onInspectionAdded, transformerI
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+        const inspectedBy = user?.username;
 
         try {
-            let finalTransformerId;
+            let finalTransformerId = inspectionToEdit?.transformer?.id || transformerId || Number(selectedTransformerId);
 
-            if (inspectionToEdit) {
-                finalTransformerId = inspectionToEdit.transformer?.id || transformerId || selectedTransformerId;
-
-            } else if (transformerId){
-                finalTransformerId = transformerId;
-                }
-
-            else {
-                finalTransformerId = Number(selectedTransformerId);
-            }
-        if (!finalTransformerId) {
+            if (!finalTransformerId) {
                 setError('Please select a transformer.');
                 return;
             }
 
             if (inspectionToEdit) {
-                const updatedData = { ...formData, id: inspectionToEdit.id, transformer: { id: finalTransformerId } };
+                const updatedData = { ...formData, id: inspectionToEdit.id, inspectedBy: inspectedBy, transformer: { id: finalTransformerId } };
                 await updateInspection(updatedData.id, updatedData);
             } else {
-                const newData = { ...formData, transformer: { id: finalTransformerId } };
+                const newData = { ...formData, inspectedBy: inspectedBy, transformer: { id: finalTransformerId } };
                 await createInspection(newData);
             }
 
             onInspectionAdded();
-            handleClose();
+          handleClose();
         } catch (err) {
             console.error("Failed to save inspection:", err);
             setError('Failed to save inspection. Please check the form data.');
