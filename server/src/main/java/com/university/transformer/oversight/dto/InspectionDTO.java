@@ -32,6 +32,7 @@ public class InspectionDTO {
         this.inspectedDate = inspection.getInspectedDate();
         this.maintenanceDate = inspection.getMaintenanceDate();
         this.status = inspection.getStatus();
+        this.inspectedBy = inspection.getInspectedBy();
 
         if (inspection.getTransformer() != null) {
             this.transformerDbId = inspection.getTransformer().getId();
