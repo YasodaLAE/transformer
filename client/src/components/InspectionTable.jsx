@@ -2,6 +2,7 @@ import React from 'react';
 import { Table, Dropdown } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import { Link } from "react-router-dom";
+import StatusBadge from "./StatusBadge"
 
 const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
   <button
@@ -52,7 +53,7 @@ const InspectionTable = ({ inspections, onDelete, onEdit, showTransformerColumn 
                                    {/* Display the full date-time string */}
                                    <td>{formatDateTime(inspection.inspectedDate)}</td>
                                    <td>{inspection.maintenanceDate ? formatDateTime(inspection.maintenanceDate) : 'N/A'}</td>
-                                   <td>{inspection.status}</td>
+                                   <td><StatusBadge status = {inspection.status}/></td>
                                    <td>
                                        <Link to={`/inspections/by-inspection/${inspection.id}`} className="btn btn-primary btn-sm">View</Link>
                                    </td>
