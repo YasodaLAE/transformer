@@ -11,8 +11,8 @@ Both **admins** and **viewers** can monitor transformer data, inspection records
 - Regular users can view all data but cannot modify it.
 - Update the status of an inspection (`Pending`, `In Progress`, `Completed`).
 - Colored status badges for inspections (`Pending`: red, `In Progress`: green, `Completed`: blue).
-- Can search in the list of all transformers by transformer number, location and transformer type.
-- Can search in the list of all inspections by transformer number.
+- Can search in the list of 'All Transformers' by transformer number, location and transformer type.
+- Can search in the list of 'All Inspections' by transformer number and add inspections directly from that page.
 
 
 
