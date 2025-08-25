@@ -50,6 +50,8 @@ Make sure you have the following installed with corresponding versions:
 
 Now the backend server will start on `http://localhost:8080`
 
+---
+
 ### 🌐 Frontend Setup
 1. Navigate to the frontend directory
    ```bash
@@ -70,3 +72,4 @@ admin2 : 2
 admin3 : 3
 
 
+---
