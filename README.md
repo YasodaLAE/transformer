@@ -1,7 +1,7 @@
 # ⚡Oversight : Transformer Control System
 
-A **web application** designed to manage and track inspections of **electrical transformers**.  
-Both **admins** and **viewers** can monitor transformer data, inspection records, and gain insights from **thermal image analysis**.
+A web application designed to manage and track inspections of electrical transformers.  
+Both admins and viewers can monitor transformer data, inspection records, and gain insights from thermal image analysis.
 
 ---
 
