@@ -6,8 +6,8 @@
 }
 
 .app-header {
-    background-color: #f8f9fa; /* Or the background color of your top bar */
-    padding: 1.5rem 20px; /* Adjust padding as needed */
+    background-color: #f8f9fa; 
+    padding: 1.5rem 20px; 
     border-bottom: 1px solid #dee2e6;
     display: flex; /* This makes the children flexible containers */
     justify-content: space-between; /* This pushes them to opposite ends */
@@ -16,5 +16,5 @@
 
 
 .user-info {
-    /* No special styles needed here, the parent flexbox handles alignment */
+    
 }
