@@ -11,7 +11,7 @@ import java.util.List;
 @Repository
 public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
-    // This method name must match the field name in your Inspection entity
+
     List<Inspection> findByTransformerId(Long transformerId);
     @Query("SELECT i FROM Inspection i JOIN FETCH i.transformer")
     List<Inspection> findAllWithTransformers();
