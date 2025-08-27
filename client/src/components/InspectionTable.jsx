@@ -22,7 +22,7 @@ const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
 const InspectionTable = ({ inspections, onDelete, onEdit, showTransformerColumn = true }) => {
     const { isAdmin } = useAuth();
 
-    // This helper function formats the date and time string
+    //  helper function formats the date and time string
     const formatDateTime = (dateTimeString) => {
         if (!dateTimeString) return 'N/A';
         // Splits the string at 'T' and joins with a space
