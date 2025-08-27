@@ -25,7 +25,6 @@ public class FileSystemStorageService implements FileStorageService {
     private final Path rootLocation;
 
     public FileSystemStorageService() {
-        // Using a hardcoded path for simplicity, but should be from properties
         this.rootLocation = Paths.get("uploads");
     }
 
