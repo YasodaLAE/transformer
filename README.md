@@ -3,6 +3,8 @@
 A web application designed to manage and track inspections of electrical transformers.  
 Both admins and viewers can monitor transformer data, inspection records, and gain insights from thermal image analysis.
 
+Test data (6 transformers with baseline and thermal images) are included in the `Test Data` folder.
+
 ---
 
 ## 📑 Features
