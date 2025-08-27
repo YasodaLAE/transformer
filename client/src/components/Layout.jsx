@@ -4,7 +4,7 @@ import SideNav from './SideNav';
 import './Layout.css';
 import { useAuth } from '../hooks/AuthContext';
 import { Modal, Button } from 'react-bootstrap';
-import Login from './Login'; // Assuming you have a Login component
+import Login from './Login'; 
 
 const Layout = ({ children }) => {
     const [showLoginModal, setShowLoginModal] = useState(false);
