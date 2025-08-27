@@ -25,7 +25,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/api/inspections").permitAll()
                         .requestMatchers("/api/inspections").permitAll()
-                        // 2. Permit other necessary public paths (e.g., login, etc.)
+                        // Permit other necessary public paths (login)
                         .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                         .requestMatchers("/api/**", "/files/**").permitAll()
                         .anyRequest().authenticated()
