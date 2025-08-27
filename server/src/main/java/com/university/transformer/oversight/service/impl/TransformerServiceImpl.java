@@ -117,7 +117,7 @@ public class TransformerServiceImpl implements TransformerService {
 //        return fileStorageService.loadAsResource(transformer.getBaselineImageName());
 //    }
 
-    // --- THIS IS THE CORRECTED METHOD ---
+    // --- CORRECTED METHOD ---
     @Override
     public Resource loadBaselineImageAsResource(Long transformerId) {
         Transformer transformer = transformerRepository.findById(transformerId)
@@ -129,7 +129,7 @@ public class TransformerServiceImpl implements TransformerService {
         }
 
         try {
-            // It needs to look in the dedicated baseline images directory
+            // look in the dedicated baseline images directory
             Path baselineImageDir = Paths.get("uploads/baseline-images/");
             Path file = baselineImageDir.resolve(filename).normalize();
             Resource resource = new UrlResource(file.toUri());
