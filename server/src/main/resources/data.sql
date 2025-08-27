@@ -3,7 +3,7 @@
 -- Insert 5 sample transformers
 INSERT INTO `transformer` VALUES (1,'AZ-8890','EN-122A','Nugegoda','Bulk','Im detail 1','Cloudy','baseline_1_1756026735344baseline1.png','2025-08-24 09:12:16','admin','1000','3'),(2,'AZ-1649','EN-123A','Nugegoda','Bulk','Im detail 2','Sunny','baseline_2_1756026773359baseline2.png','2025-08-24 09:12:54','admin2','1500','4'),(3,'AZ-7316','EN-123A','Maharagama','Distribution','Im detail 3',NULL,NULL,NULL,NULL,'500','2'),(4,'AZ-4613','EN-123B','Maharagama','Bulk','Im detail 4','Sunny','baseline_4_1756026839846baseline4.png','2025-08-24 09:14:00','admin3','2000','5'),(5,'AX-8993','EN-122B','Kottawa','Distribution','Im detail 5','Cloudy','baseline_5_1756026873416baseline5.png','2025-08-24 09:14:33','admin','750','3');
 
--- Assuming your transformers have IDs 1 through 5
+--  transformers have IDs 1 through 5
 INSERT INTO inspection (id, inspection_no, inspected_date, maintenance_date, status, transformer_id, inspected_by)
 VALUES
 (1, '000123589', '2025-07-02', '2025-08-02', 'In Progress', 2, 'admin'),
