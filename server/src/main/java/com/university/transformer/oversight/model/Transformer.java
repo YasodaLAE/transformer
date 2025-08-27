@@ -20,7 +20,6 @@ public class Transformer {
     private String transformerId;
     private String poleId;
     private String region;
-    // The thermalImages list has been removed from this class.
     private String capacity;
     // Add a field for noOfFeeders
     private String noOfFeeders;
