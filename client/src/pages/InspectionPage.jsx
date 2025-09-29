@@ -8,6 +8,8 @@ import { useAuth } from '../hooks/AuthContext';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import { getAllTransformers } from '../services/apiService';
+import Spinner from '../components/Spinner';
+import Toast from '../components/Toast';
 
 const InspectionPage = () => {
     const { transformerId } = useParams();
@@ -20,6 +22,10 @@ const InspectionPage = () => {
     const [transformer, setTransformer] = useState(null);
     const [baselineImageName, setBaselineImageName] = useState(null);
     const [allTransformers, setAllTransformers] = useState([]);
+    const [toast, setToast] = useState(null);
+    const showOk = (m) => setToast({ type: 'success', message: m });
+    const showErr = (m) => setToast({ type: 'error', message: m });
+
 
     const fetchInspections = useCallback(async () => {
         try {
@@ -64,17 +70,17 @@ const InspectionPage = () => {
         fetchInspections(); // Re-fetch the data to ensure the list is up-to-date
     };
 
-    const handleDelete = async (inspectionId) => {
-        if (window.confirm('Are you sure you want to delete this inspection?')) {
-            try {
-                await deleteInspection(inspectionId);
-                setInspections(inspections.filter(inspection => inspection.id !== inspectionId));
-            } catch (error) {
-                console.error('Failed to delete inspection:', error);
-                setError('Failed to delete inspection. Please try again.');
-            }
-        }
-    };
+//     const handleDelete = async (inspectionId) => {
+//         if (window.confirm('Are you sure you want to delete this inspection?')) {
+//             try {
+//                 await deleteInspection(inspectionId);
+//                 setInspections(inspections.filter(inspection => inspection.id !== inspectionId));
+//             } catch (error) {
+//                 console.error('Failed to delete inspection:', error);
+//                 setError('Failed to delete inspection. Please try again.');
+//             }
+//         }
+//     };
 
     const handleBaselineUploadSuccess = (fileName) => {
         setBaselineImageName(fileName);
@@ -85,22 +91,48 @@ const InspectionPage = () => {
         window.open(imageUrl, '_blank');
     };
 
-    const handleDeleteBaselineImage = async () => {
-        if (window.confirm("Are you sure you want to delete this baseline image?")) {
-            try {
-                await deleteBaselineImage(transformerId);
-                setBaselineImageName(null);
-                alert("Baseline image deleted successfully!");
-            } catch (error) {
-                console.error("Failed to delete baseline image:", error);
-                alert("Failed to delete baseline image. Please try again.");
-            }
+//     const handleDeleteBaselineImage = async () => {
+//         if (window.confirm("Are you sure you want to delete this baseline image?")) {
+//             try {
+//                 await deleteBaselineImage(transformerId);
+//                 setBaselineImageName(null);
+//                 alert("Baseline image deleted successfully!");
+//             } catch (error) {
+//                 console.error("Failed to delete baseline image:", error);
+//                 alert("Failed to delete baseline image. Please try again.");
+//             }
+//         }
+//     };
+
+    const handleDelete = async (inspectionId) => {
+      if (window.confirm('Are you sure you want to delete this inspection?')) {
+        try {
+          await deleteInspection(inspectionId);
+          setInspections(inspections.filter(i => i.id !== inspectionId));
+          showOk('Inspection deleted');
+        } catch (error) {
+          console.error('Failed to delete inspection:', error);
+          showErr('Failed to delete inspection');
         }
+      }
     };
 
-    if (loading) {
-        return <p>Loading inspections...</p>;
-    }
+    const handleDeleteBaselineImage = async () => {
+      if (window.confirm("Delete this baseline image?")) {
+        try {
+          await deleteBaselineImage(transformerId);
+          setBaselineImageName(null);
+          showOk('Baseline image deleted');
+        } catch (err) {
+          console.error("Failed to delete baseline image:", err);
+          showErr('Failed to delete baseline image');
+        }
+      }
+    };
+
+
+    if (loading) return <Spinner label="Loading inspections..." />;
+
 
     if (error) {
         return <p className="text-danger">{error}</p>;
@@ -195,14 +227,24 @@ const InspectionPage = () => {
                 <p>No inspections found for this transformer.</p>
             )}
             <AddInspectionModal
-                show={showModal}
-                handleClose={handleCloseModal}
-                onInspectionAdded={fetchInspections}
-                transformerId={transformerId}
-                inspectionToEdit={inspectionToEdit}
-                allTransformers={allTransformers}
+              show={showModal}
+              handleClose={handleCloseModal}
+              onInspectionAdded={(mode) => {
+                if (mode === 'created') showOk('Inspection created successfully!');
+                else if (mode === 'updated') showOk('Inspection updated successfully!');
+                fetchInspections();
+              }}
+              transformerId={transformerId}
+              inspectionToEdit={inspectionToEdit}
+              allTransformers={allTransformers}
             />
+
+
+             {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>
+
+
+
     );
 };
 

@@ -5,6 +5,9 @@ import { Button } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import AddInspectionModal from '../components/AddInspectionModal';
 import PageNavButtons from '../components/PageNavButtons'; // Import the navigation component
+import Spinner from '../components/Spinner';
+import Toast from '../components/Toast';
+
 
 
 const AllInspectionsPage = () => {
@@ -16,6 +19,10 @@ const AllInspectionsPage = () => {
     const [inspectionToEdit, setInspectionToEdit] = useState(null); // New state for editing
     const { isAdmin } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
+    const [toast, setToast] = useState(null);
+    const showOk = (m) => setToast({ type: 'success', message: m });
+    const showErr = (m) => setToast({ type: 'error', message: m });
+
 
     const fetchAllData = async () => {
         try {
@@ -75,29 +82,43 @@ const AllInspectionsPage = () => {
         fetchAllData(); // Re-fetch all inspections to update the list
     };
 
+//     const handleDelete = async (inspectionId) => {
+//       if (window.confirm('Are you sure you want to delete this inspection?')) {
+//         try {
+//           await deleteInspection(inspectionId);
+//
+//           // Update state only after successful delete
+//           setInspections((prevInspections) =>
+//             prevInspections.filter((inspection) => inspection.id !== inspectionId)
+//           );
+//
+//           alert('Inspection deleted successfully!');
+//         } catch (error) {
+//           console.error('Failed to delete inspection:', error);
+//           alert('Failed to delete inspection. Please try again.');
+//           fetchAllData(); // Restore correct data
+//         }
+//       }
+//     };
+
     const handleDelete = async (inspectionId) => {
       if (window.confirm('Are you sure you want to delete this inspection?')) {
         try {
           await deleteInspection(inspectionId);
-
-          // Update state only after successful delete
-          setInspections((prevInspections) =>
-            prevInspections.filter((inspection) => inspection.id !== inspectionId)
-          );
-
-          alert('Inspection deleted successfully!');
+          setInspections(prev => prev.filter(i => i.id !== inspectionId));
+          showOk('Inspection deleted');
         } catch (error) {
           console.error('Failed to delete inspection:', error);
-          alert('Failed to delete inspection. Please try again.');
-          fetchAllData(); // Restore correct data
+          showErr('Failed to delete inspection');
+          fetchAllData();
         }
       }
     };
 
 
-    if (loading) {
-        return <p>Loading all inspections...</p>;
-    }
+
+    if (loading) return <Spinner label="Loading all inspections..." />;
+
 
     if (error) {
         return <p className="text-danger">{error}</p>;
@@ -140,13 +161,22 @@ const AllInspectionsPage = () => {
                 <p>No inspections found.</p>
             )}
             <AddInspectionModal
-                show={showModal}
-                handleClose={handleCloseModal}
-                onInspectionAdded={fetchAllData}
-                inspectionToEdit={inspectionToEdit}
-                allTransformers={transformers}
+              show={showModal}
+              handleClose={handleCloseModal}
+              onInspectionAdded={(mode) => {
+                if (mode === 'created') showOk('Inspection created successfully!');
+                else if (mode === 'updated') showOk('Inspection updated successfully!');
+                fetchAllData();
+              }}
+              inspectionToEdit={inspectionToEdit}
+              allTransformers={transformers}
             />
+
+
+            {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>
+
+
     );
 };
 

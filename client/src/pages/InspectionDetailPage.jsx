@@ -5,6 +5,8 @@ import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
+import Toast from '../components/Toast';
+
 
 const InspectionDetailPage = () => {
     const { inspectionId } = useParams();
@@ -15,6 +17,10 @@ const InspectionDetailPage = () => {
     const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
     const { user, isAdmin } = useAuth();
+    const [toast, setToast] = useState(null);
+    const showOk = (m) => setToast({ type: 'success', message: m });
+    const showErr = (m) => setToast({ type: 'error', message: m });
+
 
     const fetchData = async () => {
         try {
@@ -40,29 +46,29 @@ const InspectionDetailPage = () => {
         fetchData();
     }, [inspectionId]);
 
-    const handleDelete = async (imageId) => {
-        if (confirm("Are you sure you want to delete this thermal image?")) {
-            try {
-                await deleteThermalImage(imageId);
-                fetchData();
-            } catch (err) {
-                console.error("Failed to delete image:", err);
-                alert("Failed to delete image.");
-            }
-        }
-    };
+//     const handleDelete = async (imageId) => {
+//         if (confirm("Are you sure you want to delete this thermal image?")) {
+//             try {
+//                 await deleteThermalImage(imageId);
+//                 fetchData();
+//             } catch (err) {
+//                 console.error("Failed to delete image:", err);
+//                 alert("Failed to delete image.");
+//             }
+//         }
+//     };
 
-    const handleDeleteBaseline = async (transformerId) => {
-        if (confirm("Are you sure you want to delete the baseline image?")) {
-            try {
-                await deleteBaselineImage(transformerId);
-                fetchData();
-            } catch (err) {
-                console.error("Failed to delete baseline image:", err);
-                alert("Failed to delete baseline image.");
-            }
-        }
-    };
+//     const handleDeleteBaseline = async (transformerId) => {
+//         if (confirm("Are you sure you want to delete the baseline image?")) {
+//             try {
+//                 await deleteBaselineImage(transformerId);
+//                 fetchData();
+//             } catch (err) {
+//                 console.error("Failed to delete baseline image:", err);
+//                 alert("Failed to delete baseline image.");
+//             }
+//         }
+//     };
 
     const handleViewBaselineImage = () => {
         if (transformer) {
@@ -71,7 +77,36 @@ const InspectionDetailPage = () => {
         }
     };
 
-    if (loading) return <p>Loading...</p>;
+    const handleDelete = async (imageId) => {
+      if (confirm("Delete this thermal image?")) {
+        try {
+          await deleteThermalImage(imageId);
+          showOk('Thermal image deleted');
+          fetchData();
+        } catch (err) {
+          console.error("Failed to delete image:", err);
+          showErr('Failed to delete thermal image');
+        }
+      }
+    };
+
+    const handleDeleteBaseline = async (transformerId) => {
+      if (confirm("Delete the baseline image?")) {
+        try {
+          await deleteBaselineImage(transformerId);
+          showOk('Baseline image deleted');
+          fetchData();
+        } catch (err) {
+          console.error("Failed to delete baseline image:", err);
+          showErr('Failed to delete baseline image');
+        }
+      }
+    };
+
+
+//     if (loading) return <p>Loading...</p>;
+    if (loading) return <Spinner label="Loading inspection..." />;
+
     if (error) return <p className="text-danger">{error}</p>;
     if (!inspection) return <p>Inspection not found.</p>;
 
@@ -255,7 +290,10 @@ const InspectionDetailPage = () => {
                     </Card.Body>
                 </Card>
             )}
+        {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>
+
+
     );
 };
 
