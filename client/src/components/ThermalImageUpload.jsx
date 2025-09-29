@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { uploadThermalImage } from '../services/apiService';
 import { useAuth } from '../hooks/AuthContext'; // Import useAuth hook
+import axios from 'axios';
 
 const ThermalImageUpload = ({ inspectionId, onUploadSuccess }) => { // <-- Prop changed
     const [file, setFile] = useState(null);

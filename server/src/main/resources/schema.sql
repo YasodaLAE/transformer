@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS anomaly_detection_result;
 DROP TABLE IF EXISTS thermal_image;
 DROP TABLE IF EXISTS inspection;
 -- Parent table last
@@ -25,7 +26,7 @@ CREATE TABLE inspection (
  inspection_no VARCHAR(255),
  inspected_date DATE,
  maintenance_date DATE,
-status VARCHAR(255),
+ status VARCHAR(255),
  transformer_id BIGINT,
  inspected_by VARCHAR(255),
  FOREIGN KEY (transformer_id) REFERENCES transformer(id) ON DELETE CASCADE
@@ -40,6 +41,6 @@ CREATE TABLE thermal_image (
   image_type enum('BASELINE','MAINTENANCE'),
   upload_timestamp datetime(6),
   uploader_id varchar(255),
-  inspected_by bigint,
-  FOREIGN KEY (id) REFERENCES inspection(id) ON DELETE CASCADE
+  inspection_id BIGINT NOT NULL, -- <-- ADDED THIS COLUMN
+  FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
 );

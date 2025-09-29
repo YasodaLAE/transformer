@@ -71,3 +71,20 @@ export const updateTransformer = (id, transformerData) => {
 export const getAllInspections = async () => {
     return axios.get(`${API_BASE_URL}/api/inspections`);
 };
+
+export const getAnomalyDetectionResult = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/anomalies`);
+};
+
+export const triggerAnomalyDetection = (inspectionId) => {
+    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`);
+};
+
+
+export const getAnnotatedAnomalyImage = (inspectionId) => {
+    // This is useful if your frontend needs the direct image URL, though
+    // fetching it via Axios and blob is usually safer for protected routes.
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image`, {
+        responseType: 'blob' // Important for image data
+    });
+};

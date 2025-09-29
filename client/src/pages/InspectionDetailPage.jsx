@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById } from '../services/apiService';
+import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 
 const InspectionDetailPage = () => {
+    const API_BASE_URL = 'http://localhost:8080';
     const { inspectionId } = useParams();
     const [inspection, setInspection] = useState(null);
     const [transformer, setTransformer] = useState(null);
@@ -15,6 +16,51 @@ const InspectionDetailPage = () => {
     const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
     const { user, isAdmin } = useAuth();
+    const [anomalyResult, setAnomalyResult] = useState(null);
+    const [isDetecting, setIsDetecting] = useState(false); // To show spinner/disable buttons
+    const [timestamp, setTimestamp] = useState(Date.now());
+
+    // Function to fetch the existing anomaly result if it exists
+    const fetchAnomalyResult = async (id) => {
+        try {
+            const resultResponse = await getAnomalyDetectionResult(id); // Using the service function (or axios.get)
+            setAnomalyResult(resultResponse.data);
+        } catch (err) {
+            // 404 is expected if detection hasn't run or result wasn't saved.
+            if (err.response && err.response.status === 404) {
+                setAnomalyResult(null);
+            } else {
+                console.error('Failed to fetch anomaly result:', err);
+            }
+        }
+    };
+
+    // Function to run the detection and fetch the result (POST then GET)
+    const runAndFetchDetection = async (id) => {
+        setIsDetecting(true);
+        setAnomalyResult(null); // Clear previous results
+
+        try {
+            // 1. POST: Trigger the detection script
+            const postResponse = await triggerAnomalyDetection(id);
+
+                                 // 2. SET: Use the result directly from the POST response
+                                 // ASSUMES your Spring Boot POST returns the saved AnomalyDetectionResult entity
+            setAnomalyResult(postResponse.data); // <-- Use POST response data directly
+
+            // Optionally, force refresh the component to update the image source
+            // (by changing the URL query parameter)
+            setTimestamp(new Date().getTime());
+
+        } catch (error) {
+            console.error('Detection failed:', error.response ? error.response.data : error.message);
+            alert('Anomaly detection failed. Check server logs.');
+        } finally {
+            setIsDetecting(false);
+        }
+    };
+    // Add a timestamp state to force image refresh
+
 
     const fetchData = async () => {
         try {
@@ -26,6 +72,12 @@ const InspectionDetailPage = () => {
                 const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
                 setTransformer(transformerResponse.data);
                 setBaselineImageName(transformerResponse.data.baselineImageName);
+            }
+
+            if (inspectionResponse.data.thermalImage) {
+                await fetchAnomalyResult(inspectionId);
+            } else {
+                setAnomalyResult(null);
             }
         
         } catch (err) {
@@ -63,6 +115,13 @@ const InspectionDetailPage = () => {
             }
         }
     };
+
+    const handleImageUploadSuccess = () => {
+        fetchData(); // Refetch all data
+        // AUTOMATICALLY TRIGGER DETECTION AFTER UPLOAD
+        runAndFetchDetection(inspectionId);
+    };
+
 
     const handleViewBaselineImage = () => {
         if (transformer) {
@@ -184,77 +243,106 @@ const InspectionDetailPage = () => {
             )}
 
             {/* Thermal Image Comparison Section */}
-            {hasThermalImage ? (
-                <>
-                    <Card className="rounded-4 shadow-sm">
-                        <Card.Body>
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h4>Thermal Image Comparison</h4>
-                            </div>
-                            <Row>
-                                <Col md={6}>
-                                    <Card>
-                                        <Card.Header className="d-flex justify-content-between align-items-center">
-                                            Baseline
-                                            {isAdmin && hasBaselineImage && (
-                                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)}>Delete</Button>
-                                            )}
-                                        </Card.Header>
-                                        <Card.Body className="text-center">
-                                            {hasBaselineImage ? (
-                                                <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
-                                            ) : (
-                                                <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
-                                                    <p className="text-muted">No baseline image available.</p>
-                                                </div>
-                                            )}
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                                <Col md={6}>
-                                    <Card>
-                                        <Card.Header className="d-flex justify-content-between align-items-center">
-                                            Current
-                                            {isAdmin && (
-                                            <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
-                                            )}
-                                        </Card.Header>
-                                        <Card.Body>
-                                            <img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%' }} />
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            </Row>
-                        </Card.Body>
-                    </Card>
-
-{/*                     {!hasBaselineImage && ( */}
-{/*                         <Card className="mt-4 rounded-4 shadow-sm"> */}
-{/*                             <Card.Body> */}
-{/*                                 <p>A baseline image is required for a full comparison.</p> */}
-{/*                                 <BaselineImageUploader */}
-{/*                                     show={showBaselineModal} */}
-{/*                                     handleClose={() => setShowBaselineModal(false)} */}
-{/*                                     onUploadSuccess={fetchData} */}
-{/*                                     transformerId={inspection.transformerDbId} */}
-{/*                                 /> */}
-{/*                             </Card.Body> */}
-{/*                         </Card> */}
-{/*                     )} */}
-                </>
-            ) : (
-                <Card className="mb-4 rounded-4 shadow-sm">
-                    <Card.Body>
-                        {isAdmin ? (
-                        <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={fetchData} />
-                        ) : (
-                            <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
-                                <p className="text-muted text-center">No thermal images uploaded yet.</p>
-                            </div>
+            <Card className="rounded-4 shadow-sm mb-4">
+                <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Thermal Image Comparison</h4>
+                        {/* Show detection status/spinner */}
+                        {hasThermalImage && (
+                            <small className={`fw-bold text-${isDetecting ? 'warning' : anomalyResult ? 'success' : 'muted'}`}>
+                                {isDetecting ? (
+                                    <>
+                                        <Spinner animation="border" size="sm" className="me-2" />
+                                        Running Anomaly Detection...
+                                    </>
+                                ) : anomalyResult ? (
+                                    `Detection Complete`
+                                ) : (
+                                    'Detection Pending/Not Run'
+                                )}
+                            </small>
                         )}
+                    </div>
+                    <Row>
+                        {/* --- Baseline Image Column (Unchanged) --- */}
+                        <Col md={6}>
+                            <Card>
+                                <Card.Header className="d-flex justify-content-between align-items-center">
+                                    Baseline
+                                    {isAdmin && hasBaselineImage && (
+                                        <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)}>Delete</Button>
+                                    )}
+                                </Card.Header>
+                                <Card.Body className="text-center">
+                                    {hasBaselineImage ? (
+                                        <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
+                                    ) : (
+                                        <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
+                                            <p className="text-muted">No baseline image available.</p>
+                                        </div>
+                                    )}
+                                </Card.Body>
+                            </Card>
+                        </Col>
+
+                        {/* --- Current/Analyzed Image Column (MODIFIED) --- */}
+                        <Col md={6}>
+                            <Card>
+                                <Card.Header className="d-flex justify-content-between align-items-center">
+                                    {anomalyResult ? 'Analyzed Image' : 'Current Maintenance Image'}
+                                    {isAdmin && hasThermalImage && (
+                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
+                                    )}
+                                </Card.Header>
+                                <Card.Body>
+                                    {hasThermalImage ? (
+                                        <img
+                                            // NEW LOGIC: Use the annotated image URL if the anomaly result is present
+                                            src={anomalyResult
+                                                ? `$API_BASE_URL/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
+                                                : thermalImageUrl
+                                            }
+                                            alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"}
+                                            style={{ maxWidth: '100%' }}
+                                        />
+                                    ) : (
+                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
+                                    )}
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Card.Body>
+            </Card>
+            {/* END Thermal Image Comparison Section */}
+
+
+            {/* --- Bounding Box Details Section (NEW) --- */}
+            {anomalyResult && anomalyResult.detectionJsonOutput && (
+                <Card className="mt-4 rounded-4 shadow-sm">
+                    <Card.Body>
+                        <h4>Anomaly Details ({JSON.parse(anomalyResult.detectionJsonOutput || '[]').length} Detected)</h4>
+                        <ul className="list-group list-group-flush">
+                            {/* Parse the JSON string from detectionJsonOutput and map the list */}
+                            {JSON.parse(anomalyResult.detectionJsonOutput || '[]').map((anomaly, index) => (
+                                <li key={index} className="list-group-item">
+                                    <strong>Error {index + 1}:</strong>
+                                    <span className={`badge ms-2 ${anomaly.type === 'Faulty' ? 'bg-danger' : 'bg-warning'}`}>
+                                        {anomaly.type}
+                                    </span>
+                                    <br/>
+                                    <small className="text-muted">
+                                        Coordinates: ({anomaly.location.x_min}, {anomaly.location.y_min}) to ({anomaly.location.x_max}, {anomaly.location.y_max})
+                                        | Confidence: {anomaly.confidence}
+                                        | Severity Score: {anomaly.severity_score}
+                                    </small>
+                                </li>
+                            ))}
+                        </ul>
                     </Card.Body>
                 </Card>
             )}
+            {/* END Bounding Box Details Section */}
         </div>
     );
 };

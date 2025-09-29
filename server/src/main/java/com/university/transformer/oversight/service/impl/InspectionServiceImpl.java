@@ -128,7 +128,7 @@ public class InspectionServiceImpl implements InspectionService {
 
         ThermalImage thermalImage = new ThermalImage();
         thermalImage.setFileName(filename);
-        thermalImage.setFilePath(fileStorageService.getRootLocation().resolve(filename).toString());
+//        thermalImage.setFilePath(fileStorageService.getRootLocation().resolve(filename).toString());
         thermalImage.setEnvironmentalCondition(ThermalImage.EnvironmentalCondition.valueOf(condition.toUpperCase()));
         thermalImage.setImageType(ThermalImage.ImageType.MAINTENANCE);
         thermalImage.setUploadTimestamp(LocalDateTime.now());

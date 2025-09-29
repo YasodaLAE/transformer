@@ -8,7 +8,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -22,10 +25,16 @@ import java.util.stream.Stream;
 @Service
 public class FileSystemStorageService implements FileStorageService {
 
-    private final Path rootLocation;
+    private Path rootLocation;
 
-    public FileSystemStorageService() {
-        this.rootLocation = Paths.get("uploads");
+//    public FileSystemStorageService() {
+//        this.rootLocation = Paths.get("uploads");
+//    }
+
+    @Autowired
+    public FileSystemStorageService(@Value("${storage.root-location}") String rootPath) {
+        // Use the injected absolute path
+        this.rootLocation = Paths.get(rootPath).toAbsolutePath().normalize();
     }
 
     @Override
@@ -100,7 +109,7 @@ public class FileSystemStorageService implements FileStorageService {
             Path file = rootLocation.resolve(filename);
             Files.deleteIfExists(file);
         } catch (IOException e) {
-            throw new RuntimeException("Could not delete the file: " + filename, e);
+            System.err.println("Could not delete the file: " + filename + ". Error: " + e.getMessage());
         }
     }
 }
