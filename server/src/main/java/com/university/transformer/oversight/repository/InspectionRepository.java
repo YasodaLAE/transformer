@@ -12,7 +12,7 @@ import java.util.List;
 public interface InspectionRepository extends JpaRepository<Inspection, Long> {
 
 
-    List<Inspection> findByTransformerId(Long transformerId);
+    List<Inspection> findByTransformer_Id(Long transformerId);
     @Query("SELECT i FROM Inspection i JOIN FETCH i.transformer")
     List<Inspection> findAllWithTransformers();
     @Modifying

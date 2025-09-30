@@ -33,7 +33,7 @@ public class InspectionServiceImpl implements InspectionService {
 
     @Override
     public List<Inspection> getInspectionsByTransformer(Long transformerId) {
-        return inspectionRepository.findByTransformerId(transformerId);
+        return inspectionRepository.findByTransformer_Id(transformerId);
     }
 
     @Override

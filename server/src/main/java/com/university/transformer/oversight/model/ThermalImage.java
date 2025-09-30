@@ -16,16 +16,15 @@ public class ThermalImage {
     }
 
     public enum EnvironmentalCondition {
-        SUNNY,
-        CLOUDY,
-        RAINY;
+        SUNNY, CLOUDY, RAINY;
 
-        @JsonCreator
+        @com.fasterxml.jackson.annotation.JsonCreator
         public static EnvironmentalCondition fromString(String value) {
-            if (value == null) { return null; }
+            if (value == null) return null;
             return EnvironmentalCondition.valueOf(value.toUpperCase());
         }
     }
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
