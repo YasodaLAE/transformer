@@ -92,22 +92,49 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         String outputImageName = (String) outputMap.get("output_image_name"); // Relative path from Python
         String detectionJson = objectMapper.writeValueAsString(outputMap.get("anomalies")); // List of bounding boxes
 
-        // 5. Store the result
+        // 5. Store the result - UPSERT LOGIC
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Inspection not found."));
 
-        // Check for existing result and update (safer than always inserting)
+        // Check for existing result and update. If none found, create a new one.
+        // We use orElseGet() to ensure 'inspection' is only set on a new entity.
         AnomalyDetectionResult result = resultRepository.findByInspectionId(inspectionId)
-                .orElse(new AnomalyDetectionResult());
+                .orElseGet(() -> {
+                    // This block executes ONLY if the result doesn't exist yet (INSERT case)
+                    AnomalyDetectionResult newResult = new AnomalyDetectionResult();
+                    newResult.setInspection(inspection); // Set the required foreign key on creation
+                    return newResult;
+                });
 
-        result.setInspection(inspection);
+        // Update the transient data fields regardless of whether it's new or existing
         result.setOverallStatus(overallStatus);
         result.setDetectionJsonOutput(detectionJson);
-        result.setOutputImageName(outputImageName); // Store the relative path
+        // Note: The python output is currently saving the ABSOLUTE path. It's better to save
+        // a relative path/filename if possible, but for now we rely on the implementation
+        // of fileStorageService.loadAsResource() to handle this path.
+        result.setOutputImageName(outputImageName);
         result.setDetectedTimestamp(LocalDateTime.now());
 
+        // resultRepository.save(result) will handle UPDATE if result has an ID, or INSERT if it's new.
         return resultRepository.save(result);
     }
+
+        // 5. Store the result
+        //Inspection inspection = inspectionRepository.findById(inspectionId)
+        //        .orElseThrow(() -> new RuntimeException("Inspection not found."));
+
+        // Check for existing result and update (safer than always inserting)
+        //AnomalyDetectionResult result = resultRepository.findByInspectionId(inspectionId)
+        //        .orElse(new AnomalyDetectionResult());
+
+        //result.setInspection(inspection);
+        //result.setOverallStatus(overallStatus);
+        //result.setDetectionJsonOutput(detectionJson);
+        //result.setOutputImageName(outputImageName); // Store the relative path
+        //result.setDetectedTimestamp(LocalDateTime.now());
+
+        //return resultRepository.save(result);
+    //}
 
     @Override
     public Optional<AnomalyDetectionResult> getDetectionResultByInspectionId(Long inspectionId) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
@@ -19,6 +19,7 @@ const InspectionDetailPage = () => {
     const [anomalyResult, setAnomalyResult] = useState(null);
     const [isDetecting, setIsDetecting] = useState(false); // To show spinner/disable buttons
     const [timestamp, setTimestamp] = useState(Date.now());
+    const detectionTriggeredRef = useRef(false);
 
     // Function to fetch the existing anomaly result if it exists
     const fetchAnomalyResult = async (id) => {
@@ -62,6 +63,57 @@ const InspectionDetailPage = () => {
     // Add a timestamp state to force image refresh
 
 
+//     const fetchData = async () => {
+//         try {
+//             setLoading(true);
+//             const inspectionResponse = await getInspectionById(inspectionId);
+//             setInspection(inspectionResponse.data);
+//
+//             if (inspectionResponse.data.transformerDbId) {
+//                 const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
+//                 setTransformer(transformerResponse.data);
+//                 setBaselineImageName(transformerResponse.data.baselineImageName);
+//             }
+//
+//             //if (inspectionResponse.data.thermalImage) {
+//             //    await fetchAnomalyResult(inspectionId);
+//             //} else {
+//             //    setAnomalyResult(null);
+//             //}
+//
+//             if (inspectionResponse.data.thermalImage) {
+//                 // A. Attempt to fetch existing result
+//                 try {
+//                     await fetchAnomalyResult(inspectionId);
+//                     // If fetchAnomalyResult succeeds, anomalyResult is set, we're done.
+//                 } catch (err) {
+//                     // B. If fetchAnomalyResult (GET /anomalies) returns 404 (as expected if no result saved yet)
+//                     if (err.response && err.response.status === 404) {
+//                         setAnomalyResult(null); // Explicitly clear any stale state
+//
+//                         // C. NOW: Check if we have an image but no result, and trigger the detection
+//                         if (inspectionResponse.data.thermalImage && !anomalyResult) {
+//                             console.log("No existing anomaly result found. Triggering detection...");
+//                             // This will POST to /detect-anomalies and save the result
+//                             await runAndFetchDetection(inspectionId);
+//                         }
+//                     } else {
+//                         console.error('Failed to fetch anomaly result:', err);
+//                     }
+//                 }
+//             } else {
+//                 setAnomalyResult(null);
+//             }
+//
+//
+//         } catch (err) {
+//             setError('Failed to fetch inspection details.');
+//             console.error(err);
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -74,37 +126,39 @@ const InspectionDetailPage = () => {
                 setBaselineImageName(transformerResponse.data.baselineImageName);
             }
 
-            //if (inspectionResponse.data.thermalImage) {
-            //    await fetchAnomalyResult(inspectionId);
-            //} else {
-            //    setAnomalyResult(null);
-            //}
-
+            // --- ANOMALY CHECK LOGIC ---
             if (inspectionResponse.data.thermalImage) {
-                // A. Attempt to fetch existing result
                 try {
-                    await fetchAnomalyResult(inspectionId);
-                    // If fetchAnomalyResult succeeds, anomalyResult is set, we're done.
-                } catch (err) {
-                    // B. If fetchAnomalyResult (GET /anomalies) returns 404 (as expected if no result saved yet)
-                    if (err.response && err.response.status === 404) {
-                        setAnomalyResult(null); // Explicitly clear any stale state
+                    // A. Attempt to fetch existing result directly
+                    const resultResponse = await getAnomalyDetectionResult(inspectionId);
+                    setAnomalyResult(resultResponse.data); // Result found, update state.
+                    detectionTriggeredRef.current = true;
 
-                        // C. NOW: Check if we have an image but no result, and trigger the detection
-                        if (inspectionResponse.data.thermalImage && !anomalyResult) {
-                            console.log("No existing anomaly result found. Triggering detection...");
-                            // This will POST to /detect-anomalies and save the result
+                } catch (err) {
+                    // B. Result was NOT found (404 caught here)
+                    if (err.response && err.response.status === 404) {
+                        setAnomalyResult(null);
+
+                        if (!detectionTriggeredRef.current) { // <--- ADD THIS GUARD
+                            console.log("Image found, but no anomaly result. Triggering detection...");
+
+                            // Mark as triggered BEFORE the async call
+                            detectionTriggeredRef.current = true; // <--- MARK AS TRUE
+
+                            // Await the detection
                             await runAndFetchDetection(inspectionId);
                         }
+
                     } else {
                         console.error('Failed to fetch anomaly result:', err);
+                        setAnomalyResult(null);
                     }
                 }
             } else {
                 setAnomalyResult(null);
             }
+            // --- END ANOMALY CHECK LOGIC ---
 
-        
         } catch (err) {
             setError('Failed to fetch inspection details.');
             console.error(err);
@@ -144,7 +198,7 @@ const InspectionDetailPage = () => {
     const handleImageUploadSuccess = () => {
         fetchData(); // Refetch all data
         // AUTOMATICALLY TRIGGER DETECTION AFTER UPLOAD
-        runAndFetchDetection(inspectionId);
+        // runAndFetchDetection(inspectionId);
     };
 
 
