@@ -44,3 +44,15 @@ CREATE TABLE thermal_image (
   inspection_id BIGINT NOT NULL, -- <-- ADDED THIS COLUMN
   FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
 );
+
+CREATE TABLE `anomaly_detection_result` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `detected_timestamp` datetime(6) DEFAULT NULL,
+  `detection_json_output` text,
+  `output_image_name` varchar(255) DEFAULT NULL,
+  `overall_status` varchar(255) DEFAULT NULL,
+  `inspection_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UK9powin3ux3oslbcuoguifhqro` (`inspection_id`),
+  CONSTRAINT `FK87o85w504j1em42s76se41nc7` FOREIGN KEY (`inspection_id`) REFERENCES `inspection` (`id`)
+);

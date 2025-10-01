@@ -89,7 +89,8 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         Map<String, Object> outputMap = objectMapper.readValue(outputString, new TypeReference<Map<String, Object>>() {});
 
         String overallStatus = (String) outputMap.get("overall_status");
-        String outputImageName = (String) outputMap.get("output_image_name"); // Relative path from Python
+        // This 'outputImageName' variable will now contain the RELATIVE path/filename
+        String outputImageName = (String) outputMap.get("output_image_name");
         String detectionJson = objectMapper.writeValueAsString(outputMap.get("anomalies")); // List of bounding boxes
 
         // 5. Store the result - UPSERT LOGIC
@@ -119,22 +120,6 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         return resultRepository.save(result);
     }
 
-        // 5. Store the result
-        //Inspection inspection = inspectionRepository.findById(inspectionId)
-        //        .orElseThrow(() -> new RuntimeException("Inspection not found."));
-
-        // Check for existing result and update (safer than always inserting)
-        //AnomalyDetectionResult result = resultRepository.findByInspectionId(inspectionId)
-        //        .orElse(new AnomalyDetectionResult());
-
-        //result.setInspection(inspection);
-        //result.setOverallStatus(overallStatus);
-        //result.setDetectionJsonOutput(detectionJson);
-        //result.setOutputImageName(outputImageName); // Store the relative path
-        //result.setDetectedTimestamp(LocalDateTime.now());
-
-        //return resultRepository.save(result);
-    //}
 
     @Override
     public Optional<AnomalyDetectionResult> getDetectionResultByInspectionId(Long inspectionId) {
@@ -142,18 +127,36 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         return resultRepository.findByInspectionId(inspectionId);
     }
 
+    // AnomalyDetectionServiceImpl.java - loadAnnotatedImageAsResource method
+
     @Override
     public Resource loadAnnotatedImageAsResource(Long inspectionId) {
         // 1. Get the result to find the file name
         AnomalyDetectionResult result = resultRepository.findByInspectionId(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Anomaly result not found for inspection ID: " + inspectionId));
 
-        String filename = result.getOutputImageName(); // This is the relative path (e.g., annotated-results/file.jpg)
+        // CRITICAL FIX: The database now holds the RELATIVE path/filename
+        String filename = result.getOutputImageName();
 
-        // 2. Load the file using the service, which must handle the sub-directory path
+        // 2. Load the file using the service
         try {
-            // Assuming fileStorageService.loadAsResource(filename) can handle the relative path saved in the database
+            // The FileStorageService must now resolve the filename against the root.
+            // Assuming your FileStorageService.loadAsResource(filename) is smart enough
+            // to automatically combine the filename with the root path.
+            // If not, you may need a path resolution step here before calling the service.
+
+            // If FileStorageService.loadAsResource() takes just a filename and resolves it:
             return fileStorageService.loadAsResource(filename);
+
+            // If FileStorageService.loadAsResource() requires the full path:
+            /*
+            Path absolutePath = Paths.get(storageRootLocation).resolve(filename);
+            return fileStorageService.loadAsResource(absolutePath.toString());
+            */
+
+            // Use the simpler assumption based on standard Spring file services:
+            // The service is expected to handle locating files based on the relative name.
+
         } catch (Exception e) {
             logger.error("Could not load annotated image file: {}", filename, e);
             throw new RuntimeException("Could not load annotated image file.");

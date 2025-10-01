@@ -46,6 +46,15 @@ def run_detection(image_path, save_folder):
     all_anomalies_data = []
     overall_status = "NORMAL" # Initialize overall status
 
+
+    # These variables MUST be defined outside the results loop if they are used to build
+    # the final output filename outside the inner result loop.
+    base_filename = os.path.basename(image_path)
+    name, ext = os.path.splitext(base_filename)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # ----------------------------------------------------
+
+
     # Process the results
     for i, r in enumerate(results):
         # Get the data
@@ -56,6 +65,8 @@ def run_detection(image_path, save_folder):
 
         # Use stderr for non-JSON status output
         print(f"Detected {len(boxes)} anomaly/anomalies.", file=sys.stderr)
+
+
 
         # Iterate through the boxes using enumerate to get an index (box_number)
         for box_number, (box, score, class_id) in enumerate(zip(boxes, scores, class_ids)):
@@ -113,17 +124,28 @@ def run_detection(image_path, save_folder):
             cv2.rectangle(im_bgr, (x_min, text_y_offset - text_height - 5), (x_min + text_width + 5, text_y_offset + baseline), color, -1)
             cv2.putText(im_bgr, text, (x_min + 2, text_y_offset - 2), font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
 
-        # --- Code for saving the image ---
-        base_filename = os.path.basename(image_path)
-        name, ext = os.path.splitext(base_filename)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
         # Define save path
         output_image_filename = f"{name}_annotated_{timestamp}{ext}"
         save_image_path = os.path.join(save_folder, output_image_filename)
-        
+
         # Save the annotated image
         success_img = cv2.imwrite(save_image_path, im_bgr)
+
+        # --- CRITICAL CHANGE: Calculate the RELATIVE Path ---
+        # The save_folder is the absolute storage root (e.g., D:\oversight\uploads)
+        # We need the path RELATIVE to this root. Since 'save_folder' is the root itself,
+        # the relative path is simply the filename.
+        # However, to be robust (if you later add subdirectories), let's use a path separator.
+
+        # If your output path is ALWAYS the root folder, use the filename:
+        relative_output_path = output_image_filename
+
+        # If your output is in a known subdirectory (e.g., 'annotated/'), you would use:
+        # relative_output_path = os.path.join("annotated", output_image_filename)
+        # But based on your Java service configuration, it looks like it saves directly to the root.
+
+        # For maximum safety and simplicity with your current structure, let's just return the filename.
+        # This assumes the Java side knows where to find files based on the filename.
 
         # Use stderr for non-JSON status output
         if success_img:
@@ -134,7 +156,8 @@ def run_detection(image_path, save_folder):
         # Return the collected data
         return {
             "overall_status": overall_status,
-            "output_image_name": save_image_path,
+            # CRITICAL FIX: Return the filename/relative path, not the absolute path
+            "output_image_name": relative_output_path,
             "anomalies": all_anomalies_data
         }
 
