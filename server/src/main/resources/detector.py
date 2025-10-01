@@ -134,7 +134,7 @@ def run_detection(image_path, save_folder):
         # Return the collected data
         return {
             "overall_status": overall_status,
-            "output_image_path": save_image_path,
+            "output_image_name": save_image_path,
             "anomalies": all_anomalies_data
         }
 

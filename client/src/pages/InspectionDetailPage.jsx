@@ -74,11 +74,36 @@ const InspectionDetailPage = () => {
                 setBaselineImageName(transformerResponse.data.baselineImageName);
             }
 
+            //if (inspectionResponse.data.thermalImage) {
+            //    await fetchAnomalyResult(inspectionId);
+            //} else {
+            //    setAnomalyResult(null);
+            //}
+
             if (inspectionResponse.data.thermalImage) {
-                await fetchAnomalyResult(inspectionId);
+                // A. Attempt to fetch existing result
+                try {
+                    await fetchAnomalyResult(inspectionId);
+                    // If fetchAnomalyResult succeeds, anomalyResult is set, we're done.
+                } catch (err) {
+                    // B. If fetchAnomalyResult (GET /anomalies) returns 404 (as expected if no result saved yet)
+                    if (err.response && err.response.status === 404) {
+                        setAnomalyResult(null); // Explicitly clear any stale state
+
+                        // C. NOW: Check if we have an image but no result, and trigger the detection
+                        if (inspectionResponse.data.thermalImage && !anomalyResult) {
+                            console.log("No existing anomaly result found. Triggering detection...");
+                            // This will POST to /detect-anomalies and save the result
+                            await runAndFetchDetection(inspectionId);
+                        }
+                    } else {
+                        console.error('Failed to fetch anomaly result:', err);
+                    }
+                }
             } else {
                 setAnomalyResult(null);
             }
+
         
         } catch (err) {
             setError('Failed to fetch inspection details.');
@@ -299,7 +324,7 @@ const InspectionDetailPage = () => {
                                         <img
                                             // NEW LOGIC: Use the annotated image URL if the anomaly result is present
                                             src={anomalyResult
-                                                ? `$API_BASE_URL/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
+                                                ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
                                                 : thermalImageUrl
                                             }
                                             alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"}
