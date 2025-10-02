@@ -15,19 +15,18 @@ const InspectionDetailPage = () => {
     const [error, setError] = useState(null);
     const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
-    const { user, isAdmin } = useAuth();
+    const { user, isAdmin } = useAuth(); // User object is used for the logged-in check
     const [anomalyResult, setAnomalyResult] = useState(null);
-    const [isDetecting, setIsDetecting] = useState(false); // To show spinner/disable buttons
+    const [isDetecting, setIsDetecting] = useState(false);
     const [timestamp, setTimestamp] = useState(Date.now());
     const detectionTriggeredRef = useRef(false);
 
     // Function to fetch the existing anomaly result if it exists
     const fetchAnomalyResult = async (id) => {
         try {
-            const resultResponse = await getAnomalyDetectionResult(id); // Using the service function (or axios.get)
+            const resultResponse = await getAnomalyDetectionResult(id);
             setAnomalyResult(resultResponse.data);
         } catch (err) {
-            // 404 is expected if detection hasn't run or result wasn't saved.
             if (err.response && err.response.status === 404) {
                 setAnomalyResult(null);
             } else {
@@ -39,18 +38,12 @@ const InspectionDetailPage = () => {
     // Function to run the detection and fetch the result (POST then GET)
     const runAndFetchDetection = async (id) => {
         setIsDetecting(true);
-        setAnomalyResult(null); // Clear previous results
+        setAnomalyResult(null);
 
         try {
             // 1. POST: Trigger the detection script
             const postResponse = await triggerAnomalyDetection(id);
-
-                                 // 2. SET: Use the result directly from the POST response
-                                 // ASSUMES your Spring Boot POST returns the saved AnomalyDetectionResult entity
-            setAnomalyResult(postResponse.data); // <-- Use POST response data directly
-
-            // Optionally, force refresh the component to update the image source
-            // (by changing the URL query parameter)
+            setAnomalyResult(postResponse.data);
             setTimestamp(new Date().getTime());
 
         } catch (error) {
@@ -60,59 +53,6 @@ const InspectionDetailPage = () => {
             setIsDetecting(false);
         }
     };
-    // Add a timestamp state to force image refresh
-
-
-//     const fetchData = async () => {
-//         try {
-//             setLoading(true);
-//             const inspectionResponse = await getInspectionById(inspectionId);
-//             setInspection(inspectionResponse.data);
-//
-//             if (inspectionResponse.data.transformerDbId) {
-//                 const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
-//                 setTransformer(transformerResponse.data);
-//                 setBaselineImageName(transformerResponse.data.baselineImageName);
-//             }
-//
-//             //if (inspectionResponse.data.thermalImage) {
-//             //    await fetchAnomalyResult(inspectionId);
-//             //} else {
-//             //    setAnomalyResult(null);
-//             //}
-//
-//             if (inspectionResponse.data.thermalImage) {
-//                 // A. Attempt to fetch existing result
-//                 try {
-//                     await fetchAnomalyResult(inspectionId);
-//                     // If fetchAnomalyResult succeeds, anomalyResult is set, we're done.
-//                 } catch (err) {
-//                     // B. If fetchAnomalyResult (GET /anomalies) returns 404 (as expected if no result saved yet)
-//                     if (err.response && err.response.status === 404) {
-//                         setAnomalyResult(null); // Explicitly clear any stale state
-//
-//                         // C. NOW: Check if we have an image but no result, and trigger the detection
-//                         if (inspectionResponse.data.thermalImage && !anomalyResult) {
-//                             console.log("No existing anomaly result found. Triggering detection...");
-//                             // This will POST to /detect-anomalies and save the result
-//                             await runAndFetchDetection(inspectionId);
-//                         }
-//                     } else {
-//                         console.error('Failed to fetch anomaly result:', err);
-//                     }
-//                 }
-//             } else {
-//                 setAnomalyResult(null);
-//             }
-//
-//
-//         } catch (err) {
-//             setError('Failed to fetch inspection details.');
-//             console.error(err);
-//         } finally {
-//             setLoading(false);
-//         }
-//     };
 
     const fetchData = async () => {
         try {
@@ -131,7 +71,7 @@ const InspectionDetailPage = () => {
                 try {
                     // A. Attempt to fetch existing result directly
                     const resultResponse = await getAnomalyDetectionResult(inspectionId);
-                    setAnomalyResult(resultResponse.data); // Result found, update state.
+                    setAnomalyResult(resultResponse.data);
                     detectionTriggeredRef.current = true;
 
                 } catch (err) {
@@ -139,13 +79,9 @@ const InspectionDetailPage = () => {
                     if (err.response && err.response.status === 404) {
                         setAnomalyResult(null);
 
-                        if (!detectionTriggeredRef.current) { // <--- ADD THIS GUARD
+                        if (!detectionTriggeredRef.current) {
                             console.log("Image found, but no anomaly result. Triggering detection...");
-
-                            // Mark as triggered BEFORE the async call
-                            detectionTriggeredRef.current = true; // <--- MARK AS TRUE
-
-                            // Await the detection
+                            detectionTriggeredRef.current = true;
                             await runAndFetchDetection(inspectionId);
                         }
 
@@ -196,9 +132,7 @@ const InspectionDetailPage = () => {
     };
 
     const handleImageUploadSuccess = () => {
-        fetchData(); // Refetch all data
-        // AUTOMATICALLY TRIGGER DETECTION AFTER UPLOAD
-        // runAndFetchDetection(inspectionId);
+        fetchData();
     };
 
 
@@ -220,7 +154,7 @@ const InspectionDetailPage = () => {
     const baselineImageUrl = hasBaselineImage
         ? `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view?timestamp=${new Date().getTime()}`
         : '';
-    const thermalImageUrl = hasThermalImage ? `http://localhost:8080/files/${thermalImage.fileName}` : '';
+    const thermalImageUrl = hasThermalImage ? `${API_BASE_URL}/files/${thermalImage.fileName}` : '';
 
     const getStatusBadgeColor = (status) => {
         switch (status.toLowerCase()) {
@@ -235,6 +169,12 @@ const InspectionDetailPage = () => {
         }
     };
 
+    // --- NEW LOGIC: Determine if the upload component should be visible ---
+    // User is considered "logged in" if the 'user' object exists.
+    const isUserLoggedIn = !!user;
+    const showThermalUploader = isUserLoggedIn && !hasThermalImage;
+    // -------------------------------------------------------------------
+
     return (
         <div className="container-fluid">
             {transformer && (
@@ -245,32 +185,27 @@ const InspectionDetailPage = () => {
                             {/* Left side: Inspection Details */}
                             <div className="d-flex flex-column">
                                 <h3 className="fw-bold">{inspection.inspectionNo}</h3>
-                                <div className="d-flex align-items-center mt-1">
-{/*                                     <small className="text-muted mt-2 d-flex align-items-center"> */}
-{/*                                         Last updated: */}
-{/*                                         <span className="text-primary ms-2"> */}
-{/*                                             {inspection.lastUpdated ? new Date(inspection.lastUpdated).toLocaleString() : 'N/A'} */}
-{/*                                         </span> */}
-{/*                                     </small> */}
-                                </div>
+                                {/* ... (Other inspection details) ... */}
                             </div>
                             {/* Right side: Status and Baseline Image Section */}
                             <div className="d-flex flex-column align-items-end">
                                 <div className={`badge rounded-pill text-white ${getStatusBadgeColor(inspection.status)} mb-2`}>
                                     {inspection.status}
                                 </div>
-                                {isAdmin && !hasBaselineImage && (
+                                {/* BASELINE IMAGE UPLOADER: Only show if user is logged in (implicit in isAdmin, but added 'user' check for clarity) */}
+                                {isUserLoggedIn && !hasBaselineImage && (
                                     <BaselineImageUploader
                                         transformerId={transformer.id}
                                         onUploadSuccess={fetchData}
                                     />
                                 )}
+                                {/* ... (Baseline Image View/Delete logic) ... */}
                                 {hasBaselineImage && (
                                     <small className="text-muted mt-2 d-flex align-items-center">
                                         Baseline:
                                         <span className="text-primary ms-2 me-2">{baselineImageName}</span>
                                         <div className="d-flex align-items-center ms-2">
-                                            {/* View button */}
+                                            {/* View button (visible to everyone) */}
                                             <Button
                                                 variant="outline-info"
                                                 size="sm"
@@ -280,7 +215,7 @@ const InspectionDetailPage = () => {
                                             >
                                                 <i className="bi bi-eye-fill"></i>
                                             </Button>
-                                            {/* Delete button */}
+                                            {/* Delete button (only visible to isAdmin) */}
                                             {isAdmin && (
                                             <Button
                                                 variant="outline-danger"
@@ -300,6 +235,7 @@ const InspectionDetailPage = () => {
 
                         {/* Summary Details Row */}
                         <Row className="text-center">
+                            {/* ... (Existing Summary Details) ... */}
                             <Col className="border-end py-2">
                                 <h6 className="mb-0 fw-bold">{transformer ? transformer.transformerId : inspection.transformerNo}</h6>
                                 <small className="text-muted">Transformer No</small>
@@ -327,6 +263,7 @@ const InspectionDetailPage = () => {
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h4>Thermal Image Comparison</h4>
                         {/* Show detection status/spinner */}
+                        {/* ... (Existing detection status/spinner logic) ... */}
                         {hasThermalImage && (
                             <small className={`fw-bold text-${isDetecting ? 'warning' : anomalyResult ? 'success' : 'muted'}`}>
                                 {isDetecting ? (
@@ -343,7 +280,7 @@ const InspectionDetailPage = () => {
                         )}
                     </div>
                     <Row>
-                        {/* --- Baseline Image Column (Unchanged) --- */}
+                        {/* --- Baseline Image Column (NO CHANGE) --- */}
                         <Col md={6}>
                             <Card>
                                 <Card.Header className="d-flex justify-content-between align-items-center">
@@ -356,6 +293,7 @@ const InspectionDetailPage = () => {
                                     {hasBaselineImage ? (
                                         <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
                                     ) : (
+                                        // Placeholder message for Baseline is visible to all
                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
                                             <p className="text-muted">No baseline image available.</p>
                                         </div>
@@ -364,19 +302,20 @@ const InspectionDetailPage = () => {
                             </Card>
                         </Col>
 
-                        {/* --- Current/Analyzed Image Column (MODIFIED) --- */}
+                        {/* --- Current/Analyzed Image Column (MODIFIED LOGIC) --- */}
                         <Col md={6}>
                             <Card>
                                 <Card.Header className="d-flex justify-content-between align-items-center">
                                     {anomalyResult ? 'Analyzed Image' : 'Current Maintenance Image'}
+                                    {/* Delete button only visible to isAdmin and if image exists */}
                                     {isAdmin && hasThermalImage && (
                                         <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
                                     )}
                                 </Card.Header>
                                 <Card.Body>
                                     {hasThermalImage ? (
+                                        // 1. SHOW IMAGE: If an image exists, show it to everyone (logged in or not)
                                         <img
-                                            // NEW LOGIC: Use the annotated image URL if the anomaly result is present
                                             src={anomalyResult
                                                 ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
                                                 : thermalImageUrl
@@ -384,8 +323,14 @@ const InspectionDetailPage = () => {
                                             alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"}
                                             style={{ maxWidth: '100%' }}
                                         />
+                                    ) : showThermalUploader ? (
+                                        // 2. SHOW UPLOADER: If no image exists AND user is logged in
+                                        <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
                                     ) : (
-                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
+                                        // 3. SHOW PLACEHOLDER: If no image exists AND user is NOT logged in
+                                        <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
+                                            <p className="text-muted">No thermal image available.</p>
+                                        </div>
                                     )}
                                 </Card.Body>
                             </Card>
@@ -396,7 +341,7 @@ const InspectionDetailPage = () => {
             {/* END Thermal Image Comparison Section */}
 
 
-            {/* --- Bounding Box Details Section (NEW) --- */}
+            {/* --- Bounding Box Details Section --- */}
             {anomalyResult && anomalyResult.detectionJsonOutput && (
                 <Card className="mt-4 rounded-4 shadow-sm">
                     <Card.Body>

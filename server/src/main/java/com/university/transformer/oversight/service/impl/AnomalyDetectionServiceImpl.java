@@ -29,7 +29,7 @@ import java.nio.file.Paths;
 public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
 
     private static final Logger logger = LoggerFactory.getLogger(AnomalyDetectionServiceImpl.class);
-    private static final String PYTHON_SCRIPT_PATH = "D:/oversight/server/src/main/resources/detector.py";
+    private static final String PYTHON_SCRIPT_PATH = "./server/src/main/resources/detector.py";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${storage.root-location}")

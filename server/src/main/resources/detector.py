@@ -9,7 +9,7 @@ import sys
 # --- CONFIGURATION (Move hardcoded values to the top or arguments) ---
 # NOTE: The MODEL_PATH remains hardcoded for simplicity, but in production, 
 # it should ideally be handled via config or environment variables.
-MODEL_PATH = r"C:\Users\Yaseema Rusiru\Desktop\runs\detect\transformer_anomaly_detector_tiny_data3\weights\best.pt"
+MODEL_PATH = r"/Users/kavindujayathissa/Desktop/Academics/Semester 07/EN3350 Software Design/phase 2/best.pt"
 
 SEVERITY_MAP = {
     'Potentially Faulty': 1,
