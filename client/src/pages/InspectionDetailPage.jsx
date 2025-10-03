@@ -101,9 +101,11 @@ const InspectionDetailPage = () => {
             if (inspectionResponse.data.transformerDbId) {
                 const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
                 setTransformer(transformerResponse.data);
-                setBaselineImageName(transformerResponse.data.baselineImageName);
+                //setBaselineImageName(transformerResponse.data.baselineImageName);
+                const currentBaselineName = transformerResponse.data.baselineImageName;
+                setBaselineImageName(currentBaselineName);
             }
-
+            const currentTempThreshold = tempThreshold;
             // --- ANOMALY CHECK LOGIC ---
             if (inspectionResponse.data.thermalImage) {
                 try {
@@ -121,7 +123,7 @@ const InspectionDetailPage = () => {
                         if (!detectionTriggeredRef.current) {
                             console.log("Image found, but no anomaly result. Triggering detection...");
                             detectionTriggeredRef.current = true;
-                            await runAndFetchDetection(inspectionId);
+                            await runAndFetchDetection(inspectionId, currentBaselineName, currentTempThreshold);
                         }
 
                     } else {
@@ -187,7 +189,7 @@ const InspectionDetailPage = () => {
         showOk('Thermal image uploaded successfully. Running anomaly detection...');
 
         // 1. Await the detection process
-        await runAndFetchDetection(inspectionId);
+        await runAndFetchDetection(inspectionId, baselineImageName, tempThreshold);
 
         // 2. CRITICAL STEP: Now that the anomaly result is saved, refetch ALL data to refresh component state
         fetchData();
