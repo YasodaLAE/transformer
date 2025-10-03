@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection } from '../services/apiService';
+// IMPORT THE updateInspection API method from apiService.js
+import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import Toast from '../components/Toast';
-import ZoomableImageModal from '../components/ZoomableImageModal'; // NEW IMPORT
+import ZoomableImageModal from '../components/ZoomableImageModal';
+import NotesCard from '../components/NotesCard'; // NEW IMPORT
 
 
 const InspectionDetailPage = () => {
@@ -179,6 +181,24 @@ const InspectionDetailPage = () => {
         // 2. CRITICAL STEP: Now that the anomaly result is saved, refetch ALL data to refresh component state
         fetchData();
     };
+
+    // NEW FUNCTION: Handles saving notes to the server
+    const handleSaveNotes = async (id, newNotes) => {
+        if (!inspection) return;
+
+        // Create an updated inspection object
+        const updatedInspection = {
+            ...inspection,
+            notes: newNotes, // Overwrite the notes field
+        };
+
+        // Send the update to the server
+        await updateInspection(id, updatedInspection);
+
+        // Update local state to reflect new notes immediately without full fetch
+        setInspection(updatedInspection);
+    };
+
 
     if (loading) return <Spinner animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner>;
 
@@ -422,6 +442,17 @@ const InspectionDetailPage = () => {
                     </Card.Body>
                 </Card>
             )}
+
+            {/* --- Inspector Notes Section (NEW) --- */}
+            <NotesCard
+                inspectionId={inspection.id}
+                // CRITICAL: Ensure you pass the 'notes' field from the inspection object
+                initialNotes={inspection.notes}
+                onSave={handleSaveNotes}
+                showOk={showOk}
+                showErr={showErr}
+                isAdmin={isAdmin}
+            />
 
             {/* FINAL MODAL COMPONENT */}
             <ZoomableImageModal

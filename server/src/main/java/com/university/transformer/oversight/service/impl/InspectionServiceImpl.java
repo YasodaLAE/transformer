@@ -48,9 +48,6 @@ public class InspectionServiceImpl implements InspectionService {
         return inspectionRepository.save(inspection);
     }
 
-    // ***************************************************************
-    // ** THE FIX IS IN THIS METHOD **
-    // ***************************************************************
     @Override
     @Transactional
     public void deleteInspection(Long id) {
@@ -106,8 +103,6 @@ public class InspectionServiceImpl implements InspectionService {
             throw new RuntimeException("Failed to delete inspection due to an internal error.", e);
         }
     }
-    // ***************************************************************
-    // ***************************************************************
 
     @Override
     public List<InspectionDTO> getAllInspections() {
@@ -121,6 +116,7 @@ public class InspectionServiceImpl implements InspectionService {
     }
 
     @Override
+    @Transactional
     public Inspection updateInspection(Long id, Inspection updatedInspection) {
         // Find the existing inspection by its ID
         return inspectionRepository.findById(id)
@@ -130,6 +126,9 @@ public class InspectionServiceImpl implements InspectionService {
                     inspection.setInspectedDate(updatedInspection.getInspectedDate());
                     inspection.setMaintenanceDate(updatedInspection.getMaintenanceDate());
                     inspection.setStatus(updatedInspection.getStatus());
+
+                    // FIX: CRITICAL ADDITION TO PERSIST NOTES
+                    inspection.setNotes(updatedInspection.getNotes());
 
                     // Save the updated inspection
                     return inspectionRepository.save(inspection);

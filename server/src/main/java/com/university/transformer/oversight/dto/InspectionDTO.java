@@ -13,6 +13,9 @@ public class InspectionDTO {
     private LocalDateTime maintenanceDate;
     private String status;
 
+    // CRITICAL FIX: Add the Notes field here
+    private String notes;
+
     // Transformer fields
     private Long transformerDbId;
     private String region;
@@ -33,6 +36,9 @@ public class InspectionDTO {
         this.maintenanceDate = inspection.getMaintenanceDate();
         this.status = inspection.getStatus();
         this.inspectedBy = inspection.getInspectedBy();
+
+        // CRITICAL FIX: Copy the notes field from the entity
+        this.notes = inspection.getNotes();
 
         if (inspection.getTransformer() != null) {
             this.transformerDbId = inspection.getTransformer().getId();

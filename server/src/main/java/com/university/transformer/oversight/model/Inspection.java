@@ -19,9 +19,14 @@ public class Inspection {
     private Long id;
 
     private String inspectionNo;
-    private LocalDateTime inspectedDate; // Changed from LocalDate
-    private LocalDateTime maintenanceDate; // Changed from LocalDate
+    private LocalDateTime inspectedDate;
+    private LocalDateTime maintenanceDate;
     private String status;
+
+    // --- NEW FIELD FOR NOTES ---
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+    // ---------------------------
 
     @JsonProperty("inspectedBy")
     private String inspectedBy;
@@ -37,13 +42,20 @@ public class Inspection {
     private ThermalImage thermalImage;
 
     public void setInspectedBy(String inspectedBy) {
-        // Ensure the value is not an empty string or null before setting it.
         if (inspectedBy != null && !inspectedBy.trim().isEmpty()) {
             this.inspectedBy = inspectedBy;
         } else {
-            // Optional: Log a message to see if an empty string is being received
             System.out.println("Warning: Received a null or empty value for inspectedBy.");
         }
     }
 
+    // Lombok's @Data should generate standard getters/setters for 'notes',
+    // but we add them explicitly here if @Data is sometimes unreliable in the build environment.
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
 }

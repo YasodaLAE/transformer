@@ -20,7 +20,7 @@ CREATE TABLE transformer (
   no_of_feeders INT
 );
 
--- (The CREATE TABLE inspection block remains unchanged)
+-- (The CREATE TABLE inspection block is updated with NOTES)
 CREATE TABLE inspection (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   inspection_no VARCHAR(255),
@@ -29,11 +29,12 @@ CREATE TABLE inspection (
   status VARCHAR(255),
   transformer_id BIGINT,
   inspected_by VARCHAR(255),
+  notes TEXT,  -- <--- ADDED THE NOTES COLUMN
   FOREIGN KEY (transformer_id) REFERENCES transformer(id) ON DELETE CASCADE
 );
 
 -- ******************************************************
--- ** CORRECTED thermal_image TABLE **
+-- ** CORRECTED thermal_image TABLE (Unchanged) **
 -- ******************************************************
 CREATE TABLE thermal_image (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -48,9 +49,6 @@ CREATE TABLE thermal_image (
     -- The Foreign Key now correctly links to Inspection (from the merged code)
     inspection_id BIGINT NOT NULL,
     FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
-
-    -- NOTE: The 'transformer_id' field and its FK reference were removed
-    -- as the image is logically linked through the inspection.
 );
 
 -- (The CREATE TABLE anomaly_detection_result block remains unchanged)
