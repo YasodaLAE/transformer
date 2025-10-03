@@ -22,7 +22,7 @@ const InspectionDetailPage = () => {
     const showOk = (m) => setToast({ type: 'success', message: m });
     const showErr = (m) => setToast({ type: 'error', message: m });
 
-    const { user, isAdmin } = useAuth(); // User object is used for the logged-in check
+//     const { user, isAdmin } = useAuth(); // User object is used for the logged-in check
     const [anomalyResult, setAnomalyResult] = useState(null);
     const [isDetecting, setIsDetecting] = useState(false);
     const [timestamp, setTimestamp] = useState(Date.now());
@@ -176,12 +176,12 @@ const InspectionDetailPage = () => {
     };
 
 
-    const handleViewBaselineImage = () => {
-        if (transformer) {
-            const imageUrl = `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view`;
-            window.open(imageUrl, "_blank");
-        }
-    };
+//     const handleViewBaselineImage = () => {
+//         if (transformer) {
+//             const imageUrl = `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view`;
+//             window.open(imageUrl, "_blank");
+//         }
+//     };
 
 //     if (loading) return <p>Loading...</p>;
     if (loading) return <Spinner label="Loading inspection..." />;

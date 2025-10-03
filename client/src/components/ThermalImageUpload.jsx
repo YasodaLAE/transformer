@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { uploadThermalImage } from '../services/apiService';
-import { useAuth } from '../hooks/AuthContext';
 import Toast from './Toast';
 import { useAuth } from '../hooks/AuthContext'; // Import useAuth hook
 import axios from 'axios';

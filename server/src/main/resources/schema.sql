@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS thermal_image;
 DROP TABLE IF EXISTS inspection;
 DROP TABLE IF EXISTS transformer;
 
+-- (The CREATE TABLE transformer block remains unchanged)
 CREATE TABLE transformer (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   transformer_id VARCHAR(255),
@@ -19,6 +20,7 @@ CREATE TABLE transformer (
   no_of_feeders INT
 );
 
+-- (The CREATE TABLE inspection block remains unchanged)
 CREATE TABLE inspection (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   inspection_no VARCHAR(255),
@@ -30,26 +32,28 @@ CREATE TABLE inspection (
   FOREIGN KEY (transformer_id) REFERENCES transformer(id) ON DELETE CASCADE
 );
 
+-- ******************************************************
+-- ** CORRECTED thermal_image TABLE **
+-- ******************************************************
 CREATE TABLE thermal_image (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  environmental_condition ENUM('CLOUDY','RAINY','SUNNY'),
-  file_name VARCHAR(255),
-  file_path VARCHAR(255),
-  image_type ENUM('BASELINE','MAINTENANCE'),
-  upload_timestamp DATETIME(6),
-  uploader_id VARCHAR(255),
-  transformer_id BIGINT,
-  FOREIGN KEY (transformer_id) REFERENCES transformer(id) ON DELETE CASCADE
-  environmental_condition enum('CLOUDY','RAINY','SUNNY'),
-  file_name varchar(255),
-  file_path varchar(255),
-  image_type enum('BASELINE','MAINTENANCE'),
-  upload_timestamp datetime(6),
-  uploader_id varchar(255),
-  inspection_id BIGINT NOT NULL, -- <-- ADDED THIS COLUMN
-  FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    -- Columns combined from both versions:
+    environmental_condition ENUM('CLOUDY','RAINY','SUNNY'),
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    image_type ENUM('BASELINE','MAINTENANCE') NOT NULL,
+    upload_timestamp DATETIME(6),
+    uploader_id VARCHAR(255),
+
+    -- The Foreign Key now correctly links to Inspection (from the merged code)
+    inspection_id BIGINT NOT NULL,
+    FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
+
+    -- NOTE: The 'transformer_id' field and its FK reference were removed
+    -- as the image is logically linked through the inspection.
 );
 
+-- (The CREATE TABLE anomaly_detection_result block remains unchanged)
 CREATE TABLE `anomaly_detection_result` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `detected_timestamp` datetime(6) DEFAULT NULL,
