@@ -358,7 +358,7 @@ const InspectionDetailPage = () => {
                                 )}
                             </small>
                         )}
-                    //new start
+
                     {/* 🚀 NEW THRESHOLD INPUT AND RUN BUTTON */}
                         {hasThermalImage && hasBaselineImage && (
                             <div className="d-flex align-items-center">

@@ -13,13 +13,14 @@ SEVERITY_MAP = {
     'Potentially Faulty': 1,
     'Faulty': 2
 }
-# ------------------------------------------------------------------
 
-# 🚀 NEW FUNCTION: Baseline Intensity Calculation
+# 🚀 NEW FUNCTION: Baseline Intensity Calculation (IMPROVED)
 def get_baseline_intensity(baseline_path):
     """
-    Finds a proxy for the minimum normal operating temperature intensity
-    by targeting the median intensity of non-background (non-black) pixels.
+    Finds a proxy for the 'coolest' normal operating temperature intensity
+    by targeting the median intensity (V channel) of pixels falling within
+    the blue/green Hue range, representing the body of the transformer.
+
     Returns: The calculated baseline intensity proxy (int 0-255).
     """
     img = cv2.imread(baseline_path)
@@ -27,35 +28,53 @@ def get_baseline_intensity(baseline_path):
         print(f"Error: Could not read baseline image at {baseline_path}", file=sys.stderr)
         return 50 # Tunable fallback
 
-    # Convert image to grayscale for a single intensity score (0-255)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # 1. Convert to HSV (Hue, Saturation, Value/Intensity)
+    # Hue in OpenCV is 0-179. Blue/Cyan/Green are typically in the 60-120 range.
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # Filter out pure black (background, black bars) and very dark pixels (e.g., < 10)
-    # This leaves us with the transformer body and any color bar.
-    non_black_pixels = gray[gray > 10]
+    # 2. Define the Color Range (Hue Mask)
+    # We target blue/cyan/green (cool colors) typically associated with healthy transformers.
+    # Hue: 60 (Green) to 120 (Cyan/Blue)
+    # Saturation: Must be above a threshold (e.g., 50) to exclude gray/black/white areas (background, text)
+    # Value: Must be above a threshold (e.g., 50) to exclude very dark noise
 
-    if len(non_black_pixels) == 0:
+    # Lower bound for cool colors (H, S, V)
+    lower_cool = np.array([60, 50, 50])
+    # Upper bound for cool colors (H, S, V)
+    upper_cool = np.array([120, 255, 255])
+
+    mask = cv2.inRange(hsv, lower_cool, upper_cool)
+
+    # 3. Extract the Value (Intensity) channel only for masked pixels
+    V_channel = hsv[:, :, 2] # V is the third channel (index 2)
+
+    # Filter the V channel using the mask
+    cool_pixels_intensity = V_channel[mask > 0] # Intensities of pixels in the target color range
+
+    if len(cool_pixels_intensity) == 0:
+        print("Warning: No cool (blue/green) pixels found. Falling back.", file=sys.stderr)
         return 50 # Fallback
 
-    # Use the 25th percentile (or median/50th) of the non-black pixels as a proxy for the
-    # 'coolest' operational part of the transformer, excluding the absolute coldest spots.
-    percentile = 25
-    baseline_intensity_proxy = np.percentile(non_black_pixels, percentile)
+    # 4. Find the Baseline Intensity Proxy
+    # Use the 50th percentile (median) of the 'cool' pixel intensities.
+    # This represents the typical intensity of the healthy transformer body,
+    # which is often more stable than the 25th percentile.
 
-    # Ensure a minimum intensity to prevent overly sensitive results or division by zero
+    percentile = 50
+    baseline_intensity_proxy = np.percentile(cool_pixels_intensity, percentile)
+
+    # Ensure a minimum intensity
     baseline_intensity_proxy = max(baseline_intensity_proxy, 50)
 
-    print(f"Calculated Baseline Intensity Proxy: {baseline_intensity_proxy:.2f}", file=sys.stderr)
+    print(f"Calculated Color-Filtered Baseline Intensity Proxy (Median V): {baseline_intensity_proxy:.2f}", file=sys.stderr)
 
     return int(baseline_intensity_proxy)
-
 
 # 🚀 MODIFIED FUNCTION SIGNATURE AND LOGIC
 def run_detection(maintenance_image_path, baseline_image_path, save_folder, threshold_percentage):
     """
     Performs detection and returns results as a dictionary, filtered by temperature deference.
     """
-    # ... (Input validation and setup paths/model as before) ...
 
     # 1. Input validation (check all four arguments)
     if not os.path.exists(maintenance_image_path) or not os.path.exists(baseline_image_path):
@@ -117,7 +136,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
                 intensity_deference = 100 # Default to high deference if baseline is near zero
 
             # We also ensure the YOLO confidence is met (default to 0.5 set in model() call)
-            if score >= 0.5 and intensity_deference >= threshold_percentage:
+            if intensity_deference >= threshold_percentage:
 
                 # --- Anomaly Passes BOTH YOLO Confidence AND Deference Check ---
 
