@@ -20,7 +20,7 @@ const InspectionDetailPage = () => {
     const [error, setError] = useState(null);
     const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
-    const [tempThreshold, setTempThreshold] = useState(10.0);
+    const [tempThreshold, setTempThreshold] = useState(0);
 
     const { user, isAdmin } = useAuth();
 
