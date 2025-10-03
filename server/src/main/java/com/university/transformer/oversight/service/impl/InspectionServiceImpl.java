@@ -1,8 +1,10 @@
 package com.university.transformer.oversight.service.impl;
 
 import com.university.transformer.oversight.dto.InspectionDTO;
+import com.university.transformer.oversight.model.AnomalyDetectionResult;
 import com.university.transformer.oversight.model.Inspection;
 import com.university.transformer.oversight.model.ThermalImage;
+import com.university.transformer.oversight.repository.AnomalyDetectionResultRepository;
 import com.university.transformer.oversight.repository.InspectionRepository;
 import com.university.transformer.oversight.repository.ThermalImageRepository;
 import com.university.transformer.oversight.service.FileStorageService;
@@ -28,6 +30,10 @@ public class InspectionServiceImpl implements InspectionService {
     private ThermalImageRepository thermalImageRepository;
     @Autowired
     private FileStorageService fileStorageService;
+
+    // INJECT THE ANOMALY RESULT REPOSITORY
+    @Autowired
+    private AnomalyDetectionResultRepository anomalyDetectionResultRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(InspectionServiceImpl.class);
 
@@ -55,7 +61,6 @@ public class InspectionServiceImpl implements InspectionService {
                 logger.info("Inspection with ID {} found. Proceeding with native deletion.", id);
 
                 // Find the associated thermal image file to delete from the file system.
-                // We need to do this before the database record is gone.
                 Optional<ThermalImage> thermalImageOptional = thermalImageRepository.findByInspectionId(id);
                 if (thermalImageOptional.isPresent()) {
                     fileStorageService.delete(thermalImageOptional.get().getFileName());
@@ -116,6 +121,7 @@ public class InspectionServiceImpl implements InspectionService {
     }
 
     @Override
+    @Transactional
     public void addThermalImageToInspection(Long inspectionId, MultipartFile file, String condition, String uploader) throws Exception {
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Inspection not found with id: " + inspectionId));
@@ -124,15 +130,21 @@ public class InspectionServiceImpl implements InspectionService {
             throw new RuntimeException("This inspection already has a thermal image.");
         }
 
+        // 1. Store the file and get the unique filename
         String filename = fileStorageService.store(file);
 
         ThermalImage thermalImage = new ThermalImage();
         thermalImage.setFileName(filename);
-//        thermalImage.setFilePath(fileStorageService.getRootLocation().resolve(filename).toString());
+
+        // 2. CRITICAL FIX: Set the file path for the entity (resolves Status 500)
+        thermalImage.setFilePath(fileStorageService.getRootLocation().resolve(filename).toString());
+
         thermalImage.setEnvironmentalCondition(ThermalImage.EnvironmentalCondition.valueOf(condition.toUpperCase()));
         thermalImage.setImageType(ThermalImage.ImageType.MAINTENANCE);
         thermalImage.setUploadTimestamp(LocalDateTime.now());
         thermalImage.setUploaderId(uploader);
+
+        // 3. Set the mandatory relationship
         thermalImage.setInspection(inspection);
 
         thermalImageRepository.save(thermalImage);
@@ -145,10 +157,31 @@ public class InspectionServiceImpl implements InspectionService {
         ThermalImage thermalImage = thermalImageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("ThermalImage not found with id: " + imageId));
 
-        // Get the parent inspection
+        // Get the parent inspection ID and object
+        Long inspectionId = thermalImage.getInspection().getId();
         Inspection inspection = thermalImage.getInspection();
 
-        // Delete the physical file from the server
+        // ***************************************************************
+        // ** FIX: DELETE THE ANOMALY RESULT **
+        // ***************************************************************
+
+        // Find and delete the associated anomaly detection result
+        Optional<AnomalyDetectionResult> resultOptional = anomalyDetectionResultRepository.findByInspectionId(inspectionId);
+
+        resultOptional.ifPresent(result -> {
+            // Delete the physical annotated image file (e.g., from the 'annotated' subdirectory)
+            if (result.getOutputImageName() != null) {
+                fileStorageService.delete(result.getOutputImageName());
+            }
+
+            // Delete the result entity from the database
+            anomalyDetectionResultRepository.delete(result);
+            logger.info("Deleted anomaly detection result and annotated file for Inspection ID: {}", inspectionId);
+        });
+
+        // ***************************************************************
+
+        // Delete the physical original thermal image file from the server
         fileStorageService.delete(thermalImage.getFileName());
 
         // Break the link from the parent inspection

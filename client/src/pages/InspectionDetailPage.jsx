@@ -17,15 +17,17 @@ const InspectionDetailPage = () => {
     const [error, setError] = useState(null);
     const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
+
     const { user, isAdmin } = useAuth();
+
     const [toast, setToast] = useState(null);
     const showOk = (m) => setToast({ type: 'success', message: m });
     const showErr = (m) => setToast({ type: 'error', message: m });
 
-//     const { user, isAdmin } = useAuth(); // User object is used for the logged-in check
     const [anomalyResult, setAnomalyResult] = useState(null);
     const [isDetecting, setIsDetecting] = useState(false);
-    const [timestamp, setTimestamp] = useState(Date.now());
+    const [timestamp, setTimestamp] = useState(Date.now()); // Used to bust browser cache
+
     const detectionTriggeredRef = useRef(false);
 
     // Function to fetch the existing anomaly result if it exists
@@ -51,11 +53,14 @@ const InspectionDetailPage = () => {
             // 1. POST: Trigger the detection script
             const postResponse = await triggerAnomalyDetection(id);
             setAnomalyResult(postResponse.data);
+
+            // 2. CRITICAL FIX: Update the timestamp after the new annotated file is saved.
+            // This forces the browser to bypass the cache and load the new image immediately.
             setTimestamp(new Date().getTime());
 
         } catch (error) {
             console.error('Detection failed:', error.response ? error.response.data : error.message);
-            alert('Anomaly detection failed. Check server logs.');
+            showErr('Anomaly detection failed. Check server logs.');
         } finally {
             setIsDetecting(false);
         }
@@ -86,6 +91,7 @@ const InspectionDetailPage = () => {
                     if (err.response && err.response.status === 404) {
                         setAnomalyResult(null);
 
+                        // Only trigger if this is the first time checking (prevents loop on mount)
                         if (!detectionTriggeredRef.current) {
                             console.log("Image found, but no anomaly result. Triggering detection...");
                             detectionTriggeredRef.current = true;
@@ -99,6 +105,8 @@ const InspectionDetailPage = () => {
                 }
             } else {
                 setAnomalyResult(null);
+                // Reset flag if the image is deleted while the component is mounted
+                detectionTriggeredRef.current = false;
             }
             // --- END ANOMALY CHECK LOGIC ---
 
@@ -114,42 +122,19 @@ const InspectionDetailPage = () => {
         fetchData();
     }, [inspectionId]);
 
-//     const handleDelete = async (imageId) => {
-//         if (confirm("Are you sure you want to delete this thermal image?")) {
-//             try {
-//                 await deleteThermalImage(imageId);
-//                 fetchData();
-//             } catch (err) {
-//                 console.error("Failed to delete image:", err);
-//                 alert("Failed to delete image.");
-//             }
-//         }
-//     };
-
-//     const handleDeleteBaseline = async (transformerId) => {
-//         if (confirm("Are you sure you want to delete the baseline image?")) {
-//             try {
-//                 await deleteBaselineImage(transformerId);
-//                 fetchData();
-//             } catch (err) {
-//                 console.error("Failed to delete baseline image:", err);
-//                 alert("Failed to delete baseline image.");
-//             }
-//         }
-//     };
 
     const handleViewBaselineImage = () => {
         if (transformer) {
-            const imageUrl = `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view`;
+            const imageUrl = `${API_BASE_URL}/api/transformers/${transformer.id}/baseline-image/view`;
             window.open(imageUrl, "_blank");
         }
     };
 
     const handleDelete = async (imageId) => {
-      if (confirm("Delete this thermal image?")) {
+      if (confirm("Delete this thermal image? This will also delete the anomaly detection result.")) {
         try {
           await deleteThermalImage(imageId);
-          showOk('Thermal image deleted');
+          showOk('Thermal image and previous anomaly result deleted.');
           fetchData();
         } catch (err) {
           console.error("Failed to delete image:", err);
@@ -171,20 +156,19 @@ const InspectionDetailPage = () => {
       }
     };
 
-    const handleImageUploadSuccess = () => {
+    // FIX: Explicitly trigger detection after upload instead of just fetching data
+    const handleImageUploadSuccess = async () => {
+        showOk('Thermal image uploaded successfully. Running anomaly detection...');
+
+        // 1. Await the detection process
+        await runAndFetchDetection(inspectionId);
+
+        // 2. CRITICAL STEP: Now that the anomaly result is saved and the image cache is busted
+        // (due to setTimestamp inside runAndFetchDetection), refetch the main component data.
         fetchData();
     };
 
-
-//     const handleViewBaselineImage = () => {
-//         if (transformer) {
-//             const imageUrl = `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view`;
-//             window.open(imageUrl, "_blank");
-//         }
-//     };
-
-//     if (loading) return <p>Loading...</p>;
-    if (loading) return <Spinner label="Loading inspection..." />;
+    if (loading) return <Spinner animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner>;
 
     if (error) return <p className="text-danger">{error}</p>;
     if (!inspection) return <p>Inspection not found.</p>;
@@ -194,7 +178,7 @@ const InspectionDetailPage = () => {
     const hasBaselineImage = transformer && transformer.baselineImageName;
 
     const baselineImageUrl = hasBaselineImage
-        ? `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view?timestamp=${new Date().getTime()}`
+        ? `${API_BASE_URL}/api/transformers/${transformer.id}/baseline-image/view?timestamp=${new Date().getTime()}`
         : '';
     const thermalImageUrl = hasThermalImage ? `${API_BASE_URL}/files/${thermalImage.fileName}` : '';
 
@@ -212,7 +196,6 @@ const InspectionDetailPage = () => {
     };
 
     // --- NEW LOGIC: Determine if the upload component should be visible ---
-    // User is considered "logged in" if the 'user' object exists.
     const isUserLoggedIn = !!user;
     const showThermalUploader = isUserLoggedIn && !hasThermalImage;
     // -------------------------------------------------------------------
@@ -234,7 +217,7 @@ const InspectionDetailPage = () => {
                                 <div className={`badge rounded-pill text-white ${getStatusBadgeColor(inspection.status)} mb-2`}>
                                     {inspection.status}
                                 </div>
-                                {/* BASELINE IMAGE UPLOADER: Only show if user is logged in (implicit in isAdmin, but added 'user' check for clarity) */}
+                                {/* BASELINE IMAGE UPLOADER */}
                                 {isUserLoggedIn && !hasBaselineImage && (
                                     <BaselineImageUploader
                                         transformerId={transformer.id}
@@ -305,7 +288,6 @@ const InspectionDetailPage = () => {
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h4>Thermal Image Comparison</h4>
                         {/* Show detection status/spinner */}
-                        {/* ... (Existing detection status/spinner logic) ... */}
                         {hasThermalImage && (
                             <small className={`fw-bold text-${isDetecting ? 'warning' : anomalyResult ? 'success' : 'muted'}`}>
                                 {isDetecting ? (
@@ -322,7 +304,7 @@ const InspectionDetailPage = () => {
                         )}
                     </div>
                     <Row>
-                        {/* --- Baseline Image Column (NO CHANGE) --- */}
+                        {/* --- Baseline Image Column (VIEW) --- */}
                         <Col md={6}>
                             <Card>
                                 <Card.Header className="d-flex justify-content-between align-items-center">
@@ -335,7 +317,6 @@ const InspectionDetailPage = () => {
                                     {hasBaselineImage ? (
                                         <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
                                     ) : (
-                                        // Placeholder message for Baseline is visible to all
                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
                                             <p className="text-muted">No baseline image available.</p>
                                         </div>
@@ -344,7 +325,8 @@ const InspectionDetailPage = () => {
                             </Card>
                         </Col>
 
-                        {/* --- Current/Analyzed Image Column (MODIFIED LOGIC) --- */}
+                        {/* --- Current/Analyzed Image Column (UPLOAD/VIEW) --- */}
+
                         <Col md={6}>
                             <Card>
                                 <Card.Header className="d-flex justify-content-between align-items-center">
@@ -355,8 +337,20 @@ const InspectionDetailPage = () => {
                                     )}
                                 </Card.Header>
                                 <Card.Body>
-                                    {hasThermalImage ? (
-                                        // 1. SHOW IMAGE: If an image exists, show it to everyone (logged in or not)
+                                    {isDetecting ? (
+                                        // 1. **NEW: NICE LOADING STATE**
+                                        <div
+                                            className="d-flex flex-column align-items-center justify-content-center"
+                                            style={{ minHeight: '300px', backgroundColor: '#f8f9fa', border: '1px dashed #ccc' }}
+                                        >
+                                            <Spinner animation="border" role="status" variant="primary" className="mb-3">
+                                                <span className="visually-hidden">Running Anomaly Detection...</span>
+                                            </Spinner>
+                                            <p className="text-primary fw-bold mb-1">Running Anomaly Detection...</p>
+                                            <small className="text-muted">Analyzing image with YOLO model...</small>
+                                        </div>
+                                    ) : hasThermalImage ? (
+                                        // 2. SHOW IMAGE: Use annotated image if result is ready, else use raw uploaded image
                                         <img
                                             src={anomalyResult
                                                 ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
@@ -366,10 +360,10 @@ const InspectionDetailPage = () => {
                                             style={{ maxWidth: '100%' }}
                                         />
                                     ) : showThermalUploader ? (
-                                        // 2. SHOW UPLOADER: If no image exists AND user is logged in
+                                        // 3. SHOW UPLOADER: If no image exists AND user is logged in
                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
                                     ) : (
-                                        // 3. SHOW PLACEHOLDER: If no image exists AND user is NOT logged in
+                                        // 4. SHOW PLACEHOLDER: If no image exists AND user is NOT logged in
                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
                                             <p className="text-muted">No thermal image available.</p>
                                         </div>
