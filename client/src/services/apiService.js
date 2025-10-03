@@ -76,8 +76,12 @@ export const getAnomalyDetectionResult = (inspectionId) => {
     return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/anomalies`);
 };
 
-export const triggerAnomalyDetection = (inspectionId) => {
-    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`);
+export const triggerAnomalyDetection = (inspectionId, baselineFileName, tempThresholdPercentage) => {
+    const requestBody = {
+            baselineFileName: baselineFileName,
+            tempThresholdPercentage: tempThresholdPercentage
+    };
+    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`, requestBody);
 };
 
 

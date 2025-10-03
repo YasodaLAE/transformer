@@ -20,6 +20,7 @@ const InspectionDetailPage = () => {
     const [error, setError] = useState(null);
     const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
+    const [tempThreshold, setTempThreshold] = useState(10.0);
 
     const { user, isAdmin } = useAuth();
 
@@ -60,13 +61,23 @@ const InspectionDetailPage = () => {
     };
 
     // Function to run the detection and fetch the result (POST then GET)
-    const runAndFetchDetection = async (id) => {
+    const runAndFetchDetection = async (id, currentBaselineImageName, currentTempThreshold) => {
         setIsDetecting(true);
-        setAnomalyResult(null);
+        //setAnomalyResult(null);
+        if (!currentBaselineImageName) {
+                    showErr('Cannot run detection: No baseline image is set for the transformer.');
+                    setIsDetecting(false);
+                    return;
+        }
 
         try {
             // 1. POST: Trigger the detection script
-            const postResponse = await triggerAnomalyDetection(id);
+            //const postResponse = await triggerAnomalyDetection(id);
+            const postResponse = await triggerAnomalyDetection(
+                            id,
+                            currentBaselineImageName,
+                            currentTempThreshold
+            );
             setAnomalyResult(postResponse.data);
 
             // 2. CRITICAL FIX: Update the timestamp after the new annotated file is saved.
@@ -180,6 +191,21 @@ const InspectionDetailPage = () => {
 
         // 2. CRITICAL STEP: Now that the anomaly result is saved, refetch ALL data to refresh component state
         fetchData();
+    };
+
+    const handleRunDetectionClick = async () => {
+            if (!hasThermalImage) {
+                showErr("Please upload a maintenance image first.");
+                return;
+            }
+            if (!hasBaselineImage) {
+                showErr("Please upload a baseline image first.");
+                return;
+            }
+            // Use the current state values
+            await runAndFetchDetection(inspectionId, baselineImageName, tempThreshold);
+            // Refetch all data to refresh status and image details
+            fetchData();
     };
 
     // NEW FUNCTION: Handles saving notes to the server
@@ -332,6 +358,40 @@ const InspectionDetailPage = () => {
                                 )}
                             </small>
                         )}
+                    //new start
+                    {/* 🚀 NEW THRESHOLD INPUT AND RUN BUTTON */}
+                        {hasThermalImage && hasBaselineImage && (
+                            <div className="d-flex align-items-center">
+                                <label htmlFor="tempThreshold" className="me-2 text-muted small">Threshold (%):</label>
+                                <input
+                                    type="number"
+                                    id="tempThreshold"
+                                    value={tempThreshold}
+                                    // 🚀 CRITICAL CHANGE: Trigger re-run on threshold change
+                                    onChange={(e) => {
+                                        const newThreshold = parseFloat(e.target.value) || 0;
+                                        setTempThreshold(newThreshold);
+                                        // Optional: If you want instant re-run:
+                                        // if (!isDetecting) handleRunDetectionClick(newThreshold);
+                                    }}
+                                    min="0"
+                                    step="0.1"
+                                    style={{ width: '80px' }}
+                                    className="form-control form-control-sm me-3"
+                                    disabled={isDetecting}
+                                />
+                                <Button
+                                    variant="success"
+                                    onClick={handleRunDetectionClick} // Dedicated handler
+                                    disabled={isDetecting || !hasThermalImage || !hasBaselineImage}
+                                >
+                                    {isDetecting ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="bi bi-play-fill me-1"></i>}
+                                    Re-Run Detection
+                                </Button>
+                            </div>
+                        )}
+
+
                     </div>
                     <Row>
                         {/* --- Baseline Image Column (VIEW) --- */}

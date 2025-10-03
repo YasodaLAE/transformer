@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import jakarta.transaction.Transactional;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -45,7 +46,7 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
 
     @Override
     @Transactional
-    public AnomalyDetectionResult runDetection(Long inspectionId) throws Exception {
+    public AnomalyDetectionResult runDetection(Long inspectionId, String baselineFileName, Double tempThresholdPercentage) throws Exception {
         // 1. Get the path to the maintenance image
         ThermalImage thermalImage = thermalImageRepository.findByInspectionId(inspectionId)
                 .orElseThrow(() -> new RuntimeException("Thermal (Maintenance) Image not found for inspection ID: " + inspectionId));
@@ -57,11 +58,30 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
                 .toAbsolutePath()
                 .toString();
 
+        if (baselineFileName == null || baselineFileName.isEmpty()) {
+            throw new RuntimeException("Baseline Image file name is required for deference check.");
+        }
+
+        String baselineImagePath = fileStorageService.getRootLocation()
+                .resolve("baseline-images") // <-- CRITICAL ADDITION
+                .resolve(baselineFileName)
+                .toAbsolutePath()
+                .toString(); // e.g., D:/oversight/uploads/baseline-images/baseline_1_...jpg
+
+
+        String outputSaveFolder = Paths.get(storageRootLocation).toAbsolutePath().toString();
+
+        String pythonMaintenancePath = maintenanceImagePath.replace(File.separatorChar, '/');
+        String pythonBaselinePath = baselineImagePath.replace(File.separatorChar, '/');
+        String pythonOutputPath = outputSaveFolder.replace(File.separatorChar, '/');
+
         // 2. Build the Python command
         // Pass the absolute image path and the absolute root storage path
         ProcessBuilder pb = new ProcessBuilder("python", PYTHON_SCRIPT_PATH,
-                maintenanceImagePath,
-                Paths.get(storageRootLocation).toAbsolutePath().toString());
+                pythonMaintenancePath,
+                pythonBaselinePath,
+                pythonOutputPath,
+                String.valueOf(tempThresholdPercentage));
 
         Process p = pb.start();
 
@@ -75,11 +95,18 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         String outputString = output.toString();
 
         int exitCode = p.waitFor();
+
         if (exitCode != 0) {
             // Log error output from Python (for debugging)
             BufferedReader errorReader = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             String errorOutput = errorReader.lines().reduce("", (a, b) -> a + b + "\n");
             logger.error("Python script failed with exit code {}. Error:\n{}", exitCode, errorOutput);
+            Map<String, Object> errorMap = null;
+            try {
+                errorMap = objectMapper.readValue(outputString, new TypeReference<Map<String, Object>>() {});
+            } catch (Exception parseE) {
+                // Ignore parsing error if Python output wasn't valid JSON
+            }
             throw new RuntimeException("Anomaly detection script failed.");
         }
 

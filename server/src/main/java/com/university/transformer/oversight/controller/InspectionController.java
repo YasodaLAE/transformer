@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
+import com.university.transformer.oversight.dto.DetectionRequest; // 🚀 NEW IMPORT
 import java.util.Optional;
+
 
 import com.university.transformer.oversight.service.AnomalyDetectionService;
 import org.springframework.core.io.Resource;
@@ -106,9 +108,9 @@ public class InspectionController {
 
     // 1. API to trigger detection (POST)
     @PostMapping("/{inspectionId}/detect-anomalies")
-    public ResponseEntity<AnomalyDetectionResult> detectAnomalies(@PathVariable Long inspectionId) {
+    public ResponseEntity<AnomalyDetectionResult> detectAnomalies(@PathVariable Long inspectionId, @RequestBody DetectionRequest request) {
         try {
-            AnomalyDetectionResult result = anomalyDetectionService.runDetection(inspectionId);
+            AnomalyDetectionResult result = anomalyDetectionService.runDetection(inspectionId, request.getBaselineFileName(), request.getTempThresholdPercentage());
             return ResponseEntity.ok(result);
         } catch (RuntimeException e) {
             // RuntimeException is used for known errors (e.g., Image not found, script failed)
