@@ -6,6 +6,7 @@ import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import Toast from '../components/Toast';
+import ZoomableImageModal from '../components/ZoomableImageModal'; // NEW IMPORT
 
 
 const InspectionDetailPage = () => {
@@ -29,6 +30,18 @@ const InspectionDetailPage = () => {
     const [timestamp, setTimestamp] = useState(Date.now()); // Used to bust browser cache
 
     const detectionTriggeredRef = useRef(false);
+
+    // NEW STATE & HANDLERS FOR ZOOM MODAL
+    const [zoomModal, setZoomModal] = useState({ show: false, url: '', title: '' });
+
+    const handleOpenZoomModal = (url, title) => {
+        setZoomModal({ show: true, url: url, title: title });
+    };
+
+    const handleCloseZoomModal = () => {
+        setZoomModal({ show: false, url: '', title: '' });
+    };
+    // END NEW STATE & HANDLERS
 
     // Function to fetch the existing anomaly result if it exists
     const fetchAnomalyResult = async (id) => {
@@ -163,8 +176,7 @@ const InspectionDetailPage = () => {
         // 1. Await the detection process
         await runAndFetchDetection(inspectionId);
 
-        // 2. CRITICAL STEP: Now that the anomaly result is saved and the image cache is busted
-        // (due to setTimestamp inside runAndFetchDetection), refetch the main component data.
+        // 2. CRITICAL STEP: Now that the anomaly result is saved, refetch ALL data to refresh component state
         fetchData();
     };
 
@@ -210,7 +222,6 @@ const InspectionDetailPage = () => {
                             {/* Left side: Inspection Details */}
                             <div className="d-flex flex-column">
                                 <h3 className="fw-bold">{inspection.inspectionNo}</h3>
-                                {/* ... (Other inspection details) ... */}
                             </div>
                             {/* Right side: Status and Baseline Image Section */}
                             <div className="d-flex flex-column align-items-end">
@@ -224,7 +235,7 @@ const InspectionDetailPage = () => {
                                         onUploadSuccess={fetchData}
                                     />
                                 )}
-                                {/* ... (Baseline Image View/Delete logic) ... */}
+                                {/* Baseline Image View/Delete logic */}
                                 {hasBaselineImage && (
                                     <small className="text-muted mt-2 d-flex align-items-center">
                                         Baseline:
@@ -260,7 +271,6 @@ const InspectionDetailPage = () => {
 
                         {/* Summary Details Row */}
                         <Row className="text-center">
-                            {/* ... (Existing Summary Details) ... */}
                             <Col className="border-end py-2">
                                 <h6 className="mb-0 fw-bold">{transformer ? transformer.transformerId : inspection.transformerNo}</h6>
                                 <small className="text-muted">Transformer No</small>
@@ -326,7 +336,6 @@ const InspectionDetailPage = () => {
                         </Col>
 
                         {/* --- Current/Analyzed Image Column (UPLOAD/VIEW) --- */}
-
                         <Col md={6}>
                             <Card>
                                 <Card.Header className="d-flex justify-content-between align-items-center">
@@ -338,7 +347,7 @@ const InspectionDetailPage = () => {
                                 </Card.Header>
                                 <Card.Body>
                                     {isDetecting ? (
-                                        // 1. **NEW: NICE LOADING STATE**
+                                        // 1. **NICE LOADING STATE**
                                         <div
                                             className="d-flex flex-column align-items-center justify-content-center"
                                             style={{ minHeight: '300px', backgroundColor: '#f8f9fa', border: '1px dashed #ccc' }}
@@ -350,20 +359,31 @@ const InspectionDetailPage = () => {
                                             <small className="text-muted">Analyzing image with YOLO model...</small>
                                         </div>
                                     ) : hasThermalImage ? (
-                                        // 2. SHOW IMAGE: Use annotated image if result is ready, else use raw uploaded image
-                                        <img
-                                            src={anomalyResult
+                                        // 2. SHOW IMAGE: Make the image clickable and render
+                                        <div
+                                            onClick={() => handleOpenZoomModal(
+                                                anomalyResult
                                                 ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
-                                                : thermalImageUrl
-                                            }
-                                            alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"}
-                                            style={{ maxWidth: '100%' }}
-                                        />
+                                                : thermalImageUrl,
+                                                anomalyResult ? 'Analyzed Image' : 'Current Maintenance Image'
+                                            )}
+                                            style={{ cursor: 'zoom-in' }} // Add zoom cursor for visual cue
+                                        >
+                                            <img
+                                                src={anomalyResult
+                                                    ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
+                                                    : thermalImageUrl
+                                                }
+                                                alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"}
+                                                style={{ maxWidth: '100%' }}
+                                            />
+                                            <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small>
+                                        </div>
                                     ) : showThermalUploader ? (
-                                        // 3. SHOW UPLOADER: If no image exists AND user is logged in
+                                        // 3. SHOW UPLOADER
                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
                                     ) : (
-                                        // 4. SHOW PLACEHOLDER: If no image exists AND user is NOT logged in
+                                        // 4. SHOW PLACEHOLDER
                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
                                             <p className="text-muted">No thermal image available.</p>
                                         </div>
@@ -402,6 +422,15 @@ const InspectionDetailPage = () => {
                     </Card.Body>
                 </Card>
             )}
+
+            {/* FINAL MODAL COMPONENT */}
+            <ZoomableImageModal
+                show={zoomModal.show}
+                onClose={handleCloseZoomModal}
+                imageUrl={zoomModal.url}
+                title={zoomModal.title}
+            />
+
         {toast && <Toast {...toast} onClose={() => setToast(null)} />}
             {/* END Bounding Box Details Section */}
         </div>
