@@ -94,6 +94,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
     results = model(maintenance_image_path, conf=0.5, verbose=False)
 
     im_bgr = cv2.imread(maintenance_image_path)
+
     if im_bgr is None:
         return {"error": f"Error: Could not read maintenance image at {maintenance_image_path}", "overall_status": "UNCERTAIN"}
 
@@ -104,6 +105,9 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
     base_filename = os.path.basename(maintenance_image_path)
     name, ext = os.path.splitext(base_filename)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    im_hsv = cv2.cvtColor(im_bgr, cv2.COLOR_BGR2HSV)
+    v_channel = im_bgr[:, :, 2] # Extract the V-channel (Intensity)
 
     # Process the results
     for i, r in enumerate(results):
@@ -116,16 +120,22 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
 
         for box_number, (box, score, class_id) in enumerate(zip(boxes, scores, class_ids)):
             display_box_number = box_number + 1
+
             x_min, y_min, x_max, y_max = map(int, box)
+            roi_v_channel = v_channel[y_min:y_max, x_min:x_max]
+            if roi_v_channel.size == 0:
+                max_intensity_M = 0
+            else:
+                # np.max on a uint8 array will return an integer.
+                max_intensity_M = int(np.max(roi_v_channel))
 
-            # --- CRITICAL NEW STEP: Calculate Max Anomaly Intensity (I_M Proxy) ---
-            roi = im_bgr[y_min:y_max, x_min:x_max]
-
-            # Find the absolute highest channel value (0-255) in the ROI as the HOTSPOT PROXY
-            max_intensity_M = int(np.max(roi))
+#             # --- CRITICAL NEW STEP: Calculate Max Anomaly Intensity (I_M Proxy) ---
+#             roi = im_bgr[y_min:y_max, x_min:x_max]
+#
+#             # Find the absolute highest channel value (0-255) in the ROI as the HOTSPOT PROXY
+#             max_intensity_M = int(np.max(roi))
 
             # ----------------------------------------------------------------------
-
             # --- APPLY DEFERENCE CHECK (FR2.1) ---
 
             # Calculate the percentage difference from the Baseline Intensity Proxy
@@ -135,8 +145,14 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
             else:
                 intensity_deference = 100 # Default to high deference if baseline is near zero
 
+            #print(f"Anomaly {box_number+1}: Deference={intensity_deference:.2f}%, Threshold={threshold_percentage:.2f}%", file=sys.stderr)
+#             print(f"Maintenance Image Shape: {im_bgr.shape}, Dtype: {im_bgr.dtype}", file=sys.stderr)
+#             print(f"Maintenance Image Max Value: {np.max(im_bgr)}", file=sys.stderr)
+#
+
             # We also ensure the YOLO confidence is met (default to 0.5 set in model() call)
             if intensity_deference >= threshold_percentage:
+#             if True:
 
                 # --- Anomaly Passes BOTH YOLO Confidence AND Deference Check ---
 
@@ -147,9 +163,12 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
                 anomaly_data = {
                     "id": display_box_number,
                     "type": class_label,
+                    #"type": ,
                     "location": {"x_min" : x_min, "y_min": y_min, "x_max" : x_max, "y_max" : y_max},
                     "severity_score": severity_score_int,
+#                     "severity_score": baseline_intensity_B,
                     "confidence": round(float(score), 4),
+#                     "confidence": max_intensity_M,
 #                     "intensity_deference_percent": round(intensity_deference, 2) # NEW METADATA
                 }
                 final_anomalies_data.append(anomaly_data)
