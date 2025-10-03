@@ -48,32 +48,52 @@ public class InspectionServiceImpl implements InspectionService {
         return inspectionRepository.save(inspection);
     }
 
+    // ***************************************************************
+    // ** THE FIX IS IN THIS METHOD **
+    // ***************************************************************
     @Override
     @Transactional
     public void deleteInspection(Long id) {
         logger.info("Attempting to delete inspection with ID: {}", id);
 
         try {
-            // Find the inspection to get its data before deleting the record
+            // 1. Find the inspection (the parent)
             Optional<Inspection> inspectionOptional = inspectionRepository.findById(id);
 
             if (inspectionOptional.isPresent()) {
-                logger.info("Inspection with ID {} found. Proceeding with native deletion.", id);
+                logger.info("Inspection with ID {} found. Proceeding with full cleanup.", id);
 
-                // Find the associated thermal image file to delete from the file system.
+                // --- STEP 2: DELETE ANOMALY RESULT (The common blocking record) ---
+                Optional<AnomalyDetectionResult> resultOptional = anomalyDetectionResultRepository.findByInspectionId(id);
+                resultOptional.ifPresent(result -> {
+                    // Delete the annotated file first
+                    if (result.getOutputImageName() != null) {
+                        fileStorageService.delete(result.getOutputImageName());
+                    }
+                    anomalyDetectionResultRepository.delete(result);
+                    logger.info("Associated anomaly detection result and annotated file deleted.");
+                });
+
+                // --- STEP 3: DELETE THERMAL IMAGE RECORD and FILE ---
                 Optional<ThermalImage> thermalImageOptional = thermalImageRepository.findByInspectionId(id);
                 if (thermalImageOptional.isPresent()) {
-                    fileStorageService.delete(thermalImageOptional.get().getFileName());
-                    logger.info("Associated thermal image file deleted successfully from file system.");
+                    ThermalImage thermalImage = thermalImageOptional.get();
+
+                    // Delete the original thermal image file
+                    fileStorageService.delete(thermalImage.getFileName());
+                    logger.info("Associated thermal image file deleted from file system.");
+
+                    // Delete the ThermalImage database record
+                    thermalImageRepository.delete(thermalImage);
+                    logger.info("ThermalImage record deleted.");
                 }
 
-                // First, delete the thermal image record using the native query
-                inspectionRepository.deleteThermalImageByInspectionId(id);
+                // --- STEP 4: DELETE PARENT INSPECTION ---
+                // After manually deleting all children, we can safely delete the parent.
+                inspectionRepository.deleteById(id); // Use standard JPA method for clarity
 
-                // Then, delete the inspection record using the native query
-                inspectionRepository.deleteInspectionById(id);
+                logger.info("Inspection with ID {} and all associated records successfully deleted.", id);
 
-                logger.info("Inspection with ID {} and associated records successfully deleted via native query.", id);
             } else {
                 logger.warn("Attempted to delete non-existent inspection with ID {}.", id);
                 throw new RuntimeException("Inspection not found with id: " + id);
@@ -86,6 +106,8 @@ public class InspectionServiceImpl implements InspectionService {
             throw new RuntimeException("Failed to delete inspection due to an internal error.", e);
         }
     }
+    // ***************************************************************
+    // ***************************************************************
 
     @Override
     public List<InspectionDTO> getAllInspections() {
