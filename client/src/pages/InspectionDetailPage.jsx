@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById } from '../services/apiService';
+import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner } from 'react-bootstrap';
@@ -9,6 +9,7 @@ import Toast from '../components/Toast';
 
 
 const InspectionDetailPage = () => {
+    const API_BASE_URL = 'http://localhost:8080';
     const { inspectionId } = useParams();
     const [inspection, setInspection] = useState(null);
     const [transformer, setTransformer] = useState(null);
@@ -21,6 +22,44 @@ const InspectionDetailPage = () => {
     const showOk = (m) => setToast({ type: 'success', message: m });
     const showErr = (m) => setToast({ type: 'error', message: m });
 
+    const { user, isAdmin } = useAuth(); // User object is used for the logged-in check
+    const [anomalyResult, setAnomalyResult] = useState(null);
+    const [isDetecting, setIsDetecting] = useState(false);
+    const [timestamp, setTimestamp] = useState(Date.now());
+    const detectionTriggeredRef = useRef(false);
+
+    // Function to fetch the existing anomaly result if it exists
+    const fetchAnomalyResult = async (id) => {
+        try {
+            const resultResponse = await getAnomalyDetectionResult(id);
+            setAnomalyResult(resultResponse.data);
+        } catch (err) {
+            if (err.response && err.response.status === 404) {
+                setAnomalyResult(null);
+            } else {
+                console.error('Failed to fetch anomaly result:', err);
+            }
+        }
+    };
+
+    // Function to run the detection and fetch the result (POST then GET)
+    const runAndFetchDetection = async (id) => {
+        setIsDetecting(true);
+        setAnomalyResult(null);
+
+        try {
+            // 1. POST: Trigger the detection script
+            const postResponse = await triggerAnomalyDetection(id);
+            setAnomalyResult(postResponse.data);
+            setTimestamp(new Date().getTime());
+
+        } catch (error) {
+            console.error('Detection failed:', error.response ? error.response.data : error.message);
+            alert('Anomaly detection failed. Check server logs.');
+        } finally {
+            setIsDetecting(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -33,7 +72,36 @@ const InspectionDetailPage = () => {
                 setTransformer(transformerResponse.data);
                 setBaselineImageName(transformerResponse.data.baselineImageName);
             }
-        
+
+            // --- ANOMALY CHECK LOGIC ---
+            if (inspectionResponse.data.thermalImage) {
+                try {
+                    // A. Attempt to fetch existing result directly
+                    const resultResponse = await getAnomalyDetectionResult(inspectionId);
+                    setAnomalyResult(resultResponse.data);
+                    detectionTriggeredRef.current = true;
+
+                } catch (err) {
+                    // B. Result was NOT found (404 caught here)
+                    if (err.response && err.response.status === 404) {
+                        setAnomalyResult(null);
+
+                        if (!detectionTriggeredRef.current) {
+                            console.log("Image found, but no anomaly result. Triggering detection...");
+                            detectionTriggeredRef.current = true;
+                            await runAndFetchDetection(inspectionId);
+                        }
+
+                    } else {
+                        console.error('Failed to fetch anomaly result:', err);
+                        setAnomalyResult(null);
+                    }
+                }
+            } else {
+                setAnomalyResult(null);
+            }
+            // --- END ANOMALY CHECK LOGIC ---
+
         } catch (err) {
             setError('Failed to fetch inspection details.');
             console.error(err);
@@ -103,6 +171,17 @@ const InspectionDetailPage = () => {
       }
     };
 
+    const handleImageUploadSuccess = () => {
+        fetchData();
+    };
+
+
+    const handleViewBaselineImage = () => {
+        if (transformer) {
+            const imageUrl = `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view`;
+            window.open(imageUrl, "_blank");
+        }
+    };
 
 //     if (loading) return <p>Loading...</p>;
     if (loading) return <Spinner label="Loading inspection..." />;
@@ -117,7 +196,7 @@ const InspectionDetailPage = () => {
     const baselineImageUrl = hasBaselineImage
         ? `http://localhost:8080/api/transformers/${transformer.id}/baseline-image/view?timestamp=${new Date().getTime()}`
         : '';
-    const thermalImageUrl = hasThermalImage ? `http://localhost:8080/files/${thermalImage.fileName}` : '';
+    const thermalImageUrl = hasThermalImage ? `${API_BASE_URL}/files/${thermalImage.fileName}` : '';
 
     const getStatusBadgeColor = (status) => {
         switch (status.toLowerCase()) {
@@ -132,6 +211,12 @@ const InspectionDetailPage = () => {
         }
     };
 
+    // --- NEW LOGIC: Determine if the upload component should be visible ---
+    // User is considered "logged in" if the 'user' object exists.
+    const isUserLoggedIn = !!user;
+    const showThermalUploader = isUserLoggedIn && !hasThermalImage;
+    // -------------------------------------------------------------------
+
     return (
         <div className="container-fluid">
             {transformer && (
@@ -142,32 +227,27 @@ const InspectionDetailPage = () => {
                             {/* Left side: Inspection Details */}
                             <div className="d-flex flex-column">
                                 <h3 className="fw-bold">{inspection.inspectionNo}</h3>
-                                <div className="d-flex align-items-center mt-1">
-{/*                                     <small className="text-muted mt-2 d-flex align-items-center"> */}
-{/*                                         Last updated: */}
-{/*                                         <span className="text-primary ms-2"> */}
-{/*                                             {inspection.lastUpdated ? new Date(inspection.lastUpdated).toLocaleString() : 'N/A'} */}
-{/*                                         </span> */}
-{/*                                     </small> */}
-                                </div>
+                                {/* ... (Other inspection details) ... */}
                             </div>
                             {/* Right side: Status and Baseline Image Section */}
                             <div className="d-flex flex-column align-items-end">
                                 <div className={`badge rounded-pill text-white ${getStatusBadgeColor(inspection.status)} mb-2`}>
                                     {inspection.status}
                                 </div>
-                                {isAdmin && !hasBaselineImage && (
+                                {/* BASELINE IMAGE UPLOADER: Only show if user is logged in (implicit in isAdmin, but added 'user' check for clarity) */}
+                                {isUserLoggedIn && !hasBaselineImage && (
                                     <BaselineImageUploader
                                         transformerId={transformer.id}
                                         onUploadSuccess={fetchData}
                                     />
                                 )}
+                                {/* ... (Baseline Image View/Delete logic) ... */}
                                 {hasBaselineImage && (
                                     <small className="text-muted mt-2 d-flex align-items-center">
                                         Baseline:
                                         <span className="text-primary ms-2 me-2">{baselineImageName}</span>
                                         <div className="d-flex align-items-center ms-2">
-                                            {/* View button */}
+                                            {/* View button (visible to everyone) */}
                                             <Button
                                                 variant="outline-info"
                                                 size="sm"
@@ -177,7 +257,7 @@ const InspectionDetailPage = () => {
                                             >
                                                 <i className="bi bi-eye-fill"></i>
                                             </Button>
-                                            {/* Delete button */}
+                                            {/* Delete button (only visible to isAdmin) */}
                                             {isAdmin && (
                                             <Button
                                                 variant="outline-danger"
@@ -197,6 +277,7 @@ const InspectionDetailPage = () => {
 
                         {/* Summary Details Row */}
                         <Row className="text-center">
+                            {/* ... (Existing Summary Details) ... */}
                             <Col className="border-end py-2">
                                 <h6 className="mb-0 fw-bold">{transformer ? transformer.transformerId : inspection.transformerNo}</h6>
                                 <small className="text-muted">Transformer No</small>
@@ -219,78 +300,116 @@ const InspectionDetailPage = () => {
             )}
 
             {/* Thermal Image Comparison Section */}
-            {hasThermalImage ? (
-                <>
-                    <Card className="rounded-4 shadow-sm">
-                        <Card.Body>
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h4>Thermal Image Comparison</h4>
-                            </div>
-                            <Row>
-                                <Col md={6}>
-                                    <Card>
-                                        <Card.Header className="d-flex justify-content-between align-items-center">
-                                            Baseline
-                                            {isAdmin && hasBaselineImage && (
-                                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)}>Delete</Button>
-                                            )}
-                                        </Card.Header>
-                                        <Card.Body className="text-center">
-                                            {hasBaselineImage ? (
-                                                <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
-                                            ) : (
-                                                <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
-                                                    <p className="text-muted">No baseline image available.</p>
-                                                </div>
-                                            )}
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                                <Col md={6}>
-                                    <Card>
-                                        <Card.Header className="d-flex justify-content-between align-items-center">
-                                            Current
-                                            {isAdmin && (
-                                            <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
-                                            )}
-                                        </Card.Header>
-                                        <Card.Body>
-                                            <img src={thermalImageUrl} alt="Current Thermal" style={{ maxWidth: '100%' }} />
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            </Row>
-                        </Card.Body>
-                    </Card>
-
-{/*                     {!hasBaselineImage && ( */}
-{/*                         <Card className="mt-4 rounded-4 shadow-sm"> */}
-{/*                             <Card.Body> */}
-{/*                                 <p>A baseline image is required for a full comparison.</p> */}
-{/*                                 <BaselineImageUploader */}
-{/*                                     show={showBaselineModal} */}
-{/*                                     handleClose={() => setShowBaselineModal(false)} */}
-{/*                                     onUploadSuccess={fetchData} */}
-{/*                                     transformerId={inspection.transformerDbId} */}
-{/*                                 /> */}
-{/*                             </Card.Body> */}
-{/*                         </Card> */}
-{/*                     )} */}
-                </>
-            ) : (
-                <Card className="mb-4 rounded-4 shadow-sm">
-                    <Card.Body>
-                        {isAdmin ? (
-                        <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={fetchData} />
-                        ) : (
-                            <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
-                                <p className="text-muted text-center">No thermal images uploaded yet.</p>
-                            </div>
+            <Card className="rounded-4 shadow-sm mb-4">
+                <Card.Body>
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Thermal Image Comparison</h4>
+                        {/* Show detection status/spinner */}
+                        {/* ... (Existing detection status/spinner logic) ... */}
+                        {hasThermalImage && (
+                            <small className={`fw-bold text-${isDetecting ? 'warning' : anomalyResult ? 'success' : 'muted'}`}>
+                                {isDetecting ? (
+                                    <>
+                                        <Spinner animation="border" size="sm" className="me-2" />
+                                        Running Anomaly Detection...
+                                    </>
+                                ) : anomalyResult ? (
+                                    `Detection Complete`
+                                ) : (
+                                    'Detection Pending/Not Run'
+                                )}
+                            </small>
                         )}
+                    </div>
+                    <Row>
+                        {/* --- Baseline Image Column (NO CHANGE) --- */}
+                        <Col md={6}>
+                            <Card>
+                                <Card.Header className="d-flex justify-content-between align-items-center">
+                                    Baseline
+                                    {isAdmin && hasBaselineImage && (
+                                        <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)}>Delete</Button>
+                                    )}
+                                </Card.Header>
+                                <Card.Body className="text-center">
+                                    {hasBaselineImage ? (
+                                        <img src={baselineImageUrl} alt="Baseline" style={{ maxWidth: '100%' }} />
+                                    ) : (
+                                        // Placeholder message for Baseline is visible to all
+                                        <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
+                                            <p className="text-muted">No baseline image available.</p>
+                                        </div>
+                                    )}
+                                </Card.Body>
+                            </Card>
+                        </Col>
+
+                        {/* --- Current/Analyzed Image Column (MODIFIED LOGIC) --- */}
+                        <Col md={6}>
+                            <Card>
+                                <Card.Header className="d-flex justify-content-between align-items-center">
+                                    {anomalyResult ? 'Analyzed Image' : 'Current Maintenance Image'}
+                                    {/* Delete button only visible to isAdmin and if image exists */}
+                                    {isAdmin && hasThermalImage && (
+                                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
+                                    )}
+                                </Card.Header>
+                                <Card.Body>
+                                    {hasThermalImage ? (
+                                        // 1. SHOW IMAGE: If an image exists, show it to everyone (logged in or not)
+                                        <img
+                                            src={anomalyResult
+                                                ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
+                                                : thermalImageUrl
+                                            }
+                                            alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"}
+                                            style={{ maxWidth: '100%' }}
+                                        />
+                                    ) : showThermalUploader ? (
+                                        // 2. SHOW UPLOADER: If no image exists AND user is logged in
+                                        <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
+                                    ) : (
+                                        // 3. SHOW PLACEHOLDER: If no image exists AND user is NOT logged in
+                                        <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
+                                            <p className="text-muted">No thermal image available.</p>
+                                        </div>
+                                    )}
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    </Row>
+                </Card.Body>
+            </Card>
+            {/* END Thermal Image Comparison Section */}
+
+
+            {/* --- Bounding Box Details Section --- */}
+            {anomalyResult && anomalyResult.detectionJsonOutput && (
+                <Card className="mt-4 rounded-4 shadow-sm">
+                    <Card.Body>
+                        <h4>Anomaly Details ({JSON.parse(anomalyResult.detectionJsonOutput || '[]').length} Detected)</h4>
+                        <ul className="list-group list-group-flush">
+                            {/* Parse the JSON string from detectionJsonOutput and map the list */}
+                            {JSON.parse(anomalyResult.detectionJsonOutput || '[]').map((anomaly, index) => (
+                                <li key={index} className="list-group-item">
+                                    <strong>Error {index + 1}:</strong>
+                                    <span className={`badge ms-2 ${anomaly.type === 'Faulty' ? 'bg-danger' : 'bg-warning'}`}>
+                                        {anomaly.type}
+                                    </span>
+                                    <br/>
+                                    <small className="text-muted">
+                                        Coordinates: ({anomaly.location.x_min}, {anomaly.location.y_min}) to ({anomaly.location.x_max}, {anomaly.location.y_max})
+                                        | Confidence: {anomaly.confidence}
+                                        | Severity Score: {anomaly.severity_score}
+                                    </small>
+                                </li>
+                            ))}
+                        </ul>
                     </Card.Body>
                 </Card>
             )}
         {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+            {/* END Bounding Box Details Section */}
         </div>
 
 
