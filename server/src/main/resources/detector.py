@@ -7,7 +7,8 @@ from datetime import datetime
 import sys
 
 # --- CONFIGURATION (Move hardcoded values to the top or arguments) ---
-MODEL_PATH = r"/Users/kavindujayathissa/Desktop/Academics/Semester 07/EN3350 Software Design/phase 2/best.pt"
+# MODEL_PATH = r"/Users/kavindujayathissa/Desktop/Academics/Semester 07/EN3350 Software Design/phase 2/best.pt"
+MODEL_PATH = r"./server/src/main/resources/BestforNow.pt"
 
 SEVERITY_MAP = {
     'Potentially Faulty': 1,
