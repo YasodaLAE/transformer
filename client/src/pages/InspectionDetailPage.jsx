@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-// IMPORT THE updateInspection API method from apiService.js
 import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
-import { Card, Row, Col, Button, Spinner } from 'react-bootstrap';
+import { Card, Row, Col, Button, Spinner, Form } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import Toast from '../components/Toast';
 import ZoomableImageModal from '../components/ZoomableImageModal';
-import NotesCard from '../components/NotesCard'; // NEW IMPORT
+import NotesCard from '../components/NotesCard';
 
 
 const InspectionDetailPage = () => {
@@ -21,6 +20,8 @@ const InspectionDetailPage = () => {
     const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
 
+    const [tempThreshold, setTempThreshold] = useState(0.5);
+
     const { user, isAdmin } = useAuth();
 
     const [toast, setToast] = useState(null);
@@ -29,7 +30,7 @@ const InspectionDetailPage = () => {
 
     const [anomalyResult, setAnomalyResult] = useState(null);
     const [isDetecting, setIsDetecting] = useState(false);
-    const [timestamp, setTimestamp] = useState(Date.now()); // Used to bust browser cache
+    const [timestamp, setTimestamp] = useState(Date.now());
 
     const detectionTriggeredRef = useRef(false);
 
@@ -60,17 +61,25 @@ const InspectionDetailPage = () => {
     };
 
     // Function to run the detection and fetch the result (POST then GET)
-    const runAndFetchDetection = async (id) => {
+    const runAndFetchDetection = async (id, currentBaselineImageName, currentTempThreshold) => {
         setIsDetecting(true);
-        setAnomalyResult(null);
+
+        if (!currentBaselineImageName) {
+                    showErr('Cannot run detection: No baseline image is set for the transformer.');
+                    setIsDetecting(false);
+                    return;
+        }
 
         try {
-            // 1. POST: Trigger the detection script
-            const postResponse = await triggerAnomalyDetection(id);
+            // 1. POST: Trigger the detection script with parameters
+            const postResponse = await triggerAnomalyDetection(
+                            id,
+                            currentBaselineImageName,
+                            currentTempThreshold
+            );
             setAnomalyResult(postResponse.data);
 
-            // 2. CRITICAL FIX: Update the timestamp after the new annotated file is saved.
-            // This forces the browser to bypass the cache and load the new image immediately.
+            // 2. CRITICAL FIX: Update the timestamp to force image cache bust
             setTimestamp(new Date().getTime());
 
         } catch (error) {
@@ -87,10 +96,12 @@ const InspectionDetailPage = () => {
             const inspectionResponse = await getInspectionById(inspectionId);
             setInspection(inspectionResponse.data);
 
+            let currentBaselineName = '';
             if (inspectionResponse.data.transformerDbId) {
                 const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
                 setTransformer(transformerResponse.data);
-                setBaselineImageName(transformerResponse.data.baselineImageName);
+                currentBaselineName = transformerResponse.data.baselineImageName;
+                setBaselineImageName(currentBaselineName);
             }
 
             // --- ANOMALY CHECK LOGIC ---
@@ -110,7 +121,8 @@ const InspectionDetailPage = () => {
                         if (!detectionTriggeredRef.current) {
                             console.log("Image found, but no anomaly result. Triggering detection...");
                             detectionTriggeredRef.current = true;
-                            await runAndFetchDetection(inspectionId);
+                            // Set a default threshold for the initial run
+                            await runAndFetchDetection(inspectionId, currentBaselineName, 0.5);
                         }
 
                     } else {
@@ -120,7 +132,6 @@ const InspectionDetailPage = () => {
                 }
             } else {
                 setAnomalyResult(null);
-                // Reset flag if the image is deleted while the component is mounted
                 detectionTriggeredRef.current = false;
             }
             // --- END ANOMALY CHECK LOGIC ---
@@ -175,27 +186,41 @@ const InspectionDetailPage = () => {
     const handleImageUploadSuccess = async () => {
         showOk('Thermal image uploaded successfully. Running anomaly detection...');
 
-        // 1. Await the detection process
-        await runAndFetchDetection(inspectionId);
+        // Use the current threshold set by the slider for the run
+        await runAndFetchDetection(inspectionId, baselineImageName, tempThreshold);
 
-        // 2. CRITICAL STEP: Now that the anomaly result is saved, refetch ALL data to refresh component state
+        // Refetch ALL data to refresh component state
         fetchData();
     };
 
-    // NEW FUNCTION: Handles saving notes to the server
+    const handleRunDetectionClick = async () => {
+        const currentThreshold = parseFloat(tempThreshold);
+
+        if (!hasThermalImage) {
+            showErr("Please upload a maintenance image first.");
+            return;
+        }
+        if (!hasBaselineImage) {
+            showErr("Please upload a baseline image first.");
+            return;
+        }
+        await runAndFetchDetection(inspectionId, baselineImageName, currentThreshold);
+        fetchData();
+    };
+
+    // Handles saving notes to the server
     const handleSaveNotes = async (id, newNotes) => {
         if (!inspection) return;
 
         // Create an updated inspection object
         const updatedInspection = {
             ...inspection,
-            notes: newNotes, // Overwrite the notes field
+            notes: newNotes,
         };
 
-        // Send the update to the server
         await updateInspection(id, updatedInspection);
 
-        // Update local state to reflect new notes immediately without full fetch
+        // Update local state to reflect new notes immediately
         setInspection(updatedInspection);
     };
 
@@ -227,7 +252,7 @@ const InspectionDetailPage = () => {
         }
     };
 
-    // --- NEW LOGIC: Determine if the upload component should be visible ---
+    // --- LOGIC: Determine if the upload component should be visible ---
     const isUserLoggedIn = !!user;
     const showThermalUploader = isUserLoggedIn && !hasThermalImage;
     // -------------------------------------------------------------------
@@ -316,8 +341,9 @@ const InspectionDetailPage = () => {
             <Card className="rounded-4 shadow-sm mb-4">
                 <Card.Body>
                     <div className="d-flex justify-content-between align-items-center mb-3">
+
+                        {/* LEFT SIDE: Status and Title */}
                         <h4>Thermal Image Comparison</h4>
-                        {/* Show detection status/spinner */}
                         {hasThermalImage && (
                             <small className={`fw-bold text-${isDetecting ? 'warning' : anomalyResult ? 'success' : 'muted'}`}>
                                 {isDetecting ? (
@@ -331,6 +357,83 @@ const InspectionDetailPage = () => {
                                     'Detection Pending/Not Run'
                                 )}
                             </small>
+                        )}
+
+                    {/* FIXED THRESHOLD CONTROL: Slider + Numeric Input for Precision */}
+                        {hasThermalImage && hasBaselineImage && (
+                            <div className="d-flex align-items-center bg-light p-2 rounded-3 border">
+
+                                <label className="me-3 text-dark small fw-bold text-nowrap">
+                                    Temperature Difference:
+                                </label>
+
+                                {/* SLIDER INPUT (Visual Adjustment) */}
+                                <Form.Range
+                                    id="tempThresholdSlider"
+                                    value={tempThreshold}
+                                    onChange={(e) => setTempThreshold(parseFloat(e.target.value))}
+                                    min="0.0"
+                                    max="1.0"
+                                    step="0.01" // Increased precision to 1% steps
+                                    style={{ width: '150px' }}
+                                    className="me-3"
+                                    disabled={isDetecting}
+                                />
+
+                                {/* CUSTOM STEPPER CONTROL GROUP */}
+                                <div className="input-group input-group-sm me-3" style={{ width: '100px', height: '31px' }}>
+
+                                    {/* MINUS BUTTON (-) */}
+                                    <Button
+                                        variant="outline-secondary"
+                                        onClick={() => setTempThreshold(t => Math.max(0, t - 0.01))}
+                                        disabled={isDetecting || tempThreshold <= 0.01}
+                                        style={{ width: '25px' }}
+                                    >
+                                        <i className="bi bi-dash-lg"></i>
+                                    </Button>
+
+                                    {/* NUMERIC INPUT (Precision Entry - Added no-spinner class) */}
+                                    <Form.Control
+                                        type="number"
+                                        value={Math.round(tempThreshold * 100)} // Display as percentage (0-100)
+                                        onChange={(e) => {
+                                            const value = parseInt(e.target.value);
+                                            // Ensure input is between 0 and 100 before converting back to 0.0-1.0 scale
+                                            const safeValue = Math.min(100, Math.max(0, value)) / 100;
+                                            setTempThreshold(safeValue);
+                                        }}
+                                        min="0"
+                                        max="100"
+                                        step="1"
+                                        style={{ textAlign: 'center', width: '40px' }}
+                                        className="form-control-sm border-secondary no-spinner" // CRITICAL FIX
+                                        disabled={isDetecting}
+                                    />
+
+                                    {/* PLUS BUTTON (+) */}
+                                    <Button
+                                        variant="outline-secondary"
+                                        onClick={() => setTempThreshold(t => Math.min(1.0, t + 0.01))}
+                                        disabled={isDetecting || tempThreshold >= 1.00}
+                                        style={{ width: '25px' }}
+                                    >
+                                        <i className="bi bi-plus-lg"></i>
+                                    </Button>
+
+                                </div>
+                                <span className="me-3 small">%</span>
+
+                                {/* RE-RUN BUTTON */}
+                                <Button
+                                    variant="success"
+                                    onClick={handleRunDetectionClick}
+                                    disabled={isDetecting || !hasThermalImage || !hasBaselineImage}
+                                >
+                                    {isDetecting ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="bi bi-arrow-clockwise me-1"></i>}
+                                    Re-Run
+                                </Button>
+                            </div>
                         )}
                     </div>
                     <Row>
@@ -446,7 +549,6 @@ const InspectionDetailPage = () => {
             {/* --- Inspector Notes Section (NEW) --- */}
             <NotesCard
                 inspectionId={inspection.id}
-                // CRITICAL: Ensure you pass the 'notes' field from the inspection object
                 initialNotes={inspection.notes}
                 onSave={handleSaveNotes}
                 showOk={showOk}
@@ -463,10 +565,7 @@ const InspectionDetailPage = () => {
             />
 
         {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-            {/* END Bounding Box Details Section */}
         </div>
-
-
     );
 };
 
