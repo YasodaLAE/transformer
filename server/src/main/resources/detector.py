@@ -8,7 +8,7 @@ import sys
 
 # --- CONFIGURATION (Move hardcoded values to the top or arguments) ---
 # MODEL_PATH = r"/Users/kavindujayathissa/Desktop/Academics/Semester 07/EN3350 Software Design/phase 2/best.pt"
-MODEL_PATH = r"./server/src/main/resources/BestforNow.pt"
+MODEL_PATH = r"./server/src/main/resources/best.pt"
 
 SEVERITY_MAP = {
     'Potentially Faulty': 1,
@@ -128,7 +128,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
                 max_intensity_M = 0
             else:
                 # np.max on a uint8 array will return an integer.
-                max_intensity_M = int(np.max(roi_v_channel))
+                max_intensity_M = np.percentile(roi_v_channel, 95)
 
 #             # --- CRITICAL NEW STEP: Calculate Max Anomaly Intensity (I_M Proxy) ---
 #             roi = im_bgr[y_min:y_max, x_min:x_max]
