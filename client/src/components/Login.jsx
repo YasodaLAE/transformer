@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
-import { useAuth } from '../hooks/AuthContext'; // Import the useAuth hook
+import { useAuth } from '../hooks/AuthContext';
 
 const Login = ({ onLoginSuccess }) => {
     // State to manage both username and password inputs
@@ -17,7 +17,7 @@ const Login = ({ onLoginSuccess }) => {
         const success = login(username, password);
 
         if (success) {
-            onLoginSuccess(); // This will close the modal and update the UI
+            onLoginSuccess();
         } else {
             setError('Invalid username or password.');
         }

@@ -6,29 +6,43 @@ import AddInspectionModal from '../components/AddInspectionModal';
 import InspectionTable from '../components/InspectionTable';
 import { useAuth } from '../hooks/AuthContext';
 import BaselineImageUploader from '../components/BaselineImageUploader';
-import ThermalImageUpload from '../components/ThermalImageUpload';
-import { getAllTransformers } from '../services/apiService';
+import { getAllTransformers } from '../services/apiService'; // Needed for the AddInspectionModal dropdown
 import Spinner from '../components/Spinner';
 import Toast from '../components/Toast';
 
+
+/**
+ * Renders the page for a specific Transformer ID, showing the transformer's details
+ * and a list of all associated inspections.
+ */
 const InspectionPage = () => {
-    const { transformerId } = useParams();
+    // Hooks and State
+    const { transformerId } = useParams(); // Retrieves ID from the URL
     const [inspections, setInspections] = useState([]);
+    const [transformer, setTransformer] = useState(null);
+    const [allTransformers, setAllTransformers] = useState([]); // List for the modal dropdown
+    const [baselineImageName, setBaselineImageName] = useState(null);
+
+    // UI/Flow State
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showModal, setShowModal] = useState(false); // Changed name to be more generic
-    const [inspectionToEdit, setInspectionToEdit] = useState(null); // New state for editing
+    const [showModal, setShowModal] = useState(false);
+    const [inspectionToEdit, setInspectionToEdit] = useState(null);
+
+    // Auth and Notification
     const { isAdmin } = useAuth();
-    const [transformer, setTransformer] = useState(null);
-    const [baselineImageName, setBaselineImageName] = useState(null);
-    const [allTransformers, setAllTransformers] = useState([]);
     const [toast, setToast] = useState(null);
     const showOk = (m) => setToast({ type: 'success', message: m });
     const showErr = (m) => setToast({ type: 'error', message: m });
 
 
+    /**
+     * Fetches all necessary data concurrently: inspections for this transformer,
+     * the transformer details, and the list of all transformers (for the modal).
+     */
     const fetchInspections = useCallback(async () => {
         try {
+            // Fetch multiple data points in parallel for efficiency
             const [inspectionsResponse, transformerResponse, allTransformersResponse] = await Promise.all([
                             getInspectionsByTransformer(transformerId),
                             getTransformerById(transformerId),
@@ -45,69 +59,52 @@ const InspectionPage = () => {
             setLoading(false);
             console.error(err);
         }
-    }, [transformerId]);
+    }, [transformerId]); // Dependency on transformerId ensures re-fetch if ID changes
 
+    // Run data fetching on component mount
     useEffect(() => {
         fetchInspections();
     }, [fetchInspections]);
 
     // Handle opening the modal in "add" mode
     const handleOpenAddModal = () => {
-        setInspectionToEdit(null); // Set to null to trigger "add" mode in the modal
+        setInspectionToEdit(null); // Clear editing state
         setShowModal(true);
     };
 
     // Handle opening the modal in "edit" mode
     const handleOpenEditModal = (inspection) => {
-        setInspectionToEdit(inspection); // Set the inspection to edit
+        setInspectionToEdit(inspection);
         setShowModal(true);
     };
 
-    // Handle closing the modal and refreshing data
+    // Handle closing the modal and triggering a full data refresh
     const handleCloseModal = () => {
         setShowModal(false);
-        setInspectionToEdit(null); // Reset the state
-        fetchInspections(); // Re-fetch the data to ensure the list is up-to-date
+        setInspectionToEdit(null);
+        fetchInspections();
     };
 
-//     const handleDelete = async (inspectionId) => {
-//         if (window.confirm('Are you sure you want to delete this inspection?')) {
-//             try {
-//                 await deleteInspection(inspectionId);
-//                 setInspections(inspections.filter(inspection => inspection.id !== inspectionId));
-//             } catch (error) {
-//                 console.error('Failed to delete inspection:', error);
-//                 setError('Failed to delete inspection. Please try again.');
-//             }
-//         }
-//     };
-
+    // Updates state after a successful baseline image upload
     const handleBaselineUploadSuccess = (fileName) => {
         setBaselineImageName(fileName);
+        fetchInspections(); // Re-fetch to ensure all associated data is updated
     };
 
+    // Opens the baseline image in a new tab
     const handleViewBaselineImage = () => {
         const imageUrl = `http://localhost:8080/api/transformers/${transformerId}/baseline-image/view`;
         window.open(imageUrl, '_blank');
     };
 
-//     const handleDeleteBaselineImage = async () => {
-//         if (window.confirm("Are you sure you want to delete this baseline image?")) {
-//             try {
-//                 await deleteBaselineImage(transformerId);
-//                 setBaselineImageName(null);
-//                 alert("Baseline image deleted successfully!");
-//             } catch (error) {
-//                 console.error("Failed to delete baseline image:", error);
-//                 alert("Failed to delete baseline image. Please try again.");
-//             }
-//         }
-//     };
-
+    /**
+     * Handles deletion of an inspection record.
+     */
     const handleDelete = async (inspectionId) => {
       if (window.confirm('Are you sure you want to delete this inspection?')) {
         try {
           await deleteInspection(inspectionId);
+          // Optimistically remove item from local state
           setInspections(inspections.filter(i => i.id !== inspectionId));
           showOk('Inspection deleted');
         } catch (error) {
@@ -117,12 +114,16 @@ const InspectionPage = () => {
       }
     };
 
+    /**
+     * Handles deletion of the transformer's baseline image.
+     */
     const handleDeleteBaselineImage = async () => {
       if (window.confirm("Delete this baseline image?")) {
         try {
           await deleteBaselineImage(transformerId);
           setBaselineImageName(null);
           showOk('Baseline image deleted');
+          fetchInspections();
         } catch (err) {
           console.error("Failed to delete baseline image:", err);
           showErr('Failed to delete baseline image');
@@ -140,6 +141,7 @@ const InspectionPage = () => {
 
     return (
         <div className="container-fluid">
+            {/* --- Transformer Details Card --- */}
             {transformer && (
                 <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
@@ -153,17 +155,20 @@ const InspectionPage = () => {
                                 </div>
                             </div>
                             <div className="d-flex flex-column align-items-end">
+                                {/* Baseline Uploader Button (Admin only, if no image exists) */}
                                 {isAdmin && !baselineImageName && (
                                     <BaselineImageUploader
                                         transformerId={transformerId}
                                         onUploadSuccess={handleBaselineUploadSuccess}
                                     />
                                 )}
+                                {/* Baseline Image Info and Actions */}
                                 {baselineImageName && (
                                     <small className="text-muted mt-2 d-flex align-items-center">
                                         Baseline:
                                         <span className="text-primary ms-2 me-2">{baselineImageName}</span>
                                         <div className="d-flex align-items-center">
+                                            {/* View Button */}
                                             <Button
                                                 variant="outline-info"
                                                 size="sm"
@@ -173,6 +178,7 @@ const InspectionPage = () => {
                                             >
                                                 <i className="bi bi-eye-fill"></i>
                                             </Button>
+                                            {/* Delete Button (Admin only) */}
                                             {isAdmin && (
                                             <Button
                                                 variant="outline-danger"
@@ -188,6 +194,7 @@ const InspectionPage = () => {
                                 )}
                             </div>
                         </div>
+                        {/* Summary Details Row */}
                         <Row className="text-center">
                             <Col className="border-end py-2">
                                 <h6 className="mb-0 fw-bold">{transformer.poleId}</h6>
@@ -210,22 +217,27 @@ const InspectionPage = () => {
                 </Card>
             )}
 
+            {/* --- Inspection List Section --- */}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2>Transformer Inspections</h2>
                 {isAdmin && (
                     <Button onClick={handleOpenAddModal}>Add Inspection</Button>
                 )}
             </div>
+
+            {/* Inspection Table Rendering */}
             {inspections.length > 0 ? (
                 <InspectionTable
                     inspections={inspections}
                     onDelete={handleDelete}
-                    onEdit={handleOpenEditModal} // Pass the new onEdit handler
-                    showTransformerColumn={false}
+                    onEdit={handleOpenEditModal}
+                    showTransformerColumn={false} // Hide Transformer column since it's implied by the page context
                 />
             ) : (
                 <p>No inspections found for this transformer.</p>
             )}
+
+            {/* Modal for Adding/Editing Inspections */}
             <AddInspectionModal
               show={showModal}
               handleClose={handleCloseModal}
@@ -234,17 +246,14 @@ const InspectionPage = () => {
                 else if (mode === 'updated') showOk('Inspection updated successfully!');
                 fetchInspections();
               }}
-              transformerId={transformerId}
+              transformerId={transformerId} // Pass the ID so the modal defaults to this transformer
               inspectionToEdit={inspectionToEdit}
               allTransformers={allTransformers}
             />
 
-
+            {/* Global Toast Notification */}
              {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>
-
-
-
     );
 };
 

@@ -1,9 +1,8 @@
 import React from 'react';
 import { Modal, Button } from 'react-bootstrap';
-// Import the necessary components from your installed library
-// Assuming you use 'react-zoom-pan-pinch' (install this!)
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 
+// Modal component for interactive zoom/pan of analyzed images.
 const ZoomableImageModal = ({ imageUrl, show, onClose, title }) => {
 
     return (
@@ -13,14 +12,14 @@ const ZoomableImageModal = ({ imageUrl, show, onClose, title }) => {
             </Modal.Header>
             <Modal.Body className="p-0" style={{ height: '80vh', overflow: 'hidden' }}>
 
-                {/* 1. TransformWrapper: Wraps the image and provides the zoom/pan context */}
+                {/* TransformWrapper: Initializes the zoom/pan context (required by library) */}
                 <TransformWrapper
                     initialScale={1}
                     minScale={0.5}
                     maxScale={5} // Allow up to 5x zoom
                     initialPositionX={0}
                     initialPositionY={0}
-                    // Controls: Enable panning by default (click and drag)
+                    // Enable click-and-drag movement (pan)
                     panning={{ disabled: false, velocity: false }}
                 >
                     {({ zoomIn, zoomOut, resetTransform }) => (
@@ -29,25 +28,25 @@ const ZoomableImageModal = ({ imageUrl, show, onClose, title }) => {
                             {/* Controls Bar for Zoom/Reset */}
                             <div className="tools d-flex p-2 bg-light border-bottom sticky-top" style={{ zIndex: 10 }}>
 
-                                {/* ZOOM IN BUTTON: Now uses '+' icon */}
+                                {/* ZOOM IN BUTTON (+) */}
                                 <Button size="sm" variant="outline-dark" className="me-2" onClick={() => zoomIn()}>
-                                    <i className="bi bi-plus-lg fw-bold"></i> {/* Bootstrap Plus Icon */}
+                                    <i className="bi bi-plus-lg fw-bold"></i>
                                 </Button>
 
-                                {/* ZOOM OUT BUTTON: Now uses '-' icon */}
+                                {/* ZOOM OUT BUTTON (-) */}
                                 <Button size="sm" variant="outline-dark" className="me-2" onClick={() => zoomOut()}>
-                                    <i className="bi bi-dash-lg fw-bold"></i> {/* Bootstrap Minus Icon */}
+                                    <i className="bi bi-dash-lg fw-bold"></i>
                                 </Button>
 
-                                {/* Reset Button (Kept) */}
+                                {/* Reset Button */}
                                 <Button size="sm" variant="outline-danger" onClick={() => resetTransform()}>
                                     <i className="bi bi-arrow-counterclockwise"></i> Reset
                                 </Button>
                             </div>
 
-                            {/* 2. TransformComponent: Renders the actual image */}
+                            {/* TransformComponent: Renders the actual image to be manipulated */}
                             <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }}>
-                                {/* Ensure the image takes up minimal space initially to allow proper zoom calculation */}
+                                {/* Image tag, sized to fit the container initially */}
                                 <img src={imageUrl} alt="Analyzed Image" style={{ maxWidth: '100%', maxHeight: '100%' }} />
                             </TransformComponent>
 

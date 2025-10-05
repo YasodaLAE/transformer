@@ -62,23 +62,17 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
-/* client/src/index.css */
 
-/* --- HIDE BROWSER DEFAULT NUMBER SPINNERS --- */
-
-/* Hides the default number input controls in Webkit browsers (Chrome, Safari) */
 .no-spinner::-webkit-outer-spin-button,
 .no-spinner::-webkit-inner-spin-button {
     -webkit-appearance: none !important;
     margin: 0 !important;
 }
 
-/* Hides the default number input controls in Mozilla Firefox */
 .no-spinner[type="number"] {
     -moz-appearance: textfield !important;
 }
 
-/* Ensure the input itself doesn't inherit default styling that could show the box */
 .no-spinner {
     appearance: none !important;
     -moz-appearance: textfield !important;
