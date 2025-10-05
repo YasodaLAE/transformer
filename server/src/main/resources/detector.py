@@ -40,17 +40,21 @@ def get_baseline_intensity(baseline_path):
     # Value: Must be above a threshold (e.g., 50) to exclude very dark noise
 
     # Lower bound for cool colors (H, S, V)
-    lower_cool = np.array([60, 50, 50])
+#     lower_cool = np.array([60, 50, 50])
+    lower_cool = np.array([133, 118, 162])
     # Upper bound for cool colors (H, S, V)
-    upper_cool = np.array([120, 255, 255])
+#     upper_cool = np.array([120, 255, 255])
+    upper_cool = np.array([82, 207, 20])
 
-    mask = cv2.inRange(hsv, lower_cool, upper_cool)
-
-    # 3. Extract the Value (Intensity) channel only for masked pixels
-    V_channel = hsv[:, :, 2] # V is the third channel (index 2)
+#     mask = cv2.inRange(hsv, lower_cool, upper_cool)
+    mask = cv2.inRange(img, lower_cool, upper_cool)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+#     R_channel = hsv[:, :, 2] # V is the third channel (index 2)
+    R_channel = lab[:, :, 0]
 
     # Filter the V channel using the mask
-    cool_pixels_intensity = V_channel[mask > 0] # Intensities of pixels in the target color range
+#     cool_pixels_intensity = V_channel[mask > 0] # Intensities of pixels in the target color range
+    cool_pixels_intensity = R_channel[mask > 0]
 
     if len(cool_pixels_intensity) == 0:
         print("Warning: No cool (blue/green) pixels found. Falling back.", file=sys.stderr)
@@ -107,8 +111,8 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
     name, ext = os.path.splitext(base_filename)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    im_hsv = cv2.cvtColor(im_bgr, cv2.COLOR_BGR2HSV)
-    v_channel = im_bgr[:, :, 2] # Extract the V-channel (Intensity)
+    im_hsv = cv2.cvtColor(im_bgr, cv2.COLOR_BGR2LAB)
+    v_channel = im_hsv[:, :, 2] # Extract the V-channel (Intensity)
 
     # Process the results
     for i, r in enumerate(results):
@@ -142,7 +146,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
             # Calculate the percentage difference from the Baseline Intensity Proxy
             # Equation: ((I_M - I_B) / I_B) * 100
             if baseline_intensity_B > 0:
-                intensity_deference = ((max_intensity_M - baseline_intensity_B) / baseline_intensity_B) * 100
+                intensity_deference = ((max_intensity_M - baseline_intensity_B) / 255) *100
             else:
                 intensity_deference = 100 # Default to high deference if baseline is near zero
 
@@ -150,7 +154,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
 #             print(f"Maintenance Image Shape: {im_bgr.shape}, Dtype: {im_bgr.dtype}", file=sys.stderr)
 #             print(f"Maintenance Image Max Value: {np.max(im_bgr)}", file=sys.stderr)
 #
-
+            threshold_percentage = threshold_percentage*100
             # We also ensure the YOLO confidence is met (default to 0.5 set in model() call)
             if intensity_deference >= threshold_percentage:
 #             if True:
@@ -167,9 +171,9 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
                     #"type": ,
                     "location": {"x_min" : x_min, "y_min": y_min, "x_max" : x_max, "y_max" : y_max},
                     "severity_score": severity_score_int,
-#                     "severity_score": baseline_intensity_B,
+#                     "severity_score": intensity_deference,
                     "confidence": round(float(score), 4),
-#                     "confidence": max_intensity_M,
+#                     "confidence": threshold_percentage,
 #                     "intensity_deference_percent": round(intensity_deference, 2) # NEW METADATA
                 }
                 final_anomalies_data.append(anomaly_data)
