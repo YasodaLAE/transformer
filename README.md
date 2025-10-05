@@ -2,7 +2,7 @@
 
 A comprehensive web application designed to manage, track, and analyze inspections of electrical transformers with AI-powered thermal anomaly detection. Both admins and viewers can monitor transformer data, inspection records, and gain automated insights from thermal image analysis.
 
-Test data (6 transformers with baseline and thermal images) are included in the `Test Data` folder.
+Test data (5 transformers with baseline and thermal images) are included in the `Test Data` folder.
 
 ---
 
@@ -32,7 +32,7 @@ Test data (6 transformers with baseline and thermal images) are included in the 
   - Zoom, pan (click and drag), and reset controls
   - Visual anomaly highlighting with color-coded overlays and markers
 - **Detailed Anomaly Metadata**:
-  - Pixel coordinates and anomaly size information
+  - Pixel coordinates
   - Severity scores and confidence levels
   - Automatic annotation of detected anomalies
 - **Performance Optimized**:
@@ -117,6 +117,39 @@ admin  : 1
 admin2 : 2
 admin3 : 3
 ```
+
+---
+
+## 🤖 YOLO Model Training
+
+### Training Script
+The project includes a custom YOLO training script (`yolo.py`) for training the anomaly detection model on thermal transformer images.
+
+#### Training the Model
+1. **Prepare your dataset**
+   - Organize thermal images in the required directory structure
+   - Ensure images are properly labeled with anomaly annotations
+
+2. **Run the training script**
+   ```bash
+   python yolo.py
+   ```
+
+3. **Monitor training progress**
+   - Training metrics and loss values will be displayed in the console
+   - Model checkpoints are saved automatically during training
+
+4. **Model Output**
+   - Trained model weights are saved for inference
+   - Best performing model is selected based on validation metrics
+
+#### Model Configuration
+The `yolo.py` script includes:
+- Custom hyperparameters optimized for thermal imagery
+- Data augmentation techniques for improved generalization
+- Training/validation split configuration
+- Model architecture selection (YOLOv5/v8/v11)
+- Performance metrics tracking
 
 ---
 
