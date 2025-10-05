@@ -13,7 +13,6 @@ public interface InspectionService {
     // The delete method is now void and throws an exception on failure
     void deleteInspection(Long id);
     Optional<InspectionDTO> findInspectionById(Long id);
-
     // Methods for thermal images
     void addThermalImageToInspection(Long inspectionId, MultipartFile file, String condition, String uploader) throws Exception;
     void deleteThermalImage(Long imageId);

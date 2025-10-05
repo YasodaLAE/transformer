@@ -2,16 +2,15 @@ package com.university.transformer.oversight.service.impl;
 
 import com.university.transformer.oversight.service.FileStorageService;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Service;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -27,13 +26,9 @@ public class FileSystemStorageService implements FileStorageService {
 
     private Path rootLocation;
 
-//    public FileSystemStorageService() {
-//        this.rootLocation = Paths.get("uploads");
-//    }
-
     @Autowired
     public FileSystemStorageService(@Value("${storage.root-location}") String rootPath) {
-        // Use the injected absolute path
+        // Use the injected absolute path as storage root
         this.rootLocation = Paths.get(rootPath).toAbsolutePath().normalize();
     }
 
@@ -53,7 +48,6 @@ public class FileSystemStorageService implements FileStorageService {
             if (file.isEmpty()) {
                 throw new RuntimeException("Failed to store empty file.");
             }
-            // Generate a unique filename to prevent collisions
             String originalFilename = StringUtils.cleanPath(file.getOriginalFilename());
             String uniqueFilename = UUID.randomUUID().toString() + "_" + originalFilename;
             Path destinationFile = this.rootLocation.resolve(uniqueFilename).normalize().toAbsolutePath();
@@ -71,7 +65,7 @@ public class FileSystemStorageService implements FileStorageService {
     public Stream<Path> loadAll() {
         try {
             return Files.walk(this.rootLocation, 1)
-                    .filter(path ->!path.equals(this.rootLocation))
+                    .filter(path -> !path.equals(this.rootLocation))
                     .map(this.rootLocation::relativize);
         } catch (IOException e) {
             throw new RuntimeException("Failed to read stored files", e);

@@ -21,7 +21,6 @@ public class Transformer {
     private String poleId;
     private String region;
     private String capacity;
-    // Add a field for noOfFeeders
     private String noOfFeeders;
     private String transformerType;
     private String details;
