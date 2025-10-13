@@ -1,5 +1,5 @@
+DROP TABLE IF EXISTS anomaly_feedback;
 DROP TABLE IF EXISTS anomaly_detection_result;
--- schema.sql (replace thermal_image DDL)
 DROP TABLE IF EXISTS thermal_image;
 DROP TABLE IF EXISTS inspection;
 DROP TABLE IF EXISTS transformer;
@@ -62,4 +62,21 @@ CREATE TABLE `anomaly_detection_result` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK9powin3ux3oslbcuoguifhqro` (`inspection_id`),
   CONSTRAINT `FK87o85w504j1em42s76se41nc7` FOREIGN KEY (`inspection_id`) REFERENCES `inspection` (`id`)
+);
+
+-- Anomaly Feedback and Logging Table
+CREATE TABLE anomaly_feedback (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    -- Link to modified ANOMALY_DETECTION_RESULT
+    result_id BIGINT NOT NULL,
+
+    action VARCHAR(50) NOT NULL,            -- USER_ADDED, USER_EDITED, USER_DELETED
+    annotator_user VARCHAR(255) NOT NULL,
+    timestamp DATETIME(6) NOT NULL,
+
+    -- The JSON string of the specific anomaly box that was ADDED, EDITED, or DELETED.
+    anomaly_data_json TEXT,
+    user_comments VARCHAR(255),
+
+    FOREIGN KEY (result_id) REFERENCES anomaly_detection_result(id) ON DELETE CASCADE
 );

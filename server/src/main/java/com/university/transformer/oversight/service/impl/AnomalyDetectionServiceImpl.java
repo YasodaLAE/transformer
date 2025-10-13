@@ -2,10 +2,13 @@ package com.university.transformer.oversight.service.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.university.transformer.oversight.dto.AnnotationRequest;
 import com.university.transformer.oversight.model.AnomalyDetectionResult;
+import com.university.transformer.oversight.model.AnomalyFeedback;
 import com.university.transformer.oversight.model.Inspection;
 import com.university.transformer.oversight.model.ThermalImage;
 import com.university.transformer.oversight.repository.AnomalyDetectionResultRepository;
+import com.university.transformer.oversight.repository.AnomalyFeedbackRepository;
 import com.university.transformer.oversight.repository.InspectionRepository;
 import com.university.transformer.oversight.repository.ThermalImageRepository;
 import com.university.transformer.oversight.service.AnomalyDetectionService;
@@ -22,6 +25,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.nio.file.Paths;
@@ -40,6 +44,8 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
     @Autowired private ThermalImageRepository thermalImageRepository;
     @Autowired private AnomalyDetectionResultRepository resultRepository;
     @Autowired private FileStorageService fileStorageService;
+    @Autowired private AnomalyFeedbackRepository feedbackRepository; // Inject the new repository
+
 
     // NOTE: This constant MUST match the one in the Python script!
     private static final String ANNOTATED_IMAGE_SUBDIR = "annotated" ;
@@ -145,6 +151,46 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
 
         // resultRepository.save(result) will handle UPDATE if result has an ID, or INSERT if it's new.
         return resultRepository.save(result);
+    }
+
+
+    @Override
+    @Transactional
+    public void saveUserAnnotations(Long inspectionId, AnnotationRequest request) throws Exception {
+        AnomalyDetectionResult result = resultRepository.findByInspectionId(inspectionId)
+                .orElseThrow(() -> new RuntimeException("Anomaly result not found for inspection ID: " + inspectionId));
+
+        String originalAnnotationsJson = result.getDetectionJsonOutput();
+        List<Map<String, Object>> finalAnnotations = request.getFinalAnnotations();
+        String annotatorUser = request.getAnnotatorUser();
+
+        // 1. LOG THE ACTION (FR3.3) - Since we don't have the original/new status of each box,
+        //    we save the *final state* as the 'EDITED' log for now.
+
+        // In a sophisticated system, you would compare finalAnnotations against JSON.parse(originalAnnotationsJson)
+        // to determine which boxes were ADDED, EDITED, or DELETED. For project scope, we log the final list.
+
+        for (Map<String, Object> anomalyMap : finalAnnotations) {
+            AnomalyFeedback feedback = new AnomalyFeedback();
+            feedback.setDetectionResult(result);
+            feedback.setAnnotatorUser(annotatorUser);
+            feedback.setTimestamp(LocalDateTime.now());
+
+            // Log every box in the final accepted list as a user-approved/edited box.
+            // We assume any box that exists in the final list was accepted/edited by the user.
+            feedback.setAction(AnomalyFeedback.AnnotationAction.USER_EDITED);
+            feedback.setAnomalyDataJson(objectMapper.writeValueAsString(anomalyMap));
+
+            feedbackRepository.save(feedback);
+        }
+
+        // 2. PERSIST THE FINAL STATE (FR3.2)
+        // Update the AnomalyDetectionResult entity with the final, clean, user-validated list.
+        result.setDetectionJsonOutput(objectMapper.writeValueAsString(finalAnnotations));
+        result.setOverallStatus(finalAnnotations.isEmpty() ? "NORMAL" : "VALIDATED_ANOMALY"); // Update status based on user action
+        result.setDetectedTimestamp(LocalDateTime.now()); // Update timestamp to reflect validation time
+
+        resultRepository.save(result);
     }
 
 

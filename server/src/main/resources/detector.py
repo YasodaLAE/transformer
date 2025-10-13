@@ -99,6 +99,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
     results = model(maintenance_image_path, conf=0.5, verbose=False)
 
     im_bgr = cv2.imread(maintenance_image_path)
+    original_height, original_width, _ = im_bgr.shape
 
     if im_bgr is None:
         return {"error": f"Error: Could not read maintenance image at {maintenance_image_path}", "overall_status": "UNCERTAIN"}
@@ -173,8 +174,10 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
                     "severity_score": severity_score_int,
 #                     "severity_score": intensity_deference,
                     "confidence": round(float(score), 4),
-#                     "confidence": threshold_percentage,
-#                     "intensity_deference_percent": round(intensity_deference, 2) # NEW METADATA
+                    "image_dimensions": {
+                            "original_width": original_width,
+                            "original_height": original_height
+                    },
                 }
                 final_anomalies_data.append(anomaly_data)
 

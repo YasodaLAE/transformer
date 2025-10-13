@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/AuthContext';
 import Toast from '../components/Toast';
 import ZoomableImageModal from '../components/ZoomableImageModal';
 import NotesCard from '../components/NotesCard';
+import AnomalyAnnotationCanvas from '../components/AnomalyAnnotationCanvas';
 
 
 const InspectionDetailPage = () => {
@@ -36,6 +37,15 @@ const InspectionDetailPage = () => {
 
     // NEW STATE & HANDLERS FOR ZOOM MODAL
     const [zoomModal, setZoomModal] = useState({ show: false, url: '', title: '' });
+    // 1. Parse the detection JSON (need to handle possibility of empty array)
+    const parsedAnomalyData = JSON.parse(anomalyResult?.detectionJsonOutput || '[]');
+
+    // 2. Extract dimensions from the first anomaly object (or pass a default)
+    // ASSUMING original image dimensions are stored in the *first* anomaly object's payload:
+    const originalDimensions = parsedAnomalyData[0]?.image_dimensions || {
+        original_width: 1000,
+        original_height: 750 // Use safe defaults until data is loaded
+    }
 
     const handleOpenZoomModal = (url, title) => {
         setZoomModal({ show: true, url: url, title: title });
@@ -468,45 +478,82 @@ const InspectionDetailPage = () => {
                                         <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
                                     )}
                                 </Card.Header>
+{/*                                 <Card.Body> */}
+{/*                                     {isDetecting ? ( */}
+{/*                                         // 1. **NICE LOADING STATE** */}
+{/*                                         <div */}
+{/*                                             className="d-flex flex-column align-items-center justify-content-center" */}
+{/*                                             style={{ minHeight: '300px', backgroundColor: '#f8f9fa', border: '1px dashed #ccc' }} */}
+{/*                                         > */}
+{/*                                             <Spinner animation="border" role="status" variant="primary" className="mb-3"> */}
+{/*                                                 <span className="visually-hidden">Running Anomaly Detection...</span> */}
+{/*                                             </Spinner> */}
+{/*                                             <p className="text-primary fw-bold mb-1">Running Anomaly Detection...</p> */}
+{/*                                             <small className="text-muted">Analyzing image with YOLO model...</small> */}
+{/*                                         </div> */}
+{/*                                     ) : hasThermalImage ? ( */}
+{/*                                         // 2. SHOW IMAGE: Make the image clickable and render */}
+{/*                                         <div */}
+{/*                                             onClick={() => handleOpenZoomModal( */}
+{/*                                                 anomalyResult */}
+{/*                                                 ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}` */}
+{/*                                                 : thermalImageUrl, */}
+{/*                                                 anomalyResult ? 'Analyzed Image' : 'Current Maintenance Image' */}
+{/*                                             )} */}
+{/*                                             style={{ cursor: 'zoom-in' }} // Add zoom cursor for visual cue */}
+{/*                                         > */}
+{/*                                             <img */}
+{/*                                                 src={anomalyResult */}
+{/*                                                     ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}` */}
+{/*                                                     : thermalImageUrl */}
+{/*                                                 } */}
+{/*                                                 alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"} */}
+{/*                                                 style={{ maxWidth: '100%' }} */}
+{/*                                             /> */}
+{/*                                             <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small> */}
+{/*                                         </div> */}
+{/*                                     ) : showThermalUploader ? ( */}
+{/*                                         // 3. SHOW UPLOADER */}
+{/*                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} /> */}
+{/*                                     ) : ( */}
+{/*                                         // 4. SHOW PLACEHOLDER */}
+{/*                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}> */}
+{/*                                             <p className="text-muted">No thermal image available.</p> */}
+{/*                                         </div> */}
+{/*                                     )} */}
+{/*                                 </Card.Body> */}
+
+{/*                                 // InspectionDetailPage.js (Around line 330, inside the Analyzed Image Card.Body) */}
+
+{/*                                 // REMOVE ALL THE LOGIC inside Card.Body and replace with: */}
+
                                 <Card.Body>
-                                    {isDetecting ? (
-                                        // 1. **NICE LOADING STATE**
+                                    {hasThermalImage && hasBaselineImage && anomalyResult ? (
+                                        // RENDER THE INTERACTIVE CANVAS FOR EDITING (FR3.1)
+                                        <AnomalyAnnotationCanvas
+                                            inspectionId={inspectionId}
+                                            // Use the ANNOTATED IMAGE as the background for the canvas
+                                            imagePath={`${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`}
+                                            // Pass the RAW JSON anomaly output for the canvas to load editable shapes
+                                            initialAnnotationsJson={anomalyResult.detectionJsonOutput}
+                                            annotatorUser={user.username}
+                                            // Trigger a re-fetch to show the updated AI state (if needed)
+                                            onAnnotationSaved={fetchData}
+                                            originalImageDimensions={originalDimensions}
+                                        />
+                                    ) : isDetecting ? (
+                                        // SHOW LOADING STATE
                                         <div
                                             className="d-flex flex-column align-items-center justify-content-center"
                                             style={{ minHeight: '300px', backgroundColor: '#f8f9fa', border: '1px dashed #ccc' }}
                                         >
-                                            <Spinner animation="border" role="status" variant="primary" className="mb-3">
-                                                <span className="visually-hidden">Running Anomaly Detection...</span>
-                                            </Spinner>
-                                            <p className="text-primary fw-bold mb-1">Running Anomaly Detection...</p>
-                                            <small className="text-muted">Analyzing image with YOLO model...</small>
-                                        </div>
-                                    ) : hasThermalImage ? (
-                                        // 2. SHOW IMAGE: Make the image clickable and render
-                                        <div
-                                            onClick={() => handleOpenZoomModal(
-                                                anomalyResult
-                                                ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
-                                                : thermalImageUrl,
-                                                anomalyResult ? 'Analyzed Image' : 'Current Maintenance Image'
-                                            )}
-                                            style={{ cursor: 'zoom-in' }} // Add zoom cursor for visual cue
-                                        >
-                                            <img
-                                                src={anomalyResult
-                                                    ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}`
-                                                    : thermalImageUrl
-                                                }
-                                                alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"}
-                                                style={{ maxWidth: '100%' }}
-                                            />
-                                            <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small>
+                                            {/* ... (Spinner and text) ... */}
                                         </div>
                                     ) : showThermalUploader ? (
-                                        // 3. SHOW UPLOADER
+                                        // SHOW UPLOADER
                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
                                     ) : (
-                                        // 4. SHOW PLACEHOLDER
+                                        // SHOW PLACEHOLDER
                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
                                             <p className="text-muted">No thermal image available.</p>
                                         </div>

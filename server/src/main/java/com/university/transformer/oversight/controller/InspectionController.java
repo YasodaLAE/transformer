@@ -1,5 +1,6 @@
 package com.university.transformer.oversight.controller;
 
+import com.university.transformer.oversight.dto.AnnotationRequest;
 import com.university.transformer.oversight.dto.InspectionDTO;
 import com.university.transformer.oversight.model.AnomalyDetectionResult;
 import com.university.transformer.oversight.model.Inspection;
@@ -127,6 +128,23 @@ public class InspectionController {
         return anomalyDetectionService.getDetectionResultByInspectionId(inspectionId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{inspectionId}/annotations")
+    public ResponseEntity<Void> saveAnnotations(
+            @PathVariable Long inspectionId,
+            @RequestBody AnnotationRequest request
+    ) {
+        try {
+            anomalyDetectionService.saveUserAnnotations(inspectionId, request);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            // Return 400 for validation errors or missing resources
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
 

@@ -1,5 +1,6 @@
 package com.university.transformer.oversight.service;
 
+import com.university.transformer.oversight.dto.AnnotationRequest;
 import com.university.transformer.oversight.model.AnomalyDetectionResult;
 import org.springframework.core.io.Resource;
 import java.util.Optional;
@@ -14,6 +15,8 @@ public interface AnomalyDetectionService {
 
     // 3. Method to serve the image with bounding boxes
     Resource loadAnnotatedImageAsResource(Long inspectionId);
+
+    void saveUserAnnotations(Long inspectionId, AnnotationRequest request) throws Exception;
 
 
 }
