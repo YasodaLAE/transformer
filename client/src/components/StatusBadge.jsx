@@ -4,13 +4,13 @@ import React from 'react';
 const getStatusBadgeColor = (status) => {
   switch (status.toLowerCase()) {
     case 'completed':
-      return 'bg-primary'; // Bootstrap's default blue
+      return 'bg-primary';
     case 'in progress':
-      return 'bg-success'; // Bootstrap's default green
+      return 'bg-success';
     case 'pending':
-      return 'bg-danger'; // Bootstrap's default red
+      return 'bg-danger';
     default:
-      return 'bg-secondary'; // A neutral color for unknown statuses
+      return 'bg-secondary';
   }
 };
 

@@ -50,27 +50,38 @@ const getOriginalDimensions = (result) => {
 
 
 
+/**
+ * Displays the detailed view for a single inspection, including image comparison,
+ * anomaly analysis results, threshold control, and notes management.
+ */
 const InspectionDetailPage = () => {
     const API_BASE_URL = 'http://localhost:8080';
     const { inspectionId } = useParams();
+
+    // Primary Data States
     const [inspection, setInspection] = useState(null);
     const [transformer, setTransformer] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [baselineImageName, setBaselineImageName] = useState(null);
 
-    const [tempThreshold, setTempThreshold] = useState(0.5);
+    // Anomaly Detection States
+    const [tempThreshold, setTempThreshold] = useState(0.5); // Current confidence threshold (0.0 to 1.0)
+    const [anomalyResult, setAnomalyResult] = useState(null);
+    const [isDetecting, setIsDetecting] = useState(false);
+    const [timestamp, setTimestamp] = useState(Date.now()); // Used to force image cache bust
 
+    // Component Refs & Hooks
+    const detectionTriggeredRef = useRef(false); // Flag to prevent detection loop on initial mount
     const { user, isAdmin } = useAuth();
-
     const [toast, setToast] = useState(null);
     const showOk = (m) => setToast({ type: 'success', message: m });
     const showErr = (m) => setToast({ type: 'error', message: m });
 
-    const [anomalyResult, setAnomalyResult] = useState(null);
-    const [isDetecting, setIsDetecting] = useState(false);
-    const [timestamp, setTimestamp] = useState(Date.now());
+    // Image/Baseline Name State
+    const [baselineImageName, setBaselineImageName] = useState(null);
 
+    // Zoom Modal State
     const detectionTriggeredRef = useRef(false);
 
     const [zoomModal, setZoomModal] = useState({ show: false, url: '', title: '' });
@@ -92,7 +103,7 @@ const InspectionDetailPage = () => {
 //     };
     // ------------------------------------------------------------------
 
-    // Function to fetch the existing anomaly result if it exists
+    // Fetches existing anomaly result if it exists in the database
     const fetchAnomalyResult = async (id) => {
         try {
             const resultResponse = await getAnomalyDetectionResult(id);
@@ -106,6 +117,9 @@ const InspectionDetailPage = () => {
         }
     };
 
+    // Executes the Python detection script via API call
+    const runAndFetchDetection = async (id, currentBaselineImageName, currentTempThreshold) => {
+        setIsDetecting(true);
     // Function to run the detection and fetch the result (POST returns the entity)
     // ... (rest of imports and component definition) ...
 
@@ -119,6 +133,14 @@ const InspectionDetailPage = () => {
                         return;
             }
 
+        try {
+            // POST: Trigger the detection script with parameters
+            const postResponse = await triggerAnomalyDetection(
+                            id,
+                            currentBaselineImageName,
+                            currentTempThreshold
+            );
+            setAnomalyResult(postResponse.data);
             try {
                 // 1. POST: Trigger the detection script with parameters
                 const postResponse = await triggerAnomalyDetection(
@@ -128,6 +150,8 @@ const InspectionDetailPage = () => {
                 );
                 setAnomalyResult(postResponse.data);
 
+            // CRITICAL FIX: Update timestamp to force browser cache bust for the new annotated image
+            setTimestamp(new Date().getTime());
                 // 2. CRITICAL FIX: Update the timestamp to force image cache bust
                 setTimestamp(new Date().getTime());
 
@@ -139,6 +163,12 @@ const InspectionDetailPage = () => {
             }
         };
 
+    // Main function to fetch all required inspection and transformer data
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const inspectionResponse = await getInspectionById(inspectionId);
+            setInspection(inspectionResponse.data);
         const fetchData = async () => {
             try {
                 setLoading(true);
@@ -257,7 +287,7 @@ const InspectionDetailPage = () => {
       }
     };
 
-    // FIX: Explicitly trigger detection after upload instead of just fetching data
+    // Triggers detection after a new image is successfully uploaded
     const handleImageUploadSuccess = async () => {
         showOk('Thermal image uploaded successfully. Running anomaly detection...');
 
@@ -271,6 +301,7 @@ const InspectionDetailPage = () => {
         fetchData();
     };
 
+    // Handler for the manual 'Re-Run Detection' button click
     const handleRunDetectionClick = async () => {
         const currentThreshold = parseFloat(tempThreshold);
 
@@ -296,6 +327,7 @@ const InspectionDetailPage = () => {
             notes: newNotes,
         };
 
+        // Persist the changes via the general update endpoint
         await updateInspection(id, updatedInspection);
 
         // Update local state to reflect new notes immediately
@@ -330,23 +362,21 @@ const InspectionDetailPage = () => {
         }
     };
 
-    // --- LOGIC: Determine if the upload component should be visible ---
+    // Logic to control visibility of the upload component
     const isUserLoggedIn = !!user;
     const showThermalUploader = isUserLoggedIn && !hasThermalImage;
-    // -------------------------------------------------------------------
+
 
     return (
         <div className="container-fluid">
             {transformer && (
                 <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
-                        {/* Unified Header with Flexbox */}
+                        {/* Unified Header / Summary Details */}
                         <div className="d-flex justify-content-between align-items-start mb-2">
-                            {/* Left side: Inspection Details */}
                             <div className="d-flex flex-column">
                                 <h3 className="fw-bold">{inspection.inspectionNo}</h3>
                             </div>
-                            {/* Right side: Status and Baseline Image Section */}
                             <div className="d-flex flex-column align-items-end">
                                 <div className={`badge rounded-pill text-white ${getStatusBadgeColor(inspection.status)} mb-2`}>
                                     {inspection.status}
@@ -442,7 +472,7 @@ const InspectionDetailPage = () => {
                             <div className="d-flex align-items-center bg-light p-2 rounded-3 border">
 
                                 <label className="me-3 text-dark small fw-bold text-nowrap">
-                                    Temperature Difference:
+                                    Confidence Threshold:
                                 </label>
 
                                 {/* SLIDER INPUT (Visual Adjustment) */}
@@ -471,7 +501,7 @@ const InspectionDetailPage = () => {
                                         <i className="bi bi-dash-lg"></i>
                                     </Button>
 
-                                    /* NUMERIC INPUT (Precision Entry - Added no-spinner class) */
+                                    {/* NUMERIC INPUT (Precision Entry - Added no-spinner class) */}
                                     <Form.Control
                                         type="number"
                                         value={Math.round(tempThreshold * 100)} // Display as percentage (0-100)
@@ -489,7 +519,7 @@ const InspectionDetailPage = () => {
                                         disabled={isDetecting}
                                     />
 
-                                    /* PLUS BUTTON (+) */
+                                    {/* PLUS BUTTON (+) */}
                                     <Button
                                         variant="outline-secondary"
                                         onClick={() => setTempThreshold(t => Math.min(1.0, t + 0.01))}
@@ -574,7 +604,7 @@ const InspectionDetailPage = () => {
                                         // SHOW UPLOADER
                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
                                     ) : (
-                                        // SHOW PLACEHOLDER
+                                        // 4. SHOW PLACEHOLDER
                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}>
                                             <p className="text-muted">No thermal image available.</p>
                                         </div>

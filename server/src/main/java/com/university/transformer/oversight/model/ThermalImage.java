@@ -1,7 +1,6 @@
 package com.university.transformer.oversight.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -18,13 +17,15 @@ public class ThermalImage {
     public enum EnvironmentalCondition {
         SUNNY, CLOUDY, RAINY;
 
+        /**
+         * Case-insensitive factory method for JSON deserialization.
+         */
         @com.fasterxml.jackson.annotation.JsonCreator
         public static EnvironmentalCondition fromString(String value) {
             if (value == null) return null;
             return EnvironmentalCondition.valueOf(value.toUpperCase());
         }
     }
-
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,7 +43,6 @@ public class ThermalImage {
     private LocalDateTime uploadTimestamp;
     private String uploaderId;
 
-    // --- RELATIONSHIP CHANGED ---
     @OneToOne
     @JoinColumn(name = "inspection_id", unique = true)
     @JsonBackReference

@@ -3,6 +3,10 @@ import { Modal, Button, Form } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import { createInspection, updateInspection } from '../services/apiService';
 
+/**
+ * Converts a JavaScript Date or ISO string into the 'datetime-local' input format (YYYY-MM-DDTHH:MI).
+ * This is necessary because HTML input type="datetime-local" requires this specific string format.
+ */
 function toDatetimeLocal(value) {
   if (!value) return '';
   const d = typeof value === 'string' ? new Date(value) : value;
@@ -17,13 +21,12 @@ function toDatetimeLocal(value) {
 }
 
 const AddInspectionModal = ({
-  loggedInUser,
   show,
   handleClose,
   onInspectionAdded,
-  transformerId,
-  inspectionToEdit,
-  allTransformers = [],
+  transformerId, // ID if modal is opened from a Transformer Detail Page
+  inspectionToEdit, // Inspection object if in edit mode
+  allTransformers = [], // List of all transformers for selection if adding a new inspection
 }) => {
   const { user } = useAuth();
 
@@ -38,11 +41,14 @@ const AddInspectionModal = ({
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Reset form on open
+  /**
+   * Effect to reset/initialize the form data when the modal is opened or the inspectionToEdit prop changes.
+   */
   useEffect(() => {
     if (!show) return;
 
     if (inspectionToEdit) {
+      // Load existing data for Edit mode
       setFormData({
         inspectionNo: inspectionToEdit.inspectionNo || '',
         inspectedDate: toDatetimeLocal(inspectionToEdit.inspectedDate),
@@ -53,6 +59,7 @@ const AddInspectionModal = ({
         inspectionToEdit.transformer?.id || transformerId || ''
       );
     } else {
+      // Clear data for Add mode
       setFormData({
         inspectionNo: '',
         inspectedDate: '',
@@ -78,16 +85,21 @@ const AddInspectionModal = ({
     setSelectedTransformerId(e.target.value);
   };
 
+  /**
+   * Handles form submission for both creating a new inspection and updating an existing one.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
     const inspectedBy = user?.username;
+    // Determine the final transformer ID based on context (edit, dedicated page, or dropdown)
     const finalTransformerId =
       inspectionToEdit?.transformer?.id ||
       transformerId ||
       Number(selectedTransformerId);
 
+    // --- Validation Checks ---
     if (!finalTransformerId) {
       setError('Please select a transformer.');
       return;
@@ -104,36 +116,32 @@ const AddInspectionModal = ({
       setError('Status is required.');
       return;
     }
+    // --- End Validation Checks ---
 
     try {
       setSaving(true);
 
+      const payload = {
+        ...formData,
+        inspectedBy,
+        transformer: { id: finalTransformerId },
+      };
+
       if (inspectionToEdit) {
-        const updatedData = {
-          ...formData,
-          id: inspectionToEdit.id,
-          inspectedBy,
-          transformer: { id: finalTransformerId },
-        };
-        await updateInspection(updatedData.id, updatedData);
+        // --- EDIT MODE ---
+        payload.id = inspectionToEdit.id;
+        await updateInspection(payload.id, payload);
 
-        setError(null);
         onInspectionAdded?.('updated');
-        handleClose();
-        return;
       } else {
-        const newData = {
-          ...formData,
-          inspectedBy,
-          transformer: { id: finalTransformerId },
-        };
-        await createInspection(newData);
+        // --- CREATE MODE ---
+        await createInspection(payload);
 
-        setError(null);
         onInspectionAdded?.('created');
-        handleClose();
-        return;
       }
+
+      setError(null);
+      handleClose();
     } catch (err) {
       console.error('Failed to save inspection:', err);
       setError('Failed to save inspection. Please check the form data.');
@@ -153,6 +161,7 @@ const AddInspectionModal = ({
         {error && <div className="alert alert-danger">{error}</div>}
 
         <Form onSubmit={handleSubmit}>
+          {/* Transformer Selection: Only visible if NOT editing and NOT on a dedicated transformer page */}
           {!inspectionToEdit && !transformerId && (
             <Form.Group className="mb-3">
               <Form.Label>Transformer</Form.Label>

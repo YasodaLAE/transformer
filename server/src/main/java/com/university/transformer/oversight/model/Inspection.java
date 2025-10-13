@@ -23,10 +23,8 @@ public class Inspection {
     private LocalDateTime maintenanceDate;
     private String status;
 
-    // --- NEW FIELD FOR NOTES ---
     @Column(columnDefinition = "TEXT")
     private String notes;
-    // ---------------------------
 
     @JsonProperty("inspectedBy")
     private String inspectedBy;
@@ -36,11 +34,13 @@ public class Inspection {
     @JsonBackReference
     private Transformer transformer;
 
-    // --- NEW RELATIONSHIP ADDED ---
     @OneToOne(mappedBy = "inspection", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private ThermalImage thermalImage;
 
+    /**
+     * Ensures inspectedBy is not set to null or blank values.
+     */
     public void setInspectedBy(String inspectedBy) {
         if (inspectedBy != null && !inspectedBy.trim().isEmpty()) {
             this.inspectedBy = inspectedBy;
@@ -49,8 +49,7 @@ public class Inspection {
         }
     }
 
-    // Lombok's @Data should generate standard getters/setters for 'notes',
-    // but we add them explicitly here if @Data is sometimes unreliable in the build environment.
+    // Explicit getter/setter for 'notes' to ensure stability in some build environments
     public String getNotes() {
         return notes;
     }
