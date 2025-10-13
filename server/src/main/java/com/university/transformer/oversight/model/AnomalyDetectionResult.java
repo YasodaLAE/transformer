@@ -1,15 +1,32 @@
 package com.university.transformer.oversight.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "anomaly_detection_result")
 public class AnomalyDetectionResult {
 
+    // Existing Getters and Setters...
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    // --- START CRITICAL ADDITION FOR SCALING ---
+
+    // --- NEW GETTERS AND SETTERS ---
+    @Column(name = "original_width")
+    private Integer originalWidth; // Stores W_original from Python output
+
+    @Column(name = "original_height")
+    private Integer originalHeight; // Stores H_original from Python output
+
+    // --- END CRITICAL ADDITION FOR SCALING ---
 
     @Column(name = "overall_status")
     private String overallStatus; // FAULTY, POTENTIALLY_FAULTY, NORMAL, UNCERTAIN
@@ -30,17 +47,4 @@ public class AnomalyDetectionResult {
     // --- Constructors, Getters, and Setters ---
     public AnomalyDetectionResult() {}
 
-    // Getters and Setters... (Generate these)
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getOverallStatus() { return overallStatus; }
-    public void setOverallStatus(String overallStatus) { this.overallStatus = overallStatus; }
-    public String getDetectionJsonOutput() { return detectionJsonOutput; }
-    public void setDetectionJsonOutput(String detectionJsonOutput) { this.detectionJsonOutput = detectionJsonOutput; }
-    public LocalDateTime getDetectedTimestamp() { return detectedTimestamp; }
-    public void setDetectedTimestamp(LocalDateTime detectedTimestamp) { this.detectedTimestamp = detectedTimestamp; }
-    public String getOutputImageName() { return outputImageName; }
-    public void setOutputImageName(String outputImageName) { this.outputImageName = outputImageName; }
-    public Inspection getInspection() { return inspection; }
-    public void setInspection(Inspection inspection) { this.inspection = inspection; }
 }

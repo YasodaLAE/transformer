@@ -13,6 +13,7 @@ import com.university.transformer.oversight.repository.InspectionRepository;
 import com.university.transformer.oversight.repository.ThermalImageRepository;
 import com.university.transformer.oversight.service.AnomalyDetectionService;
 import com.university.transformer.oversight.service.FileStorageService;
+import jakarta.persistence.Column;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,12 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
 
     @Value("${storage.root-location}")
     private String storageRootLocation;
+
+    @Column(name = "original_width")
+    private Integer originalWidth;
+
+    @Column(name = "original_height")
+    private Integer originalHeight;
 
     @Autowired private InspectionRepository inspectionRepository;
     @Autowired private ThermalImageRepository thermalImageRepository;
@@ -125,6 +132,9 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         // This 'outputImageName' variable will now contain the RELATIVE path/filename
         String outputImageName = (String) outputMap.get("output_image_name");
         String detectionJson = objectMapper.writeValueAsString(outputMap.get("anomalies")); // List of bounding boxes
+        Map<String, Object> dimensionsMap = (Map<String, Object>) outputMap.get("image_dimensions"); // Cast to generic Map
+
+
 
         // 5. Store the result - UPSERT LOGIC
         Inspection inspection = inspectionRepository.findById(inspectionId)
@@ -149,7 +159,23 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         result.setOutputImageName(outputImageName);
         result.setDetectedTimestamp(LocalDateTime.now());
 
-        // resultRepository.save(result) will handle UPDATE if result has an ID, or INSERT if it's new.
+        if (dimensionsMap != null) {
+            // Read the values as Longs (safest assumption for numeric JSON data)
+            Integer width = (Integer) dimensionsMap.get("original_width");
+            Integer height = (Integer) dimensionsMap.get("original_height");
+
+            // If Jackson read them as Longs (which is common):
+            if (dimensionsMap.get("original_width") instanceof Number) {
+                width = ((Number) dimensionsMap.get("original_width")).intValue();
+                height = ((Number) dimensionsMap.get("original_height")).intValue();
+            }
+
+            // Set the values to the entity
+            result.setOriginalWidth(width);
+            result.setOriginalHeight(height);
+        }
+
+// resultRepository.save(result) will handle UPDATE or INSERT.
         return resultRepository.save(result);
     }
 

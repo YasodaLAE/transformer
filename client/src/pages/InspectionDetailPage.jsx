@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
@@ -10,6 +10,45 @@ import ZoomableImageModal from '../components/ZoomableImageModal';
 import NotesCard from '../components/NotesCard';
 import AnomalyAnnotationCanvas from '../components/AnomalyAnnotationCanvas';
 
+// InspectionDetailPage.jsx (Defined OUTSIDE the functional component)
+
+const getOriginalDimensions = (result) => {
+    // Standard default dimensions (adjust these if your image size is consistently different)
+    const DEFAULT_WIDTH = 238;
+    const DEFAULT_HEIGHT = 183;
+
+    if (result) {
+        // 1. Check direct entity fields first (most reliable after Java fix)
+        if (result.originalWidth != null && result.originalHeight != null) {
+            return {
+                original_width: result.originalWidth,
+                original_height: result.originalHeight
+            };
+        }
+
+        // 2. Fallback: Check JSON string (if needed)
+        if (result.detectionJsonOutput) {
+            try {
+                const parsed = JSON.parse(result.detectionJsonOutput);
+                // The dimensions are at the root level of the Python output JSON
+                if (parsed.image_dimensions && parsed.image_dimensions.original_width != null) {
+                    return parsed.image_dimensions;
+                }
+                // Fallback 2: Check inside the first anomaly element
+                if (parsed.anomalies && parsed.anomalies.length > 0 && parsed.anomalies[0].image_dimensions) {
+                     return parsed.anomalies[0].image_dimensions;
+                }
+            } catch (e) {
+                console.warn("Failed to parse JSON for dimensions fallback:", e);
+            }
+        }
+    }
+    // Final fallback
+    return { original_width: DEFAULT_WIDTH, original_height: DEFAULT_HEIGHT };
+};
+
+
+
 
 const InspectionDetailPage = () => {
     const API_BASE_URL = 'http://localhost:8080';
@@ -18,7 +57,6 @@ const InspectionDetailPage = () => {
     const [transformer, setTransformer] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showBaselineModal, setShowBaselineModal] = useState(false);
     const [baselineImageName, setBaselineImageName] = useState(null);
 
     const [tempThreshold, setTempThreshold] = useState(0.5);
@@ -35,17 +73,7 @@ const InspectionDetailPage = () => {
 
     const detectionTriggeredRef = useRef(false);
 
-    // NEW STATE & HANDLERS FOR ZOOM MODAL
     const [zoomModal, setZoomModal] = useState({ show: false, url: '', title: '' });
-    // 1. Parse the detection JSON (need to handle possibility of empty array)
-    const parsedAnomalyData = JSON.parse(anomalyResult?.detectionJsonOutput || '[]');
-
-    // 2. Extract dimensions from the first anomaly object (or pass a default)
-    // ASSUMING original image dimensions are stored in the *first* anomaly object's payload:
-    const originalDimensions = parsedAnomalyData[0]?.image_dimensions || {
-        original_width: 1000,
-        original_height: 750 // Use safe defaults until data is loaded
-    }
 
     const handleOpenZoomModal = (url, title) => {
         setZoomModal({ show: true, url: url, title: title });
@@ -54,7 +82,15 @@ const InspectionDetailPage = () => {
     const handleCloseZoomModal = () => {
         setZoomModal({ show: false, url: '', title: '' });
     };
-    // END NEW STATE & HANDLERS
+
+    // Function to extract original dimensions from the result entity/JSON
+
+    const originalDimensions = getOriginalDimensions(anomalyResult);
+//     const originalDimensions = {
+//         original_width: anomalyResult.originalWidth,
+//         original_height: anomalyResult.originalHeight
+//     };
+    // ------------------------------------------------------------------
 
     // Function to fetch the existing anomaly result if it exists
     const fetchAnomalyResult = async (id) => {
@@ -70,90 +106,119 @@ const InspectionDetailPage = () => {
         }
     };
 
-    // Function to run the detection and fetch the result (POST then GET)
-    const runAndFetchDetection = async (id, currentBaselineImageName, currentTempThreshold) => {
-        setIsDetecting(true);
+    // Function to run the detection and fetch the result (POST returns the entity)
+    // ... (rest of imports and component definition) ...
 
-        if (!currentBaselineImageName) {
-                    showErr('Cannot run detection: No baseline image is set for the transformer.');
-                    setIsDetecting(false);
-                    return;
-        }
+        // Function to run the detection and fetch the result (POST returns the entity)
+        const runAndFetchDetection = async (id, currentBaselineImageName, currentTempThreshold) => {
+            setIsDetecting(true);
 
-        try {
-            // 1. POST: Trigger the detection script with parameters
-            const postResponse = await triggerAnomalyDetection(
-                            id,
-                            currentBaselineImageName,
-                            currentTempThreshold
-            );
-            setAnomalyResult(postResponse.data);
-
-            // 2. CRITICAL FIX: Update the timestamp to force image cache bust
-            setTimestamp(new Date().getTime());
-
-        } catch (error) {
-            console.error('Detection failed:', error.response ? error.response.data : error.message);
-            showErr('Anomaly detection failed. Check server logs.');
-        } finally {
-            setIsDetecting(false);
-        }
-    };
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const inspectionResponse = await getInspectionById(inspectionId);
-            setInspection(inspectionResponse.data);
-
-            let currentBaselineName = '';
-            if (inspectionResponse.data.transformerDbId) {
-                const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
-                setTransformer(transformerResponse.data);
-                currentBaselineName = transformerResponse.data.baselineImageName;
-                setBaselineImageName(currentBaselineName);
+            if (!currentBaselineImageName) {
+                        showErr('Cannot run detection: No baseline image is set for the transformer.');
+                        setIsDetecting(false);
+                        return;
             }
 
-            // --- ANOMALY CHECK LOGIC ---
-            if (inspectionResponse.data.thermalImage) {
-                try {
-                    // A. Attempt to fetch existing result directly
-                    const resultResponse = await getAnomalyDetectionResult(inspectionId);
-                    setAnomalyResult(resultResponse.data);
-                    detectionTriggeredRef.current = true;
+            try {
+                // 1. POST: Trigger the detection script with parameters
+                const postResponse = await triggerAnomalyDetection(
+                                id,
+                                currentBaselineImageName,
+                                currentTempThreshold
+                );
+                setAnomalyResult(postResponse.data);
 
-                } catch (err) {
-                    // B. Result was NOT found (404 caught here)
-                    if (err.response && err.response.status === 404) {
-                        setAnomalyResult(null);
+                // 2. CRITICAL FIX: Update the timestamp to force image cache bust
+                setTimestamp(new Date().getTime());
 
-                        // Only trigger if this is the first time checking (prevents loop on mount)
-                        if (!detectionTriggeredRef.current) {
-                            console.log("Image found, but no anomaly result. Triggering detection...");
-                            detectionTriggeredRef.current = true;
-                            // Set a default threshold for the initial run
-                            await runAndFetchDetection(inspectionId, currentBaselineName, 0.5);
+            } catch (error) {
+                console.error('Detection failed:', error.response ? error.response.data : error.message);
+                showErr('Anomaly detection failed. Check server logs.');
+            } finally {
+                setIsDetecting(false);
+            }
+        };
+
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const inspectionResponse = await getInspectionById(inspectionId);
+                setInspection(inspectionResponse.data);
+
+                let currentBaselineName = '';
+                let currentTransformer = null; // Store transformer locally for easy use
+                if (inspectionResponse.data.transformerDbId) {
+                    const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
+                    currentTransformer = transformerResponse.data;
+                    setTransformer(currentTransformer);
+                    currentBaselineName = currentTransformer.baselineImageName;
+                    setBaselineImageName(currentBaselineName);
+                }
+
+                // Define prerequisites locally
+                const hasThermalImage = inspectionResponse.data.thermalImage;
+                const hasBaselineImage = !!currentBaselineName;
+
+
+                // --- ANOMALY CHECK & AUTO-RE-RUN LOGIC (MODIFIED) ---
+                if (hasThermalImage) {
+                    try {
+                        // A. Attempt to fetch existing result directly
+                        const resultResponse = await getAnomalyDetectionResult(inspectionId);
+                        const existingResult = resultResponse.data;
+                        setAnomalyResult(existingResult);
+                        detectionTriggeredRef.current = true;
+
+                        // B. CRITICAL AUTO-RE-RUN CHECK for old data:
+                        // If the result exists, but the necessary JSON is missing/empty, re-run.
+                        // We check if the JSON output is null or just a very short string (e.g., "[]" or blank)
+                        const jsonOutputMissing = !existingResult.detectionJsonOutput || existingResult.detectionJsonOutput.length < 10;
+
+                        if (existingResult && jsonOutputMissing) {
+                            console.log("Anomaly result found, but raw JSON data is missing (old record). Auto-triggering detection...");
+
+                            // Check if we have the prerequisites to run detection
+                            if (hasBaselineImage) {
+                                // Use a default threshold (0.5 is a safe default for migration)
+                                await runAndFetchDetection(inspectionId, currentBaselineName, 0.5);
+                            } else {
+                                console.warn("Cannot auto-re-run for old record: Baseline image is missing.");
+                            }
                         }
 
-                    } else {
-                        console.error('Failed to fetch anomaly result:', err);
-                        setAnomalyResult(null);
+
+                    } catch (err) {
+                        // C. Result was NOT found (404 caught here)
+                        if (err.response && err.response.status === 404) {
+                            setAnomalyResult(null);
+
+                            // Only trigger if this is the first time checking (prevents loop on mount)
+                            if (!detectionTriggeredRef.current && hasBaselineImage) {
+                                console.log("Image found, but no anomaly result. Triggering detection...");
+                                detectionTriggeredRef.current = true;
+                                // Set a default threshold for the initial run
+                                await runAndFetchDetection(inspectionId, currentBaselineName, 0.5);
+                            }
+
+                        } else {
+                            console.error('Failed to fetch anomaly result:', err);
+                            setAnomalyResult(null);
+                        }
                     }
+                } else {
+                    setAnomalyResult(null);
+                    detectionTriggeredRef.current = false;
                 }
-            } else {
-                setAnomalyResult(null);
-                detectionTriggeredRef.current = false;
+                // --- END ANOMALY CHECK & AUTO-RE-RUN LOGIC ---
+
+            } catch (err) {
+                setError('Failed to fetch inspection details.');
+                console.error(err);
+            } finally {
+                setLoading(false);
             }
-            // --- END ANOMALY CHECK LOGIC ---
-
-        } catch (err) {
-            setError('Failed to fetch inspection details.');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
+        };
+    // ... (rest of the component) ...
     useEffect(() => {
         fetchData();
     }, [inspectionId]);
@@ -196,10 +261,13 @@ const InspectionDetailPage = () => {
     const handleImageUploadSuccess = async () => {
         showOk('Thermal image uploaded successfully. Running anomaly detection...');
 
+        // Refetch ALL data to ensure thermal image object is present
+        await fetchData();
+
         // Use the current threshold set by the slider for the run
         await runAndFetchDetection(inspectionId, baselineImageName, tempThreshold);
 
-        // Refetch ALL data to refresh component state
+        // Final fetch to clean up state
         fetchData();
     };
 
@@ -393,7 +461,7 @@ const InspectionDetailPage = () => {
                                 {/* CUSTOM STEPPER CONTROL GROUP */}
                                 <div className="input-group input-group-sm me-3" style={{ width: '100px', height: '31px' }}>
 
-                                    {/* MINUS BUTTON (-) */}
+                                    /* MINUS BUTTON (-) */
                                     <Button
                                         variant="outline-secondary"
                                         onClick={() => setTempThreshold(t => Math.max(0, t - 0.01))}
@@ -403,7 +471,7 @@ const InspectionDetailPage = () => {
                                         <i className="bi bi-dash-lg"></i>
                                     </Button>
 
-                                    {/* NUMERIC INPUT (Precision Entry - Added no-spinner class) */}
+                                    /* NUMERIC INPUT (Precision Entry - Added no-spinner class) */
                                     <Form.Control
                                         type="number"
                                         value={Math.round(tempThreshold * 100)} // Display as percentage (0-100)
@@ -421,7 +489,7 @@ const InspectionDetailPage = () => {
                                         disabled={isDetecting}
                                     />
 
-                                    {/* PLUS BUTTON (+) */}
+                                    /* PLUS BUTTON (+) */
                                     <Button
                                         variant="outline-secondary"
                                         onClick={() => setTempThreshold(t => Math.min(1.0, t + 0.01))}
@@ -478,54 +546,6 @@ const InspectionDetailPage = () => {
                                         <Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>
                                     )}
                                 </Card.Header>
-{/*                                 <Card.Body> */}
-{/*                                     {isDetecting ? ( */}
-{/*                                         // 1. **NICE LOADING STATE** */}
-{/*                                         <div */}
-{/*                                             className="d-flex flex-column align-items-center justify-content-center" */}
-{/*                                             style={{ minHeight: '300px', backgroundColor: '#f8f9fa', border: '1px dashed #ccc' }} */}
-{/*                                         > */}
-{/*                                             <Spinner animation="border" role="status" variant="primary" className="mb-3"> */}
-{/*                                                 <span className="visually-hidden">Running Anomaly Detection...</span> */}
-{/*                                             </Spinner> */}
-{/*                                             <p className="text-primary fw-bold mb-1">Running Anomaly Detection...</p> */}
-{/*                                             <small className="text-muted">Analyzing image with YOLO model...</small> */}
-{/*                                         </div> */}
-{/*                                     ) : hasThermalImage ? ( */}
-{/*                                         // 2. SHOW IMAGE: Make the image clickable and render */}
-{/*                                         <div */}
-{/*                                             onClick={() => handleOpenZoomModal( */}
-{/*                                                 anomalyResult */}
-{/*                                                 ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}` */}
-{/*                                                 : thermalImageUrl, */}
-{/*                                                 anomalyResult ? 'Analyzed Image' : 'Current Maintenance Image' */}
-{/*                                             )} */}
-{/*                                             style={{ cursor: 'zoom-in' }} // Add zoom cursor for visual cue */}
-{/*                                         > */}
-{/*                                             <img */}
-{/*                                                 src={anomalyResult */}
-{/*                                                     ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}` */}
-{/*                                                     : thermalImageUrl */}
-{/*                                                 } */}
-{/*                                                 alt={anomalyResult ? "Annotated Thermal" : "Current Thermal"} */}
-{/*                                                 style={{ maxWidth: '100%' }} */}
-{/*                                             /> */}
-{/*                                             <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small> */}
-{/*                                         </div> */}
-{/*                                     ) : showThermalUploader ? ( */}
-{/*                                         // 3. SHOW UPLOADER */}
-{/*                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} /> */}
-{/*                                     ) : ( */}
-{/*                                         // 4. SHOW PLACEHOLDER */}
-{/*                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}> */}
-{/*                                             <p className="text-muted">No thermal image available.</p> */}
-{/*                                         </div> */}
-{/*                                     )} */}
-{/*                                 </Card.Body> */}
-
-{/*                                 // InspectionDetailPage.js (Around line 330, inside the Analyzed Image Card.Body) */}
-
-{/*                                 // REMOVE ALL THE LOGIC inside Card.Body and replace with: */}
 
                                 <Card.Body>
                                     {hasThermalImage && hasBaselineImage && anomalyResult ? (
@@ -547,6 +567,7 @@ const InspectionDetailPage = () => {
                                             className="d-flex flex-column align-items-center justify-content-center"
                                             style={{ minHeight: '300px', backgroundColor: '#f8f9fa', border: '1px dashed #ccc' }}
                                         >
+                                            <Spinner animation="border" role="status" variant="primary" className="mb-3" />
                                             {/* ... (Spinner and text) ... */}
                                         </div>
                                     ) : showThermalUploader ? (

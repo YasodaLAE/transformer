@@ -174,10 +174,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
                     "severity_score": severity_score_int,
 #                     "severity_score": intensity_deference,
                     "confidence": round(float(score), 4),
-                    "image_dimensions": {
-                            "original_width": original_width,
-                            "original_height": original_height
-                    },
+
                 }
                 final_anomalies_data.append(anomaly_data)
 
@@ -231,6 +228,10 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
     return {
         "overall_status": overall_status,
         "output_image_name": output_image_filename,
+        "image_dimensions": {
+            "original_width": original_width,
+            "original_height": original_height
+        },
         "anomalies": final_anomalies_data
     }
 

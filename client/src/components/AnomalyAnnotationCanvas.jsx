@@ -11,6 +11,7 @@ const API_BASE_URL = 'http://localhost:8080';
 
 const AnomalyAnnotationCanvas = ({ inspectionId, imagePath, initialAnnotationsJson, annotatorUser, onAnnotationSaved, originalImageDimensions }) => {
 
+
     const [annotations, setAnnotations] = useState([]);
     const [selectedId, selectAnnotation] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -42,13 +43,14 @@ const AnomalyAnnotationCanvas = ({ inspectionId, imagePath, initialAnnotationsJs
 
         const scaleX = displayWidth / originalWidth;
         const scaleY = displayHeight / originalHeight;
+        const unifiedScale = displayWidth / originalWidth;
 
         setDisplaySize({
             width: displayWidth,
-            height: displayHeight,
-            scaleX: scaleX,
-            scaleY: scaleY,
-            scale: scaleX // Unified scale
+            height: originalHeight*unifiedScale,
+            scaleX: unifiedScale,
+            scaleY: unifiedScale,
+            scale: unifiedScale // Unified scale
         });
     }, [originalImageDimensions]);
 
@@ -149,6 +151,12 @@ const AnomalyAnnotationCanvas = ({ inspectionId, imagePath, initialAnnotationsJs
     };
     // ---------------------------------
 
+    console.log('--- ANNOTATION CANVAS DEBUG ---');
+    console.log('1. Original Dimensions Prop:', originalImageDimensions);
+    console.log('2. Calculated Display Size:', displaySize);
+    console.log('3. Is Data Loaded:', !!initialAnnotationsJson);
+    console.log('-----------------------------');
+
     return (
         <Card>
             <Card.Body>
@@ -213,8 +221,10 @@ const AnomalyAnnotationCanvas = ({ inspectionId, imagePath, initialAnnotationsJs
                                         onChange={handleShapeChange}
                                         scaleX={displaySize.scaleX}
                                         scaleY={displaySize.scaleY}
+
                                         // Ensure the Konva node itself is passed down for transformer use
                                     />
+
                                 ))}
                             </Layer>
                         </Stage>
@@ -222,6 +232,7 @@ const AnomalyAnnotationCanvas = ({ inspectionId, imagePath, initialAnnotationsJs
 
                     <div className="text-muted mt-2">
                          (Annotation editing is enabled.)
+
                     </div>
                 </div>
 
