@@ -59,6 +59,8 @@ CREATE TABLE `anomaly_detection_result` (
   `output_image_name` varchar(255) DEFAULT NULL,
   `overall_status` varchar(255) DEFAULT NULL,
   `inspection_id` bigint DEFAULT NULL,
+  `original_height` int DEFAULT NULL,
+    `original_width` int DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `UK9powin3ux3oslbcuoguifhqro` (`inspection_id`),
   CONSTRAINT `FK87o85w504j1em42s76se41nc7` FOREIGN KEY (`inspection_id`) REFERENCES `inspection` (`id`)

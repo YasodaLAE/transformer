@@ -78,12 +78,7 @@ const InspectionDetailPage = () => {
     const showOk = (m) => setToast({ type: 'success', message: m });
     const showErr = (m) => setToast({ type: 'error', message: m });
 
-    // Image/Baseline Name State
-    const [baselineImageName, setBaselineImageName] = useState(null);
-
     // Zoom Modal State
-    const detectionTriggeredRef = useRef(false);
-
     const [zoomModal, setZoomModal] = useState({ show: false, url: '', title: '' });
 
     const handleOpenZoomModal = (url, title) => {
@@ -95,52 +90,21 @@ const InspectionDetailPage = () => {
     };
 
     // Function to extract original dimensions from the result entity/JSON
-
     const originalDimensions = getOriginalDimensions(anomalyResult);
-//     const originalDimensions = {
-//         original_width: anomalyResult.originalWidth,
-//         original_height: anomalyResult.originalHeight
-//     };
     // ------------------------------------------------------------------
 
-    // Fetches existing anomaly result if it exists in the database
-    const fetchAnomalyResult = async (id) => {
-        try {
-            const resultResponse = await getAnomalyDetectionResult(id);
-            setAnomalyResult(resultResponse.data);
-        } catch (err) {
-            if (err.response && err.response.status === 404) {
-                setAnomalyResult(null);
-            } else {
-                console.error('Failed to fetch anomaly result:', err);
-            }
-        }
-    };
-
     // Executes the Python detection script via API call
-    const runAndFetchDetection = async (id, currentBaselineImageName, currentTempThreshold) => {
-        setIsDetecting(true);
     // Function to run the detection and fetch the result (POST returns the entity)
-    // ... (rest of imports and component definition) ...
-
-        // Function to run the detection and fetch the result (POST returns the entity)
         const runAndFetchDetection = async (id, currentBaselineImageName, currentTempThreshold) => {
-            setIsDetecting(true);
+            // NOTE: We rely on the caller (fetchData) to manage the setIsDetecting state
+            // for the auto-run migration, making the flow cleaner.
 
             if (!currentBaselineImageName) {
-                        showErr('Cannot run detection: No baseline image is set for the transformer.');
-                        setIsDetecting(false);
-                        return;
+                // Do NOT set isDetecting(false) here, let the caller handle the error.
+                showErr('Cannot run detection: No baseline image is set for the transformer.');
+                throw new Error('Missing Baseline');
             }
 
-        try {
-            // POST: Trigger the detection script with parameters
-            const postResponse = await triggerAnomalyDetection(
-                            id,
-                            currentBaselineImageName,
-                            currentTempThreshold
-            );
-            setAnomalyResult(postResponse.data);
             try {
                 // 1. POST: Trigger the detection script with parameters
                 const postResponse = await triggerAnomalyDetection(
@@ -148,107 +112,98 @@ const InspectionDetailPage = () => {
                                 currentBaselineImageName,
                                 currentTempThreshold
                 );
-                setAnomalyResult(postResponse.data);
+                // DO NOT set setAnomalyResult here. Return the data to the caller.
 
-            // CRITICAL FIX: Update timestamp to force browser cache bust for the new annotated image
-            setTimestamp(new Date().getTime());
                 // 2. CRITICAL FIX: Update the timestamp to force image cache bust
                 setTimestamp(new Date().getTime());
+
+                return postResponse.data; // Return the new anomaly result entity
 
             } catch (error) {
                 console.error('Detection failed:', error.response ? error.response.data : error.message);
                 showErr('Anomaly detection failed. Check server logs.');
-            } finally {
-                setIsDetecting(false);
+                throw error; // Re-throw the error so the caller can handle loading state.
             }
         };
 
     // Main function to fetch all required inspection and transformer data
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            const inspectionResponse = await getInspectionById(inspectionId);
-            setInspection(inspectionResponse.data);
         const fetchData = async () => {
+            let needsAutoRerun = false;
+
             try {
                 setLoading(true);
                 const inspectionResponse = await getInspectionById(inspectionId);
                 setInspection(inspectionResponse.data);
 
                 let currentBaselineName = '';
-                let currentTransformer = null; // Store transformer locally for easy use
+                // ... (Transformer fetching logic remains the same) ...
                 if (inspectionResponse.data.transformerDbId) {
                     const transformerResponse = await getTransformerById(inspectionResponse.data.transformerDbId);
-                    currentTransformer = transformerResponse.data;
-                    setTransformer(currentTransformer);
-                    currentBaselineName = currentTransformer.baselineImageName;
+                    setTransformer(transformerResponse.data);
+                    currentBaselineName = transformerResponse.data.baselineImageName;
                     setBaselineImageName(currentBaselineName);
                 }
 
-                // Define prerequisites locally
                 const hasThermalImage = inspectionResponse.data.thermalImage;
                 const hasBaselineImage = !!currentBaselineName;
+                let currentAnomalyResult = null;
 
 
-                // --- ANOMALY CHECK & AUTO-RE-RUN LOGIC (MODIFIED) ---
+                // --- ANOMALY CHECK & AUTO-RE-RUN LOGIC ---
                 if (hasThermalImage) {
                     try {
-                        // A. Attempt to fetch existing result directly
                         const resultResponse = await getAnomalyDetectionResult(inspectionId);
-                        const existingResult = resultResponse.data;
-                        setAnomalyResult(existingResult);
-                        detectionTriggeredRef.current = true;
+                        currentAnomalyResult = resultResponse.data;
 
-                        // B. CRITICAL AUTO-RE-RUN CHECK for old data:
-                        // If the result exists, but the necessary JSON is missing/empty, re-run.
-                        // We check if the JSON output is null or just a very short string (e.g., "[]" or blank)
-                        const jsonOutputMissing = !existingResult.detectionJsonOutput || existingResult.detectionJsonOutput.length < 10;
+                        const jsonOutputMissing = !currentAnomalyResult.detectionJsonOutput || currentAnomalyResult.detectionJsonOutput.length < 10;
 
-                        if (existingResult && jsonOutputMissing) {
-                            console.log("Anomaly result found, but raw JSON data is missing (old record). Auto-triggering detection...");
-
-                            // Check if we have the prerequisites to run detection
-                            if (hasBaselineImage) {
-                                // Use a default threshold (0.5 is a safe default for migration)
-                                await runAndFetchDetection(inspectionId, currentBaselineName, 0.5);
-                            } else {
-                                console.warn("Cannot auto-re-run for old record: Baseline image is missing.");
-                            }
+                        if (currentAnomalyResult && jsonOutputMissing) {
+                            console.log("Anomaly result found, but raw JSON data is missing (old record). Needs auto-re-run.");
+                            needsAutoRerun = true;
                         }
-
 
                     } catch (err) {
-                        // C. Result was NOT found (404 caught here)
                         if (err.response && err.response.status === 404) {
-                            setAnomalyResult(null);
-
-                            // Only trigger if this is the first time checking (prevents loop on mount)
-                            if (!detectionTriggeredRef.current && hasBaselineImage) {
-                                console.log("Image found, but no anomaly result. Triggering detection...");
+                            if (!detectionTriggeredRef.current) {
+                                console.log("No anomaly result found. Initial detection needed.");
                                 detectionTriggeredRef.current = true;
-                                // Set a default threshold for the initial run
-                                await runAndFetchDetection(inspectionId, currentBaselineName, 0.5);
+                                needsAutoRerun = true;
                             }
-
                         } else {
                             console.error('Failed to fetch anomaly result:', err);
-                            setAnomalyResult(null);
                         }
                     }
-                } else {
-                    setAnomalyResult(null);
-                    detectionTriggeredRef.current = false;
                 }
-                // --- END ANOMALY CHECK & AUTO-RE-RUN LOGIC ---
+
+                // D. Execute the Auto-Rerun if necessary and prerequisites met
+                if (needsAutoRerun && hasBaselineImage) {
+                    // 🛑 CRITICAL FIX: Clear the stale result data IMMEDIATELY
+                    // This forces the component to use the 'isDetecting' spinner logic
+                    setAnomalyResult(null);
+
+                    // Set the specific detecting state for the UI spinner
+                    setIsDetecting(true);
+
+                    // Await the detection call, which RETURNS the new result data
+                    const newResult = await runAndFetchDetection(inspectionId, currentBaselineName, 0.5);
+                    currentAnomalyResult = newResult;
+
+                }
+
+                // Set the final state after all potential synchronous/asynchronous updates are done
+                setAnomalyResult(currentAnomalyResult);
+
 
             } catch (err) {
-                setError('Failed to fetch inspection details.');
+                setError('Failed to fetch inspection details or run detection.');
                 console.error(err);
             } finally {
+                // Reset both loading states regardless of what happened
                 setLoading(false);
+                setIsDetecting(false);
             }
         };
-    // ... (rest of the component) ...
+
     useEffect(() => {
         fetchData();
     }, [inspectionId]);
@@ -328,10 +283,16 @@ const InspectionDetailPage = () => {
         };
 
         // Persist the changes via the general update endpoint
-        await updateInspection(id, updatedInspection);
+        try {
+            await updateInspection(id, updatedInspection);
+            // Update local state to reflect new notes immediately
+            setInspection(updatedInspection);
+            showOk('Notes saved successfully.');
+        } catch (e) {
+            console.error('Failed to save notes:', e);
+            showErr('Failed to save notes.');
+        }
 
-        // Update local state to reflect new notes immediately
-        setInspection(updatedInspection);
     };
 
 
@@ -467,7 +428,7 @@ const InspectionDetailPage = () => {
                             </small>
                         )}
 
-                    {/* FIXED THRESHOLD CONTROL: Slider + Numeric Input for Precision */}
+                    {/* THRESHOLD CONTROL: Slider + Numeric Input for Precision */}
                         {hasThermalImage && hasBaselineImage && (
                             <div className="d-flex align-items-center bg-light p-2 rounded-3 border">
 
@@ -491,10 +452,10 @@ const InspectionDetailPage = () => {
                                 {/* CUSTOM STEPPER CONTROL GROUP */}
                                 <div className="input-group input-group-sm me-3" style={{ width: '100px', height: '31px' }}>
 
-                                    /* MINUS BUTTON (-) */
+                                    {/* MINUS BUTTON (-) */}
                                     <Button
                                         variant="outline-secondary"
-                                        onClick={() => setTempThreshold(t => Math.max(0, t - 0.01))}
+                                        onClick={() => setTempThreshold(t => Math.max(0, parseFloat((t - 0.01).toFixed(2))))}
                                         disabled={isDetecting || tempThreshold <= 0.01}
                                         style={{ width: '25px' }}
                                     >
@@ -515,14 +476,14 @@ const InspectionDetailPage = () => {
                                         max="100"
                                         step="1"
                                         style={{ textAlign: 'center', width: '40px' }}
-                                        className="form-control-sm border-secondary no-spinner" // CRITICAL FIX
+                                        className="form-control-sm border-secondary no-spinner"
                                         disabled={isDetecting}
                                     />
 
                                     {/* PLUS BUTTON (+) */}
                                     <Button
                                         variant="outline-secondary"
-                                        onClick={() => setTempThreshold(t => Math.min(1.0, t + 0.01))}
+                                        onClick={() => setTempThreshold(t => Math.min(1.0, parseFloat((t + 0.01).toFixed(2))))}
                                         disabled={isDetecting || tempThreshold >= 1.00}
                                         style={{ width: '25px' }}
                                     >
@@ -598,7 +559,7 @@ const InspectionDetailPage = () => {
                                             style={{ minHeight: '300px', backgroundColor: '#f8f9fa', border: '1px dashed #ccc' }}
                                         >
                                             <Spinner animation="border" role="status" variant="primary" className="mb-3" />
-                                            {/* ... (Spinner and text) ... */}
+                                            <p className="text-muted mt-2">Anomaly detection is running...</p>
                                         </div>
                                     ) : showThermalUploader ? (
                                         // SHOW UPLOADER
