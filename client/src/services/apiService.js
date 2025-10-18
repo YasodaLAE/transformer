@@ -27,10 +27,8 @@ export const createInspection = (inspectionData) => {
 };
 
 export const deleteInspection = (id) => {
-    // Corrected to use axios for consistency.
     return axios.delete(`${API_BASE_URL}/api/inspections/${id}`);
 };
-
 
 export const getInspectionById = (id) => {
     return axios.get(`${API_BASE_URL}/api/inspections/${id}`);
@@ -50,17 +48,13 @@ export const deleteBaselineImage = (transformerId) => {
     return axios.delete(`${API_BASE_URL}/api/transformers/${transformerId}/baseline-image`);
 };
 
-// --- UPDATED THERMAL IMAGE FUNCTIONS ---
-
 export const uploadThermalImage = (inspectionId, formData) => {
-    // URL now points to the InspectionController
     return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/thermal-image`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
 };
 
 export const deleteThermalImage = (imageId) => {
-    // URL now points to the InspectionController
     return axios.delete(`${API_BASE_URL}/api/inspections/thermal-image/${imageId}`);
 };
 
@@ -84,11 +78,21 @@ export const triggerAnomalyDetection = (inspectionId, baselineFileName, tempThre
     return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`, requestBody);
 };
 
-
 export const getAnnotatedAnomalyImage = (inspectionId) => {
-    // This is useful if your frontend needs the direct image URL, though
-    // fetching it via Axios and blob is usually safer for protected routes.
     return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image`, {
-        responseType: 'blob' // Important for image data
+        responseType: 'blob'
     });
+};
+
+// --- ANNOTATION FUNCTIONS ---
+
+export const getAnnotations = async (inspectionId) => {
+    const response = await axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`);
+    return response.data;
+};
+
+export const saveAnnotations = async (inspectionId, annotations) => {
+    // FIX: The typo on the next line is now corrected.
+    const response = await axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`, annotations);
+    return response.data;
 };

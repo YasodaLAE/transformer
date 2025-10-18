@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "inspection")
@@ -37,6 +39,15 @@ public class Inspection {
     @OneToOne(mappedBy = "inspection", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private ThermalImage thermalImage;
+
+    @OneToMany(
+            mappedBy = "inspection",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @JsonManagedReference("inspection-annotations")
+    private List<Annotation> annotations = new ArrayList<>();
 
     /**
      * Ensures inspectedBy is not set to null or blank values.

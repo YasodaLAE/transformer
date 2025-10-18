@@ -1,10 +1,23 @@
+-- =================================================================
+--  DROP TABLES (Children First, Then Parents)
+-- =================================================================
+-- These tables depend on 'inspection', so they must be dropped first.
+DROP TABLE IF EXISTS annotations;
 DROP TABLE IF EXISTS anomaly_detection_result;
--- schema.sql (replace thermal_image DDL)
 DROP TABLE IF EXISTS thermal_image;
+
+-- This table depends on 'transformer'.
 DROP TABLE IF EXISTS inspection;
+
+-- This is the top-level parent table.
 DROP TABLE IF EXISTS transformer;
 
--- (The CREATE TABLE transformer block remains unchanged)
+
+-- =================================================================
+--  CREATE TABLES (Parents First, Then Children)
+-- =================================================================
+
+-- 1. Create 'transformer' table (Parent)
 CREATE TABLE transformer (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   transformer_id VARCHAR(255),
@@ -20,7 +33,7 @@ CREATE TABLE transformer (
   no_of_feeders INT
 );
 
--- (The CREATE TABLE inspection block is updated with NOTES)
+-- 2. Create 'inspection' table (Child of 'transformer')
 CREATE TABLE inspection (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   inspection_no VARCHAR(255),
@@ -29,37 +42,45 @@ CREATE TABLE inspection (
   status VARCHAR(255),
   transformer_id BIGINT,
   inspected_by VARCHAR(255),
-  notes TEXT,  -- <--- ADDED THE NOTES COLUMN
+  notes TEXT,
   FOREIGN KEY (transformer_id) REFERENCES transformer(id) ON DELETE CASCADE
 );
 
--- ******************************************************
--- ** CORRECTED thermal_image TABLE (Unchanged) **
--- ******************************************************
+-- 3. Create tables that depend on 'inspection' (Children of 'inspection')
 CREATE TABLE thermal_image (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    -- Columns combined from both versions:
     environmental_condition ENUM('CLOUDY','RAINY','SUNNY'),
     file_name VARCHAR(255) NOT NULL,
     file_path VARCHAR(255) NOT NULL,
     image_type ENUM('BASELINE','MAINTENANCE') NOT NULL,
     upload_timestamp DATETIME(6),
     uploader_id VARCHAR(255),
-
-    -- The Foreign Key now correctly links to Inspection (from the merged code)
-    inspection_id BIGINT NOT NULL,
+    inspection_id BIGINT,
     FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
 );
 
--- (The CREATE TABLE anomaly_detection_result block remains unchanged)
-CREATE TABLE `anomaly_detection_result` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `detected_timestamp` datetime(6) DEFAULT NULL,
-  `detection_json_output` text,
-  `output_image_name` varchar(255) DEFAULT NULL,
-  `overall_status` varchar(255) DEFAULT NULL,
-  `inspection_id` bigint DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UK9powin3ux3oslbcuoguifhqro` (`inspection_id`),
-  CONSTRAINT `FK87o85w504j1em42s76se41nc7` FOREIGN KEY (`inspection_id`) REFERENCES `inspection` (`id`)
+CREATE TABLE anomaly_detection_result (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  detected_timestamp DATETIME(6) DEFAULT NULL,
+  detection_json_output TEXT,
+  output_image_name VARCHAR(255) DEFAULT NULL,
+  overall_status VARCHAR(255) DEFAULT NULL,
+  inspection_id BIGINT DEFAULT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY UK_inspection_id (inspection_id),
+  CONSTRAINT FK_anomaly_to_inspection FOREIGN KEY (inspection_id) REFERENCES inspection(id)
+);
+
+CREATE TABLE annotations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    inspection_id BIGINT NOT NULL,
+    annotation_type VARCHAR(255) NOT NULL,
+    x DOUBLE NOT NULL,
+    y DOUBLE NOT NULL,
+    width DOUBLE NOT NULL,
+    height DOUBLE NOT NULL,
+    comments TEXT,
+    user_id VARCHAR(255),
+    timestamp DATETIME,
+    FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
 );

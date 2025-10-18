@@ -15,23 +15,15 @@ SEVERITY_MAP = {
 }
 
 def get_baseline_intensity(baseline_path):
-    """
-    Estimate a baseline intensity from the baseline image by masking a target
-    color range and taking the median of the selected intensity channel.
-
-    Returns: int in [0, 255]
-    """
     img = cv2.imread(baseline_path)
     if img is None:
         print(f"Error: Could not read baseline image at {baseline_path}", file=sys.stderr)
-        return 50  # Fallback
+        return 50
 
-    # NOTE: Mask is applied in BGR space (consistent with current thresholds).
     lower_cool = np.array([133, 118, 162])
     upper_cool = np.array([82, 207, 20])
     mask = cv2.inRange(img, lower_cool, upper_cool)
 
-    # Use L-channel from LAB as intensity proxy
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     L_channel = lab[:, :, 0]
     selected = L_channel[mask > 0]
@@ -40,16 +32,12 @@ def get_baseline_intensity(baseline_path):
         print("Warning: No target-color pixels found. Falling back.", file=sys.stderr)
         return 50
 
-    baseline = np.percentile(selected, 50)  # median
+    baseline = np.percentile(selected, 50)
     baseline = max(baseline, 50)
     print(f"Calculated Baseline Intensity Proxy (median): {baseline:.2f}", file=sys.stderr)
     return int(baseline)
 
 def run_detection(maintenance_image_path, baseline_image_path, save_folder, threshold_percentage):
-    """
-    Run YOLO on the maintenance image, filter detections by intensity difference
-    relative to a baseline, annotate the image, and return structured results.
-    """
     if not os.path.exists(maintenance_image_path) or not os.path.exists(baseline_image_path):
         return {
             "error": f"Image not found. Maintenance: {maintenance_image_path}, Baseline: {baseline_image_path}",
@@ -69,6 +57,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
     if im_bgr is None:
         return {"error": f"Error: Could not read maintenance image at {maintenance_image_path}", "overall_status": "UNCERTAIN"}
 
+    img_h, img_w = im_bgr.shape[:2]
     final_anomalies_data = []
     overall_status = "NORMAL"
 
@@ -76,9 +65,8 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
     name, ext = os.path.splitext(base_filename)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Use LAB; V-channel variable name is kept for compatibility with current logic
-    im_hsv = cv2.cvtColor(im_bgr, cv2.COLOR_BGR2LAB)
-    v_channel = im_hsv[:, :, 2]  # Using the third channel as intensity proxy (as in original code)
+    im_lab = cv2.cvtColor(im_bgr, cv2.COLOR_BGR2LAB)
+    v_channel = im_lab[:, :, 2]
 
     for r in results:
         boxes = r.boxes.xyxy.cpu().numpy()
@@ -98,7 +86,6 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
             else:
                 max_intensity_M = np.percentile(roi_v, 95)
 
-            # Intensity "deference" relative to 255 scale (kept as is)
             if baseline_intensity_B > 0:
                 intensity_deference = ((max_intensity_M - baseline_intensity_B) / 255) * 100
             else:
@@ -113,25 +100,34 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
                 anomaly_data = {
                     "id": display_id,
                     "type": class_label,
-                    "location": {"x_min": x_min, "y_min": y_min, "x_max": x_max, "y_max": y_max},
+                    "location": {
+                        "x_min": x_min,
+                        "y_min": y_min,
+                        "x_max": x_max,
+                        "y_max": y_max
+                    },
                     "severity_score": severity_score_int,
                     "confidence": round(float(score), 4),
+                    # New metadata for Phase 3
+                    "editable": True,
+                    "created_at": datetime.utcnow().isoformat(),
+                    "source": "model"
                 }
                 final_anomalies_data.append(anomaly_data)
 
-                # Update overall status by highest severity encountered
+                # Update overall status
                 if severity_score_int == 2:
                     overall_status = "FAULTY"
                 elif severity_score_int == 1 and overall_status != "FAULTY":
                     overall_status = "POTENTIALLY_FAULTY"
 
-                # Draw bounding box and id label
+                # Draw bounding box
                 if severity_score_int == 2:
-                    color = (0, 0, 255)      # Red
+                    color = (0, 0, 255)
                 elif severity_score_int == 1:
-                    color = (0, 165, 255)    # Orange
+                    color = (0, 165, 255)
                 else:
-                    color = (0, 255, 0)      # Green
+                    color = (0, 255, 0)
 
                 cv2.rectangle(im_bgr, (x_min, y_min), (x_max, y_max), color, 2)
                 text = f"{display_id}"
@@ -144,23 +140,26 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
                     text_y = y_min + th + 5
                 cv2.rectangle(im_bgr, (x_min, text_y - th - 5), (x_min + tw + 5, text_y + baseline), color, -1)
                 cv2.putText(im_bgr, text, (x_min + 2, text_y - 2), font, font_scale, (255, 255, 255), thickness, cv2.LINE_AA)
-            else:
-                # Detected by YOLO but filtered out by intensity threshold
-                pass
 
     output_image_filename = f"{name}_annotated_{timestamp}{ext}"
     save_image_path = os.path.join(save_folder, output_image_filename)
 
-    success_img = cv2.imwrite(save_image_path, im_bgr)
-    if success_img:
+    if cv2.imwrite(save_image_path, im_bgr):
         print(f"Successfully saved result image to: {save_image_path}", file=sys.stderr)
     else:
         print(f"Error saving image to: {save_image_path}", file=sys.stderr)
 
+    # 👇 New structured data added but old format preserved
     return {
         "overall_status": overall_status,
         "output_image_name": output_image_filename,
-        "anomalies": final_anomalies_data
+        "anomalies": final_anomalies_data,
+        "metadata": {
+            "timestamp": datetime.utcnow().isoformat(),
+            "image_width": img_w,
+            "image_height": img_h,
+            "model_version": "v1.0",
+        }
     }
 
 if __name__ == "__main__":
