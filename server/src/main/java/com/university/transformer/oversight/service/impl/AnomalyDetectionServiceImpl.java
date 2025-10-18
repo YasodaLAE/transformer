@@ -117,6 +117,10 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         String detectionJson = objectMapper.writeValueAsString(outputMap.get("anomalies"));
         Inspection inspection = inspectionRepository.findById(inspectionId).orElseThrow(() -> new RuntimeException("Inspection not found."));
 
+        // --- THIS IS THE NEW LINE TO ADD ---
+        // Before saving the new AI result, delete any old manual annotations for this inspection.
+        annotationRepository.deleteByInspectionId(inspectionId);
+
         AnomalyDetectionResult result = resultRepository.findByInspectionId(inspectionId).orElseGet(() -> {
             AnomalyDetectionResult newResult = new AnomalyDetectionResult();
             newResult.setInspection(inspection);
