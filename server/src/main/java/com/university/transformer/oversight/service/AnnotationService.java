@@ -5,5 +5,5 @@ import java.util.List;
 
 public interface AnnotationService {
     List<AnnotationDTO> getAnnotationsByInspectionId(Long inspectionId);
-    void saveAnnotations(Long inspectionId, List<AnnotationDTO> annotationDTOs);
+    void saveAnnotations(Long inspectionId, List<AnnotationDTO> finalAnnotations, List<AnnotationDTO> loggableChanges);
 }

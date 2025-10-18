@@ -16,7 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.university.transformer.oversight.dto.AnnotationSaveRequest;
 import java.io.IOException;
 import java.util.List;
 
@@ -79,7 +79,7 @@ public class InspectionController {
     }
 
 
-    // --- File and Anomaly Detection Endpoints ---
+
 
     @PostMapping("/{inspectionId}/thermal-image")
     public ResponseEntity<String> uploadThermalImage(
@@ -149,8 +149,13 @@ public class InspectionController {
     }
 
     @PostMapping("/{inspectionId}/annotations")
-    public ResponseEntity<Void> saveAnnotationsForInspection(@PathVariable Long inspectionId, @RequestBody List<AnnotationDTO> annotationDTOs) {
-        annotationService.saveAnnotations(inspectionId, annotationDTOs);
+    public ResponseEntity<Void> saveAnnotationsForInspection(@PathVariable Long inspectionId, @RequestBody AnnotationSaveRequest request) {
+        // Pass both the final annotations list and the loggable changes list to the service
+        annotationService.saveAnnotations(
+                inspectionId,
+                request.getFinalAnnotations(),
+                request.getLoggableChanges()
+        );
         return ResponseEntity.ok().build();
     }
 

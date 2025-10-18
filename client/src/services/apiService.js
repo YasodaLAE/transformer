@@ -91,8 +91,14 @@ export const getAnnotations = async (inspectionId) => {
     return response.data;
 };
 
-export const saveAnnotations = async (inspectionId, annotations) => {
-    // FIX: The typo on the next line is now corrected.
-    const response = await axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`, annotations);
+export const saveAnnotations = async (inspectionId, saveRequest) => {
+    // The payload must match the AnnotationSaveRequest DTO structure on the backend
+
+    const response = await axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`, saveRequest);
+    return response.data;
+};
+
+export const getAnnotationLogs = async (inspectionId) => {
+    const response = await axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/annotation-logs`);
     return response.data;
 };

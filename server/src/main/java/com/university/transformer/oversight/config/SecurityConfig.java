@@ -28,6 +28,9 @@ public class SecurityConfig {
                         // Permit other necessary public paths (login)
                         .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                         .requestMatchers("/api/**", "/files/**").permitAll()
+                        .requestMatchers("/api/inspections/*/annotations").permitAll()
+                        .requestMatchers("/api/inspections/*/annotations/image").permitAll()
+                        .requestMatchers("/api/inspections/*/annotation-logs").permitAll()
                         .anyRequest().authenticated()
                 );
 

@@ -8,6 +8,9 @@ import java.time.LocalDateTime;
 @Setter
 public class AnnotationDTO {
     private Long id;
+    private String boxSessionId;
+    private String actionType; // "ADDED", "EDITED", or "DELETED"
+    private AnnotationDTO originalState; // The state before the action
     private String type;
     private double x;
     private double y;

@@ -2,14 +2,17 @@
 --  DROP TABLES (Children First, Then Parents)
 -- =================================================================
 -- These tables depend on 'inspection', so they must be dropped first.
-DROP TABLE IF EXISTS annotations;
+DROP TABLE IF EXISTS annotations;             -- <-- NEW DEPENDENCY
 DROP TABLE IF EXISTS anomaly_detection_result;
+DROP TABLE IF EXISTS anomaly;
+DROP TABLE IF EXISTS annotation_logs;
 DROP TABLE IF EXISTS thermal_image;
+-- (Include any other child tables, like 'file_data', etc.)
 
--- This table depends on 'transformer'.
+-- 2. Drop the parent table
 DROP TABLE IF EXISTS inspection;
 
--- This is the top-level parent table.
+-- 3. Continue with the rest of the tables
 DROP TABLE IF EXISTS transformer;
 
 
