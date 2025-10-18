@@ -205,7 +205,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                  await saveAnnotations(inspectionId, saveRequest);
 
                  showOk('Annotations saved and logged successfully!');
-                 setTimeout(() => { if (onAnnotationsSaved) onAnnotationsSaved(); }, 1500);
+                 setTimeout(() => { if (onAnnotationsSaved) onAnnotationsSaved(finalAnnotationsToSave); }, 1500);
             } catch (error) {
                  showErr('Failed to save annotations and logs.');
                  console.error("Save annotation error:", error);

@@ -32,6 +32,7 @@ const InspectionDetailPage = () => {
     const [isAnnotating, setIsAnnotating] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
     const [hasUserAnnotations, setHasUserAnnotations] = useState(false);
+    const [activeAnomalyDetails, setActiveAnomalyDetails] = useState([]);
 
     const handleOpenZoomModal = (url, title) => setZoomModal({ show: true, url, title });
     const handleCloseZoomModal = () => setZoomModal({ show: false, url: '', title: '' });
@@ -68,11 +69,14 @@ const InspectionDetailPage = () => {
                 setBaselineImageName(currentBaselineName);
             }
             if (inspectionResponse.data.thermalImage) {
+                let userAnnotationExists = false;
+                let savedAnnotations = [];
 
                 try {
                     // Check if user annotations exist in the database
-                    const savedAnnotations = await getAnnotations(inspectionId);
-                    setHasUserAnnotations(savedAnnotations && savedAnnotations.length > 0);
+                    savedAnnotations = await getAnnotations(inspectionId);
+                    userAnnotationExists = savedAnnotations && savedAnnotations.length > 0;
+                    setHasUserAnnotations(userAnnotationExists);
                 } catch (annotationErr) {
                     console.warn("Could not check for saved annotations:", annotationErr);
                     setHasUserAnnotations(false);
@@ -82,6 +86,23 @@ const InspectionDetailPage = () => {
                     const resultResponse = await getAnomalyDetectionResult(inspectionId);
                     setAnomalyResult(resultResponse.data);
                     detectionTriggeredRef.current = true;
+
+                    if (userAnnotationExists) {
+                        // Priority 1: Use user's saved annotations (AnnotationDTOs)
+                        setActiveAnomalyDetails(savedAnnotations);
+                    } else {
+                        // Priority 2: Parse and use the raw AI result
+                        const aiDetails = JSON.parse(resultResponse.data.detectionJsonOutput || '[]').map(ann => ({
+                            type: ann.type || 'Faulty',
+                            x: ann.location.x_min,
+                            y: ann.location.y_min,
+                            width: ann.location.x_max - ann.location.x_min,
+                            height: ann.location.y_max - ann.location.y_min,
+                            confidence: ann.confidence,
+                            severity_score: ann.severity_score,
+                        }));
+                        setActiveAnomalyDetails(aiDetails);
+                    }
                 } catch (err) {
                     if (err.response && err.response.status === 404) {
                         setAnomalyResult(null);
@@ -91,11 +112,13 @@ const InspectionDetailPage = () => {
                         }
                     } else {
                         setAnomalyResult(null);
+                        setActiveAnomalyDetails([]);
                     }
                 }
             } else {
                 setAnomalyResult(null);
                 detectionTriggeredRef.current = false;
+                setActiveAnomalyDetails([]);
             }
         } catch (err) {
             setError('Failed to fetch inspection details.');
@@ -269,6 +292,7 @@ const InspectionDetailPage = () => {
                                                 onAnnotationsSaved={() => {
                                                     setIsAnnotating(false);
                                                     setRefreshKey(prev => prev + 1); // Triggers visual refresh
+//                                                     setActiveAnomalyDetails(finalAnnotations);
                                                     fetchData(); // 💥 IMPORTANT: Re-fetch data to update 'hasUserAnnotations' status!
                                                 }}
                                                 onCancel={() => setIsAnnotating(false)}
@@ -294,22 +318,41 @@ const InspectionDetailPage = () => {
                     </Row>
                 </Card.Body>
             </Card>
-            {anomalyResult && anomalyResult.detectionJsonOutput && !isAnnotating && (
+            {activeAnomalyDetails && activeAnomalyDetails.length > 0 && !isAnnotating && (
                 <Card className="mt-4 rounded-4 shadow-sm">
                     <Card.Body>
-                        <h4>Anomaly Details ({JSON.parse(anomalyResult.detectionJsonOutput || '[]').length} Detected)</h4>
+                        <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4>
                         <ul className="list-group list-group-flush">
-                            {JSON.parse(anomalyResult.detectionJsonOutput || '[]').map((anomaly, index) => (
-                                <li key={index} className="list-group-item">
-                                    <strong>Error {index + 1}:</strong>
-                                    <span className={`badge ms-2 ${anomaly.type === 'Faulty' ? 'bg-danger' : 'bg-warning'}`}>{anomaly.type}</span><br/>
-                                    <small className="text-muted">Coordinates: ({anomaly.location.x_min}, {anomaly.location.y_min}) to ({anomaly.location.x_max}, {anomaly.location.y_max}) | Confidence: {anomaly.confidence} | Severity Score: {anomaly.severity_score}</small>
-                                </li>
-                            ))}
-                        </ul>
-                    </Card.Body>
-                </Card>
-            )}
+                            {/* 💥 MODIFIED MAPPING to use activeAnomalyDetails */}
+                            {activeAnomalyDetails.map((anomaly, index) => {
+                                // Check if the object contains the older, raw AI structure (which has a 'location' object)
+                                const isRawAIData = anomaly.location && anomaly.location.x_min !== undefined;
+
+                                // Determine coordinates for display
+                                const xMin = isRawAIData ? anomaly.location.x_min : anomaly.x;
+                                const yMin = isRawAIData ? anomaly.location.y_min : anomaly.y;
+                                const xMax = isRawAIData ? anomaly.location.x_max : (anomaly.x + anomaly.width);
+                                const yMax = isRawAIData ? anomaly.location.y_max : (anomaly.y + anomaly.height);
+
+                                return (
+                                    <li key={anomaly.id || index} className="list-group-item">
+                                        <strong>Anomaly {index + 1}:</strong>
+                                        {/* Use anomaly.type from DTO if available, otherwise default */}
+                                        <span className={`badge ms-2 ${anomaly.type === 'Faulty' ? 'bg-danger' : 'bg-warning'}`}>{anomaly.type || 'USER_VALIDATED'}</span><br/>
+
+                                        <small className="text-muted">
+                                            Coordinates: ({Math.round(xMin)}, {Math.round(yMin)}) to ({Math.round(xMax)}, {Math.round(yMax)})
+                                            {anomaly.confidence && ` | Confidence: ${anomaly.confidence}`}
+                                            {anomaly.severity_score && ` | Severity Score: ${anomaly.severity_score}`}
+                                            {anomaly.comments && ` | Notes: ${anomaly.comments}`}
+                                        </small>
+                                    </li>
+                                );
+                            })}
+                            </ul>
+                                </Card.Body>
+                            </Card>
+                        )}
             <NotesCard inspectionId={inspection.id} initialNotes={inspection.notes} onSave={handleSaveNotes} showOk={showOk} showErr={showErr} isAdmin={isAdmin} />
             <ZoomableImageModal show={zoomModal.show} onClose={handleCloseZoomModal} imageUrl={zoomModal.url} title={zoomModal.title} />
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}
