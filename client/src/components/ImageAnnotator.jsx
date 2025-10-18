@@ -150,7 +150,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
 
             const finalAnnotationsToSave = annotations.map(ann => {
                 // Determine if the ID is a transient session ID (like "ai-0" or "user_new-1")
-                const isTransientId = typeof ann.id === 'string' && (ann.id.startsWith('ai-') || ann.id.startsWith('user_new-'));
+                const isTransientId = typeof ann.id === 'string' && (ann.id.startsWith('ai-') || ann.id.startsWith('user_new-') || ann.id.startsWith('new-'));
 
                 // Create a mutable copy
                 const finalAnn = { ...ann, userId: userId };
@@ -174,7 +174,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                 // Since loggableChanges are DTOs that will be logged, they don't map directly to the
                 // persistent Annotation entity ID. The only way to stop this is to ensure any
                 // annotation sent in loggableChanges also has its id set to null if it's transient.
-                if (typeof finalLog.id === 'string' && (finalLog.id.startsWith('ai-') || finalLog.id.startsWith('user_new-'))) {
+                if (typeof finalLog.id === 'string' && (finalLog.id.startsWith('ai-') || finalLog.id.startsWith('user_new-') || finalLog.id.startsWith('new-'))) {
                      finalLog.id = null;
                 }
                 return finalLog;

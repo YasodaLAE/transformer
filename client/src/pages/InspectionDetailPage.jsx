@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection } from '../services/apiService';
+import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection, getAnnotations } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner, Form } from 'react-bootstrap';
@@ -31,6 +31,7 @@ const InspectionDetailPage = () => {
     const [zoomModal, setZoomModal] = useState({ show: false, url: '', title: '' });
     const [isAnnotating, setIsAnnotating] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [hasUserAnnotations, setHasUserAnnotations] = useState(false);
 
     const handleOpenZoomModal = (url, title) => setZoomModal({ show: true, url, title });
     const handleCloseZoomModal = () => setZoomModal({ show: false, url: '', title: '' });
@@ -67,6 +68,16 @@ const InspectionDetailPage = () => {
                 setBaselineImageName(currentBaselineName);
             }
             if (inspectionResponse.data.thermalImage) {
+
+                try {
+                    // Check if user annotations exist in the database
+                    const savedAnnotations = await getAnnotations(inspectionId);
+                    setHasUserAnnotations(savedAnnotations && savedAnnotations.length > 0);
+                } catch (annotationErr) {
+                    console.warn("Could not check for saved annotations:", annotationErr);
+                    setHasUserAnnotations(false);
+                }
+
                 try {
                     const resultResponse = await getAnomalyDetectionResult(inspectionId);
                     setAnomalyResult(resultResponse.data);
@@ -154,6 +165,14 @@ const InspectionDetailPage = () => {
     const baselineImageUrl = hasBaselineImage ? `${API_BASE_URL}/api/transformers/${transformer.id}/baseline-image/view?timestamp=${new Date().getTime()}` : '';
     const aiAnalyzedImageUrl = anomalyResult ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}` : thermalImageUrl;
     const userAnnotatedImageUrl = `${API_BASE_URL}/api/inspections/${inspectionId}/annotations/image?key=${refreshKey}`;
+    const displayImageUrl = hasUserAnnotations
+        ? userAnnotatedImageUrl // If user saved anything, show the user-annotated image.
+        : aiAnalyzedImageUrl; // Otherwise, show the AI-analyzed image.
+
+    // We don't need the refreshKey logic anymore since fetchData updates the state, triggering reload.
+    // If you still want the instant refresh: use refreshKey in the URL:
+    const finalDisplayImageUrl = `${displayImageUrl}&k=${refreshKey}`; // Append refreshKey for instant update after save
+
     const getStatusBadgeColor = (status) => {
         switch (status.toLowerCase()) {
             case 'completed': return 'bg-primary';
@@ -243,26 +262,28 @@ const InspectionDetailPage = () => {
                                     ) : hasThermalImage ? (
                                         isAnnotating ? (
                                             <ImageAnnotator
+                                                // ... props remain the same ...
                                                 inspectionId={inspectionId}
                                                 imageUrl={thermalImageUrl}
                                                 initialAnnotations={anomalyResult?.detectionJsonOutput}
                                                 onAnnotationsSaved={() => {
                                                     setIsAnnotating(false);
-                                                    setRefreshKey(prev => prev + 1);
+                                                    setRefreshKey(prev => prev + 1); // Triggers visual refresh
+                                                    fetchData(); // 💥 IMPORTANT: Re-fetch data to update 'hasUserAnnotations' status!
                                                 }}
                                                 onCancel={() => setIsAnnotating(false)}
                                             />
-                                        ) : (
-                                            <>
-                                                <div onClick={() => handleOpenZoomModal(refreshKey > 0 ? userAnnotatedImageUrl : aiAnalyzedImageUrl, 'Analyzed Image')} style={{ cursor: 'zoom-in' }}>
-                                                    <img src={refreshKey > 0 ? userAnnotatedImageUrl : aiAnalyzedImageUrl} alt="Annotated Thermal" style={{ maxWidth: '100%' }} key={refreshKey > 0 ? userAnnotatedImageUrl : aiAnalyzedImageUrl} />
+                                            ) : (
+                                                <>
+                                                {/* Use the calculated displayImageUrl */}
+                                                <div onClick={() => handleOpenZoomModal(displayImageUrl, 'Analyzed Image')} style={{ cursor: 'zoom-in' }}>
+                                                    <img src={displayImageUrl} alt="Annotated Thermal" style={{ maxWidth: '100%' }} key={displayImageUrl} />
                                                     <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small>
                                                 </div>
                                                 {anomalyResult && (<Button variant="primary" onClick={() => setIsAnnotating(true)} className="mt-2"><i className="bi bi-pencil-square me-2"></i>Correct Annotations</Button>)}
-                                                {/* --- REMOVED 'View Original AI Detection' button from here --- */}
-                                            </>
-                                        )
-                                    ) : showThermalUploader ? (
+                                                </>
+                                            )
+                                        ) : showThermalUploader ? (
                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
                                     ) : (
                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}><p className="text-muted">No thermal image available.</p></div>
