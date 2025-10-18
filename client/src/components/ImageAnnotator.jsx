@@ -5,6 +5,7 @@ import { getAnnotations, saveAnnotations } from '../services/apiService';
 import { useAuth } from '../hooks/AuthContext';
 import Toast from './Toast';
 import { Button, ButtonGroup } from 'react-bootstrap';
+import CommentModal from './CommentModal';
 
 const AnnotationRect = ({ shapeProps, isSelected, onSelect, onChange }) => {
     const shapeRef = useRef();
@@ -278,8 +279,8 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                                  annotationId: originalAnnotation.id,
                                  // Preserve the state before the final change
                                  currentState: newAttrs,
-                                 originalState: originalAnnotation,
-                                 comment: ''
+                                 originalState: {...originalAnnotation},
+                                 comment: originalAnnotation.comment || ''
                              });
                          }
                     }
@@ -379,6 +380,15 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     </Button>
                 </ButtonGroup>
             </div>
+
+            <CommentModal
+                show={commentModal.show}
+                action={commentModal.action}
+                onSave={handleCommentSave} // Calls the ImageAnnotator function
+                onCancel={() => setCommentModal({ show: false, action: null, annotationId: null, comment: '' })}
+                initialComment={commentModal.comment}
+                annotationId={commentModal.annotationId}
+            />
 
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>
