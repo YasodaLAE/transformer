@@ -182,6 +182,23 @@ const InspectionDetailPage = () => {
         setInspection(updatedInspection);
     };
 
+    const formatTimestamp = (ts) => {
+        if (!ts) return '';
+        try {
+            const date = new Date(ts);
+            return new Intl.DateTimeFormat('en-GB', { // 'en-GB' for DD/MM/YYYY format
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false // 24-hour clock
+            }).format(date);
+        } catch (e) {
+            return ts;
+        }
+    };
+
     if (loading) return <Spinner animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner>;
     if (error) return <p className="text-danger">{error}</p>;
     if (!inspection) return <p>Inspection not found.</p>;
@@ -371,15 +388,24 @@ const InspectionDetailPage = () => {
                                         }
                                         const statusTag = <span className={`badge ms-2 ${statusTagColor}`}>{statusTagText}</span>;
 
-
+                                    const formattedTimestamp = formatTimestamp(anomaly.timestamp);
                                     return (
                                             <li key={anomaly.id || index} className="list-group-item">
-                                                <strong>Anomaly {index + 1}:</strong>
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>Anomaly {index + 1}:</strong>
+                                                        {sourceTag}
+                                                        {statusTag}
+                                                    </div>
+                                                    {/* 💥 NEW TIMESTAMP DISPLAY */}
+                                                    {formattedTimestamp && (
+                                                        <small className="text-muted ms-3 fw-bold">
+                                                            Last Updated: {formattedTimestamp}
+                                                        </small>
+                                                    )}
+                                                </div>
+{/*                                                 <br/> */}
 
-                                                {/* 🎯 DISPLAY BOTH TAGS */}
-                                                {sourceTag}
-                                                {statusTag}
-                                                <br/>
 
                                                 <small className="text-muted">
                                                     Coordinates: ({Math.round(xMin)}, {Math.round(yMin)}) to ({Math.round(xMax)}, {Math.round(yMax)})
