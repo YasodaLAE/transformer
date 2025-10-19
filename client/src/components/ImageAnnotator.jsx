@@ -4,7 +4,7 @@ import useImage from 'use-image';
 import { getAnnotations, saveAnnotations } from '../services/apiService';
 import { useAuth } from '../hooks/AuthContext';
 import Toast from './Toast';
-import { Button, ButtonGroup } from 'react-bootstrap';
+import { Button, ButtonGroup, Form, Card } from 'react-bootstrap';
 import CommentModal from './CommentModal';
 
 const AnnotationRect = ({ shapeProps, isSelected, onSelect, onChange }) => {
@@ -253,8 +253,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
             const finalAnnotation = {
                         ...newAnnotation,
                         currentStatus: 'PENDING_SAVE',
-                        originalSource: 'USER', // ⬅️ Ensure this is set for new boxes
-                        // 🎯 NEW: Explicitly set AI-related fields to null for a new user box
+                        originalSource: 'USER',
                         aiConfidence: null,
                         aiSeverityScore: null,
                     };
@@ -270,6 +269,22 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
         }
         setNewAnnotation(null);
         setIsDrawing(false);
+    };
+
+    const selectedAnnotation = annotations.find(a => a.id === selectedId);
+
+    const handleCommentChange = (e) => {
+        const newComment = e.target.value;
+        setAnnotations(prev => {
+            const index = prev.findIndex(r => r.id === selectedId);
+            if (index !== -1) {
+                const newRects = [...prev];
+                // Update the comments field on the selected annotation
+                newRects[index] = { ...newRects[index], comments: newComment };
+                return newRects;
+            }
+            return prev;
+        });
     };
 
     return (
@@ -328,15 +343,44 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
             </div>
 
             <div className="d-flex justify-content-between align-items-center mt-3">
-{/*                 <ButtonGroup size="sm"> */}
-{/*                      */}{/* ... Add New Box button ... */}
-{/*                     <Button variant="outline-danger" onClick={handleDelete} disabled={!selectedId}> */}
-{/*                         <i className="bi bi-trash-fill me-1" /> Delete */}
-{/*                     </Button> */}
-{/*                 </ButtonGroup> */}
 
                 <ButtonGroup size="sm">
                     {/* ... Discard Changes button ... */}
+                    <Button variant="primary" onClick={handleSave}>
+                        Save Annotations
+                    </Button>
+                </ButtonGroup>
+            </div>
+
+            {selectedAnnotation && (
+                <Card className="mt-3 shadow-sm border-info">
+                    <Card.Body>
+                        <Card.Title className="mb-2 d-flex justify-content-between align-items-center">
+                            Edit Annotation Details (Box ID: {selectedAnnotation.id.toString().replace('user_new-', 'NEW-')})
+                            <small className="text-muted">Source: {selectedAnnotation.originalSource}</small>
+                        </Card.Title>
+                        <Form.Group className="mb-1" controlId="annotationComments">
+                            <Form.Label className="small fw-bold">Optional Comments/Notes:</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={2}
+                                value={selectedAnnotation.comments || ''}
+                                onChange={handleCommentChange}
+                                placeholder="Add comments, detailed findings, or modification reasons here..."
+                            />
+                        </Form.Group>
+                        <small className="text-muted d-block mt-2">
+                            * Changes to comments, size, or position will be saved when you click "Save Annotations".
+                        </small>
+                    </Card.Body>
+                </Card>
+            )}
+
+            <div className="d-flex justify-content-end mt-3">
+                <ButtonGroup size="sm">
+                    <Button variant="secondary" onClick={onCancel}>
+                        Discard Changes
+                    </Button>
                     <Button variant="primary" onClick={handleSave}>
                         Save Annotations
                     </Button>
