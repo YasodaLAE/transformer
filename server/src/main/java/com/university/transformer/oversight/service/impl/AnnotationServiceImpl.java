@@ -36,7 +36,6 @@ public class AnnotationServiceImpl implements AnnotationService {
         if (!inspectionRepository.existsById(inspectionId)) {
             throw new ResourceNotFoundException("Inspection not found with id: " + inspectionId);
         }
-        // ⚠️ CRITICAL: Must use the filter to avoid loading previously deleted boxes
         List<Annotation> annotations = annotationRepository.findByInspectionIdAndIsDeletedFalse(inspectionId);
         return annotations.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
@@ -160,7 +159,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                     annotation.setHeight(dto.getHeight());
                     annotation.setComments(dto.getComments());
                     annotation.setUserId(dto.getUserId());
-                    annotation.setTimestamp(dto.getTimestamp());
+//                    annotation.setTimestamp(dto.getTimestamp());
                     annotation.setCurrentStatus(newStatus);
                     annotation.setDeleted(false); // Ensure new/edited boxes are not deleted
 

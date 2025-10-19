@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
-
+import org.hibernate.annotations.UpdateTimestamp;
 // annotation.java (No change needed, but for clarity)
 
 @Getter
@@ -48,7 +48,7 @@ public class Annotation {
     private String comments;
 
     private String userId;
-
+    @UpdateTimestamp
     private LocalDateTime timestamp;
     private boolean isDeleted = false; // Maps to is_deleted in DB
 }
