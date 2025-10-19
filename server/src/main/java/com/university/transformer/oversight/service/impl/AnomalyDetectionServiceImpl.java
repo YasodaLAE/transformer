@@ -164,7 +164,7 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         }
         BufferedImage image = ImageIO.read(originalImagePath.toFile());
         Graphics2D g2d = image.createGraphics();
-        List<Annotation> annotations = annotationRepository.findByInspectionId(inspectionId);
+        List<Annotation> annotations = annotationRepository.findByInspectionIdAndIsDeletedFalse(inspectionId);
         g2d.setColor(Color.RED);
         g2d.setStroke(new BasicStroke(2));
         g2d.setFont(new Font("Arial", Font.BOLD, 18));

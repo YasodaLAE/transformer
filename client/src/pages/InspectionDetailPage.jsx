@@ -301,7 +301,7 @@ const InspectionDetailPage = () => {
                                                 <>
                                                 {/* Use the calculated displayImageUrl */}
                                                 <div onClick={() => handleOpenZoomModal(displayImageUrl, 'Analyzed Image')} style={{ cursor: 'zoom-in' }}>
-                                                    <img src={displayImageUrl} alt="Annotated Thermal" style={{ maxWidth: '100%' }} key={displayImageUrl} />
+                                                    <img src={finalDisplayImageUrl} alt="Annotated Thermal" style={{ maxWidth: '100%' }} key={finalDisplayImageUrl} />
                                                     <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small>
                                                 </div>
                                                 {anomalyResult && (<Button variant="primary" onClick={() => setIsAnnotating(true)} className="mt-2"><i className="bi bi-pencil-square me-2"></i>Correct Annotations</Button>)}

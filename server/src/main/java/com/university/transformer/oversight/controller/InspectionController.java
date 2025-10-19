@@ -164,6 +164,9 @@ public class InspectionController {
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
                     .contentType(MediaType.IMAGE_JPEG)
+                    .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+                    .header(HttpHeaders.PRAGMA, "no-cache")
+                    .header(HttpHeaders.EXPIRES, "0")
                     .body(file);
         } catch (IOException e) {
             // Log the full error for debugging on the server

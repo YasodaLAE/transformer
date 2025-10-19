@@ -181,6 +181,16 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
         // The saveAnnotations function only takes the final list
         try {
             await saveAnnotations(inspectionId, finalAnnotationsToSave);
+
+            const savedAnnotations = await getAnnotations(inspectionId);
+            const formatted = savedAnnotations.map(ann => ({
+                        ...ann,
+                        id: ann.id.toString(),
+                        boxSessionId: ann.id.toString()
+                    }));
+                    setAnnotations(formatted);
+                    initialAnnotationsRef.current = formatted; // Update initial state reference
+                    setSelectedId(null); // Clear selected ID
             showOk('Annotations saved successfully!');
             if (onAnnotationsSaved) onAnnotationsSaved();
 //             setTimeout(() => {
@@ -292,14 +302,14 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     </Button>
                 </ButtonGroup>
 
-{/*                 <ButtonGroup size="sm"> */}
-{/*                     <Button variant="secondary" onClick={onCancel}> */}
-{/*                         Discard Changes */}
-{/*                     </Button> */}
+                <ButtonGroup size="sm">
+                    <Button variant="secondary" onClick={onCancel}>
+                        Discard Changes
+                    </Button>
 {/*                     <Button variant="primary" onClick={handleSave}> */}
 {/*                         Save Annotations */}
 {/*                     </Button> */}
-{/*                 </ButtonGroup> */}
+                </ButtonGroup>
             </div>
 
             <div className="d-flex justify-content-between align-items-center mt-3">

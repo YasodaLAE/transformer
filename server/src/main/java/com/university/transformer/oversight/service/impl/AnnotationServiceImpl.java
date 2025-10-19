@@ -72,6 +72,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                     // Mark the deleted box with the final action status
                     existingAnn.setDeleted(true);
                     existingAnn.setType("USER_DELETED");
+
                     // Use the user/timestamp from the first incoming DTO for audit trail of the save operation
                     existingAnn.setUserId(finalAnnotations.get(0).getUserId());
                     existingAnn.setTimestamp(finalAnnotations.get(0).getTimestamp());
@@ -81,7 +82,7 @@ public class AnnotationServiceImpl implements AnnotationService {
 
         // Save the soft-deleted entities
         annotationRepository.saveAll(deletedAnnotations);
-
+        annotationRepository.flush();
 
         // 3. Process Additions (id == null) and Edits (id != null)
         List<Annotation> toSave = finalAnnotations.stream()
@@ -135,6 +136,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             // - Entities with null ID are inserted (new boxes).
             // - Entities with non-null ID are updated (edited boxes).
             annotationRepository.saveAll(toSave);
+            annotationRepository.flush();
         }
     }
     // Helper method to convert Entity to DTO (No change needed)
