@@ -41,7 +41,15 @@ public class AnnotationServiceImpl implements AnnotationService {
     }
 
 
-    // AnnotationServiceImpl.java
+    @Override
+    public List<AnnotationDTO> getAllAnnotationsForDisplay(Long inspectionId) {
+        if (!inspectionRepository.existsById(inspectionId)) {
+            throw new ResourceNotFoundException("Inspection not found with id: " + inspectionId);
+        }
+        // Assuming your repository has a method to find ALL annotations by inspectionId
+        List<Annotation> allAnnotations = annotationRepository.findByInspectionId(inspectionId);
+        return allAnnotations.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
 
     @Override
     @Transactional

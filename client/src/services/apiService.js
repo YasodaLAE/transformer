@@ -98,3 +98,7 @@ export const saveAnnotations = async (inspectionId, finalAnnotations) => {
     const response = await axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`, saveRequest);
     return response.data;
 };
+
+export const getAllAnnotationsForDisplay = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations/all-for-display`);
+};

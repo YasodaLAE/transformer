@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection, getAnnotations } from '../services/apiService';
+import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection, getAnnotations, getAllAnnotationsForDisplay } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner, Form } from 'react-bootstrap';
@@ -70,12 +70,15 @@ const InspectionDetailPage = () => {
             }
             if (inspectionResponse.data.thermalImage) {
                 let userAnnotationExists = false;
-                let savedAnnotations = [];
+                let savedAnnotationsForDisplay = [];
 
                 try {
-                    // Check if user annotations exist in the database
-                    savedAnnotations = await getAnnotations(inspectionId);
-                    userAnnotationExists = savedAnnotations && savedAnnotations.length > 0;
+                    const allAnnotationsResponse = await getAllAnnotationsForDisplay(inspectionId);
+                    savedAnnotationsForDisplay = allAnnotationsResponse.data;
+
+                    // Check for existence based on non-deleted annotations for image annotation logic
+                    const activeAnnotations = savedAnnotationsForDisplay.filter(a => a.currentStatus !== 'USER_DELETED');
+                    userAnnotationExists = activeAnnotations && activeAnnotations.length > 0;
                     setHasUserAnnotations(userAnnotationExists);
                 } catch (annotationErr) {
                     console.warn("Could not check for saved annotations:", annotationErr);
@@ -89,7 +92,7 @@ const InspectionDetailPage = () => {
 
                     if (userAnnotationExists) {
                         // Priority 1: Use user's saved annotations (AnnotationDTOs)
-                        setActiveAnomalyDetails(savedAnnotations);
+                        setActiveAnomalyDetails(savedAnnotationsForDisplay);
                     } else {
                         // Priority 2: Parse and use the raw AI result
                         const aiDetails = JSON.parse(resultResponse.data.detectionJsonOutput || '[]').map(ann => ({
@@ -357,9 +360,9 @@ const InspectionDetailPage = () => {
                                                 statusTagColor = 'bg-primary';
                                                 statusTagText = 'Validated by ' + (anomaly.userId || 'Unknown');
                                                 break;
-                                            case 'USER_DELETED': // Should be filtered out, but good for completeness
-                                                statusTagColor = 'bg-danger';
-                                                statusTagText = 'DELETED';
+                                            case 'USER_DELETED': // 💥 Handle the deleted status
+                                                statusTagColor = 'bg-dark';
+                                                statusTagText = 'Deleted by ' + (anomaly.userId || 'Unknown');
                                                 break;
                                             default:
                                                 // This captures initial AI statuses like 'FAULTY'

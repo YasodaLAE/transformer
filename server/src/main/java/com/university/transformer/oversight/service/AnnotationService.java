@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface AnnotationService {
     List<AnnotationDTO> getAnnotationsByInspectionId(Long inspectionId);
-
+    List<AnnotationDTO> getAllAnnotationsForDisplay(Long inspectionId);
     // Simplified signature: only save the final list
     void saveAnnotations(Long inspectionId, List<AnnotationDTO> finalAnnotations);
 }

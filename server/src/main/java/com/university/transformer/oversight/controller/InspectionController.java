@@ -156,6 +156,12 @@ public class InspectionController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{inspectionId}/annotations/all-for-display")
+    public ResponseEntity<List<AnnotationDTO>> getAllAnnotationsForDisplay(@PathVariable Long inspectionId) {
+        List<AnnotationDTO> annotations = annotationService.getAllAnnotationsForDisplay(inspectionId);
+        return ResponseEntity.ok(annotations);
+    }
+
     // --- NEW ENDPOINT FOR USER-EDITED IMAGE ---
     @GetMapping("/{inspectionId}/annotations/image")
     public ResponseEntity<Resource> viewUserAnnotatedImage(@PathVariable Long inspectionId) {
