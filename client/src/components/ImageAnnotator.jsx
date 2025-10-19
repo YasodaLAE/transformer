@@ -332,24 +332,24 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     </Button>
                 </ButtonGroup>
 
-                <ButtonGroup size="sm">
-                    <Button variant="secondary" onClick={onCancel}>
-                        Discard Changes
-                    </Button>
+{/*                 <ButtonGroup size="sm"> */}
+{/*                     <Button variant="secondary" onClick={onCancel}> */}
+{/*                         Discard Changes */}
+{/*                     </Button> */}
 {/*                     <Button variant="primary" onClick={handleSave}> */}
 {/*                         Save Annotations */}
 {/*                     </Button> */}
-                </ButtonGroup>
+{/*                 </ButtonGroup> */}
             </div>
 
             <div className="d-flex justify-content-between align-items-center mt-3">
 
-                <ButtonGroup size="sm">
-                    {/* ... Discard Changes button ... */}
-                    <Button variant="primary" onClick={handleSave}>
-                        Save Annotations
-                    </Button>
-                </ButtonGroup>
+{/*                 <ButtonGroup size="sm"> */}
+{/*                      */}{/* ... Discard Changes button ... */}
+{/*                     <Button variant="primary" onClick={handleSave}> */}
+{/*                         Save Annotations */}
+{/*                     </Button> */}
+{/*                 </ButtonGroup> */}
             </div>
 
             {selectedAnnotation && (
@@ -378,9 +378,15 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
 
             <div className="d-flex justify-content-end mt-3">
                 <ButtonGroup size="sm">
-                    <Button variant="secondary" onClick={onCancel}>
-                        Discard Changes
-                    </Button>
+                        <Button variant="secondary" onClick={onCancel}>
+                            Discard Changes
+                        </Button>
+
+                                </ButtonGroup>
+                <ButtonGroup size="sm">
+{/*                     <Button variant="secondary" onClick={onCancel}> */}
+{/*                         Discard Changes */}
+{/*                     </Button> */}
                     <Button variant="primary" onClick={handleSave}>
                         Save Annotations
                     </Button>
