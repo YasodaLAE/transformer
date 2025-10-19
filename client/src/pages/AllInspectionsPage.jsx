@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import InspectionTable from '../components/InspectionTable';
-import { getAllInspections, deleteInspection, getAllTransformers } from '../services/apiService';
+import { getAllInspections, deleteInspection, getAllTransformers, exportAllFeedbackLog } from '../services/apiService';
 import { Button } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import AddInspectionModal from '../components/AddInspectionModal';
@@ -78,6 +78,33 @@ const AllInspectionsPage = () => {
         (inspection.transformer?.transformerId?.toString().toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const handleExportAllFeedback = async () => {
+            try {
+                showOk('Preparing global anomaly data for download...');
+
+                // Get the Blob object from the backend
+                const response = await exportAllFeedbackLog();
+                const blob = new Blob([response.data], { type: 'application/json' });
+
+                // Trigger file download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `all_anomaly_feedback_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+                showOk('Global anomaly data successfully exported!');
+            } catch (err) {
+                console.error("Export error:", err);
+                showErr('Failed to export global anomaly data. Check network connection or server logs.');
+            }
+        };
+
     // Handles modal opening for creating a new inspection
     const handleOpenAddModal = () => {
         setInspectionToEdit(null); // Explicitly set to null for 'Add' mode
@@ -130,7 +157,18 @@ const AllInspectionsPage = () => {
                      <div className="d-flex align-items-center gap-2">
                          <h2 className="mb-0">All Inspections</h2>
                          {isAdmin && (
-                             <Button onClick={handleOpenAddModal}>Add Inspection</Button>
+                             <>
+                              <Button onClick={handleOpenAddModal}>Add Inspection</Button>
+
+                              {/* 💥 NEW BUTTON */}
+                              <Button
+                                  variant="outline-primary"
+                                  onClick={handleExportAllFeedback}
+                              >
+                                  <i className="bi bi-download me-1"></i>
+                                  Export All Anomaly Data
+                              </Button>
+                          </>
                          )}
                      </div>
 

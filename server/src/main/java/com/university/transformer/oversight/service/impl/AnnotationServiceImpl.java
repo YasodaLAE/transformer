@@ -3,6 +3,7 @@
 package com.university.transformer.oversight.service.impl;
 
 import com.university.transformer.oversight.dto.AnnotationDTO;
+import com.university.transformer.oversight.dto.AnnotationExportDTO;
 import com.university.transformer.oversight.exception.ResourceNotFoundException;
 import com.university.transformer.oversight.model.Annotation;
 import com.university.transformer.oversight.model.Inspection;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.ObjectMapper; // 💥 Add this import
 import com.fasterxml.jackson.databind.JsonNode;
-
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,6 +35,20 @@ public class AnnotationServiceImpl implements AnnotationService {
         this.annotationRepository = annotationRepository;
         this.inspectionRepository = inspectionRepository;
         this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public byte[] exportAllAnnotationsAsJson() throws IOException {
+
+        // 1. Fetch the data using the new joined repository query
+        List<AnnotationExportDTO> dtos = annotationRepository.findAllAnnotationsForExport();
+
+        // 2. Use the injected ObjectMapper
+        // We use the existing injected/configured 'objectMapper' if possible, otherwise we configure a new one.
+        // Assuming your injected 'objectMapper' is configured for JavaTimeModule.
+
+        // Serialize the list of DTOs into a pretty-printed JSON byte array
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(dtos);
     }
 
     @Override

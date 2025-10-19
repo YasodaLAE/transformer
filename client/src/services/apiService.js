@@ -107,3 +107,10 @@ export const exportFeedbackLog = (inspectionId) => {
     // Note: We tell axios we expect a 'blob' response type for file download handling
     return axios.get(`${API_BASE_URL}/api/export/inspection/${inspectionId}/feedback-log`, { responseType: 'blob' });
 };
+
+export const exportAllFeedbackLog = () => {
+    // Calls the new endpoint: /api/inspections/annotations/export/all
+    return axios.get(`${API_BASE_URL}/api/inspections/annotations/export/all`, {
+        responseType: 'blob'
+    });
+};

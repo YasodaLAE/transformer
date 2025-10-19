@@ -19,11 +19,13 @@ import org.springframework.web.multipart.MultipartFile;
 import com.university.transformer.oversight.dto.AnnotationSaveRequest;
 import java.io.IOException;
 import java.util.List;
+import org.slf4j.Logger; // 💥 Import Logger
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/inspections")
 public class InspectionController {
-
+    private static final Logger logger = LoggerFactory.getLogger(InspectionController.class); // 💥 Define logger
     @Autowired
     private InspectionService inspectionService;
     @Autowired
@@ -37,6 +39,27 @@ public class InspectionController {
     public ResponseEntity<List<InspectionDTO>> getAllInspections() {
         List<InspectionDTO> inspections = inspectionService.getAllInspections();
         return ResponseEntity.ok(inspections);
+    }
+
+    @GetMapping("/annotations/export/all")
+    public ResponseEntity<byte[]> exportAllFeedbackLog() {
+        try {
+            byte[] jsonBytes = annotationService.exportAllAnnotationsAsJson();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // Set a dynamic filename based on the current timestamp
+            String filename = "all_anomaly_feedback_" + System.currentTimeMillis() + ".json";
+            headers.setContentDispositionFormData("attachment", filename);
+
+            // Return the byte array in the response body
+            return new ResponseEntity<>(jsonBytes, headers, HttpStatus.OK);
+
+        } catch (IOException e) {
+            logger.error("Failed to export all anomaly data log.", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PostMapping
