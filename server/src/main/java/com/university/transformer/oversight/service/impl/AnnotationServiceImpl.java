@@ -11,8 +11,12 @@ import com.university.transformer.oversight.repository.InspectionRepository;
 import com.university.transformer.oversight.service.AnnotationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.fasterxml.jackson.databind.ObjectMapper; // 💥 Add this import
+import com.fasterxml.jackson.databind.JsonNode;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,12 +27,80 @@ public class AnnotationServiceImpl implements AnnotationService {
 
     private final AnnotationRepository annotationRepository;
     private final InspectionRepository inspectionRepository;
-    // REMOVED: private final AnnotationLogRepository annotationLogRepository;
-    // REMOVED: private final ObjectMapper objectMapper;
 
-    public AnnotationServiceImpl(AnnotationRepository annotationRepository, InspectionRepository inspectionRepository) {
+    private final ObjectMapper objectMapper;
+
+    public AnnotationServiceImpl(AnnotationRepository annotationRepository, InspectionRepository inspectionRepository, ObjectMapper objectMapper) {
         this.annotationRepository = annotationRepository;
         this.inspectionRepository = inspectionRepository;
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    @Transactional
+    public void saveInitialAiAnnotations(Long inspectionId, String detectionJsonOutput) {
+        if (detectionJsonOutput == null || detectionJsonOutput.trim().isEmpty()) {
+            return;
+        }
+
+        // 🎯 IMPORTANT: Only run this if no existing (non-deleted) annotations are present
+        List<Annotation> existingAnnotations = annotationRepository.findByInspectionId(inspectionId);
+        if (!existingAnnotations.isEmpty()) {
+            // Already have annotations (either AI or user). Do nothing.
+            return;
+        }
+
+        Inspection inspection = inspectionRepository.findById(inspectionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inspection not found with id: " + inspectionId));
+
+        try {
+            // Parse the JSON string into a Jackson array node
+            JsonNode detections = objectMapper.readTree(detectionJsonOutput);
+            if (!detections.isArray()) return;
+
+            List<Annotation> newAnnotations = new ArrayList<>();
+
+            for (JsonNode node : detections) {
+                // Assuming the structure is: [{ "type": "...", "confidence": ..., "severity_score": ..., "location": { "x_min": ..., ... } }]
+                Annotation annotation = new Annotation();
+                annotation.setInspection(inspection);
+
+                // Map AI-specific fields
+                annotation.setCurrentStatus(node.has("type") ? node.get("type").asText() : "FAULTY");
+                annotation.setOriginalSource("AI");
+                annotation.setAiConfidence(node.has("confidence") ? node.get("confidence").asDouble() : null);
+                annotation.setAiSeverityScore(node.has("severity_score") ? node.get("severity_score").asInt() : null);
+
+                // Map Bounding Box Coordinates
+                if (node.has("location")) {
+                    JsonNode loc = node.get("location");
+                    double xMin = loc.has("x_min") ? loc.get("x_min").asDouble() : 0;
+                    double yMin = loc.has("y_min") ? loc.get("y_min").asDouble() : 0;
+                    double xMax = loc.has("x_max") ? loc.get("x_max").asDouble() : 0;
+                    double yMax = loc.has("y_max") ? loc.get("y_max").asDouble() : 0;
+
+                    annotation.setX(xMin);
+                    annotation.setY(yMin);
+                    annotation.setWidth(xMax - xMin);
+                    annotation.setHeight(yMax - yMin);
+                }
+
+                // Set default/required fields
+                annotation.setComments(null);
+                annotation.setUserId("AI_SYSTEM"); // Indicate the 'user' that created it
+                // timestamp is set automatically by @UpdateTimestamp
+                annotation.setDeleted(false);
+
+                newAnnotations.add(annotation);
+            }
+
+            annotationRepository.saveAll(newAnnotations);
+            // No need to flush here, as we exit the method.
+
+        } catch (IOException e) {
+            System.err.println("Error parsing AI detection JSON: " + e.getMessage());
+            // Log or throw a specific exception if needed
+        }
     }
 
     @Override
