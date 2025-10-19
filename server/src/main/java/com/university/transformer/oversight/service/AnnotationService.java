@@ -1,9 +1,13 @@
+// AnnotationService.java (Interface)
 package com.university.transformer.oversight.service;
 
 import com.university.transformer.oversight.dto.AnnotationDTO;
+import com.university.transformer.oversight.dto.AnnotationSaveRequest; // Import the DTO
 import java.util.List;
 
 public interface AnnotationService {
     List<AnnotationDTO> getAnnotationsByInspectionId(Long inspectionId);
-    void saveAnnotations(Long inspectionId, List<AnnotationDTO> finalAnnotations, List<AnnotationDTO> loggableChanges);
+
+    // Simplified signature: only save the final list
+    void saveAnnotations(Long inspectionId, List<AnnotationDTO> finalAnnotations);
 }

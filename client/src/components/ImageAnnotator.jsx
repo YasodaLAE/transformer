@@ -70,6 +70,9 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
 
     useEffect(() => {
         const loadAnnotations = async () => {
+            setAnnotations([]);
+            initialAnnotationsRef.current = [];
+            setSelectedId(null);
             try {
                 const savedAnnotations = await getAnnotations(inspectionId);
 
@@ -121,144 +124,76 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
         };
 
         loadAnnotations();
-    }, [inspectionId, initialAnnotations]);
+    }, [inspectionId, imageUrl, initialAnnotations]);
 
 
     const handleDelete = () => {
+            // We no longer need the CommentModal logic for logging.
+            // We will just remove the box and rely on the final save to record the deletion.
             if (selectedId) {
-                setCommentModal({
-                    show: true,
-                    action: 'DELETED',
-                    annotationId: selectedId,
-                    comment: ''
-                });
+                if (window.confirm("Are you sure you want to delete this annotation box?")) {
+                    setAnnotations(prev => prev.filter(ann => ann.id !== selectedId));
+                    setSelectedId(null);
+                    showOk('Annotation deleted locally. Click "Save Annotations" to finalize.');
+                }
             }
         };
 
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                handleDelete();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedId, annotations]);
+            const handleKeyDown = (e) => {
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    handleDelete();
+                }
+            };
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+        }, [selectedId, annotations]);
+
 
     const handleSave = async () => {
-            const userId = user ? user.username : 'unknown_user';
-            const timestamp = new Date().toISOString();
+        const userId = user ? user.username : 'unknown_user';
+        const timestamp = new Date().toISOString(); // Sent as ISO string, Spring converts to LocalDateTime
 
-            const finalAnnotationsToSave = annotations.map(ann => {
-                // Determine if the ID is a transient session ID (like "ai-0" or "user_new-1")
-                const isTransientId = typeof ann.id === 'string' && (ann.id.startsWith('ai-') || ann.id.startsWith('user_new-') || ann.id.startsWith('new-'));
+        const finalAnnotationsToSave = annotations.map(ann => {
+            // Determine if the ID is a transient session ID (like "ai-0" or "user_new-1")
+            const isTransientId = typeof ann.id === 'string' && (ann.id.startsWith('ai-') || ann.id.startsWith('user_new-') || ann.id.startsWith('new-'));
 
-                // Create a mutable copy
-                const finalAnn = { ...ann, userId: userId };
+            const finalAnn = {
+                ...ann,
+                // If it's a transient ID, set it to null for new entity creation.
+                // If it's a number (DB ID), keep it so the backend can update the row.
+                id: isTransientId ? null : ann.id,
+                userId: userId,
+                timestamp: timestamp,
 
-                // 💥 FIX 1: Ensure the database 'id' field is only populated if it's a real DB ID (i.e., not a transient string).
-                // If it's a transient ID, set it to null so Spring Boot knows it's a new entity.
-                if (isTransientId) {
-                    finalAnn.id = null; // Set Long field to null for new entity creation
-                }
+                // Annotation Type will be set by the backend (USER_ADDED if id is null, USER_VALIDATED if id exists)
+                // We keep the original 'type' here, the service overrides it.
+            };
 
-                // Remove logging-specific fields before final save
-                finalAnn.actionType = undefined;
-                finalAnn.originalState = undefined;
+//             // Clean up transient fields
+//             delete finalAnn.boxSessionId;
+//             delete finalAnn.actionType;
+//             delete finalAnn.originalState;
 
-                return finalAnn;
-            });
+            return finalAnn;
+        });
 
-            const changesLog = loggableChanges.map(logEntry => {
-                const finalLog = { ...logEntry };
-                // 💥 FIX 2: Ensure the 'id' field in the loggableChanges DTO is null or a valid Long.
-                // Since loggableChanges are DTOs that will be logged, they don't map directly to the
-                // persistent Annotation entity ID. The only way to stop this is to ensure any
-                // annotation sent in loggableChanges also has its id set to null if it's transient.
-                if (typeof finalLog.id === 'string' && (finalLog.id.startsWith('ai-') || finalLog.id.startsWith('user_new-') || finalLog.id.startsWith('new-'))) {
-                     finalLog.id = null;
-                }
-                return finalLog;
-            });
+        // The saveAnnotations function only takes the final list
+        try {
+            await saveAnnotations(inspectionId, finalAnnotationsToSave);
+            showOk('Annotations saved successfully!');
+            if (onAnnotationsSaved) onAnnotationsSaved();
+//             setTimeout(() => {
+//                 if (onAnnotationsSaved) onAnnotationsSaved(finalAnnotationsToSave);
+//             }, 1500);
+        } catch (error) {
+            showErr('Failed to save annotations.');
+            console.error("Save annotation error:", error);
+        }
+    };
 
-            // 1. Check for ADDED boxes
-            const addedAnnotations = annotations.filter(ann => ann.id.startsWith('user_new-'));
-            addedAnnotations.forEach(ann => {
-                 changesLog.push({
-                    boxSessionId: ann.id,
-                    userId: userId,
-                    actionType: 'ADDED',
-                    comments: ann.comments || '',
-                    originalState: null, // No original state for an added box
-                    ...ann, // The DTO itself is the final state
-                    timestamp: timestamp,
-                 });
-            });
+// ... existing code ...
 
-            try {
-                 // Create the request body wrapper
-                 const saveRequest = {
-                     finalAnnotations: finalAnnotationsToSave,
-                     loggableChanges: changesLog,
-                 };
-
-                 // You need to update apiService.js to handle the new saveAnnotations signature
-                 await saveAnnotations(inspectionId, saveRequest);
-
-                 showOk('Annotations saved and logged successfully!');
-                 setTimeout(() => { if (onAnnotationsSaved) onAnnotationsSaved(finalAnnotationsToSave); }, 1500);
-            } catch (error) {
-                 showErr('Failed to save annotations and logs.');
-                 console.error("Save annotation error:", error);
-            }
-        };
-
-    const handleCommentSave = (comment) => {
-            const { action, annotationId, currentState, originalState } = commentModal;
-            const userId = user ? user.username : 'unknown_user';
-            const timestamp = new Date().toISOString();
-
-            // Find the annotation in the current state
-            const annotationToLog = annotations.find(ann => ann.id === annotationId);
-
-            if (action === 'DELETED') {
-                 // Annotation log for deletion
-                 const originalBox = initialAnnotationsRef.current.find(ann => ann.id === annotationId) || annotationToLog;
-
-                 setLoggableChanges(prev => [...prev, {
-                     boxSessionId: annotationId,
-                     userId: userId,
-                     actionType: 'DELETED',
-                     comments: comment,
-                     originalState: originalBox, // The state that was deleted
-                     timestamp: timestamp,
-                 }]);
-
-                 // Finally delete the annotation from the main list
-                 setAnnotations(annotations.filter(ann => ann.id !== annotationId));
-                 setSelectedId(null);
-
-            } else if (action === 'EDITED') {
-                // Annotation log for edit - the state comparison must be done here if it wasn't done on transformEnd
-                // For simplicity in this demo, we rely on the modal being triggered at transformEnd or dragEnd
-                 setLoggableChanges(prev => [...prev, {
-                     boxSessionId: annotationId,
-                     userId: userId,
-                     actionType: 'EDITED',
-                     comments: comment,
-                     // The 'originalState' here is the state before the user started transforming/dragging.
-                     originalState: originalState,
-                     // The DTO itself will be the final state after the transformation
-                     ...currentState,
-                     timestamp: timestamp,
-                 }]);
-            }
-
-            // If you need to update the comment on the main annotation state:
-            // setAnnotations(prev => prev.map(ann => ann.id === annotationId ? { ...ann, comments: comment } : ann));
-
-            setCommentModal({ show: false, action: null, annotationId: null, comment: '' });
-        };
 
     const handleAnnotateChange = (newAttrs) => {
             setAnnotations(prev => {
@@ -267,23 +202,9 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     const newRects = [...prev];
                     const originalAnnotation = newRects[index];
 
-                    // Create a log entry if it's an EDIT action
-                    if (!originalAnnotation.id.startsWith('user_new-')) { // Don't log moves/resizes for newly drawn boxes until final save
-                         const isEdited = (originalAnnotation.x !== newAttrs.x || originalAnnotation.y !== newAttrs.y || originalAnnotation.width !== newAttrs.width || originalAnnotation.height !== newAttrs.height);
+                    // Check for movement/resize and update comments if needed (optional)
+                    // For a simpler workflow, we just update the coordinates immediately.
 
-                         if (isEdited) {
-                             // Open modal for comment on edit
-                             setCommentModal({
-                                 show: true,
-                                 action: 'EDITED',
-                                 annotationId: originalAnnotation.id,
-                                 // Preserve the state before the final change
-                                 currentState: newAttrs,
-                                 originalState: {...originalAnnotation},
-                                 comment: originalAnnotation.comment || ''
-                             });
-                         }
-                    }
                     newRects[index] = { ...originalAnnotation, ...newAttrs };
                     return newRects;
                 }
@@ -371,24 +292,31 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     </Button>
                 </ButtonGroup>
 
+{/*                 <ButtonGroup size="sm"> */}
+{/*                     <Button variant="secondary" onClick={onCancel}> */}
+{/*                         Discard Changes */}
+{/*                     </Button> */}
+{/*                     <Button variant="primary" onClick={handleSave}> */}
+{/*                         Save Annotations */}
+{/*                     </Button> */}
+{/*                 </ButtonGroup> */}
+            </div>
+
+            <div className="d-flex justify-content-between align-items-center mt-3">
+{/*                 <ButtonGroup size="sm"> */}
+{/*                      */}{/* ... Add New Box button ... */}
+{/*                     <Button variant="outline-danger" onClick={handleDelete} disabled={!selectedId}> */}
+{/*                         <i className="bi bi-trash-fill me-1" /> Delete */}
+{/*                     </Button> */}
+{/*                 </ButtonGroup> */}
+
                 <ButtonGroup size="sm">
-                    <Button variant="secondary" onClick={onCancel}>
-                        Discard Changes
-                    </Button>
+                    {/* ... Discard Changes button ... */}
                     <Button variant="primary" onClick={handleSave}>
                         Save Annotations
                     </Button>
                 </ButtonGroup>
             </div>
-
-            <CommentModal
-                show={commentModal.show}
-                action={commentModal.action}
-                onSave={handleCommentSave} // Calls the ImageAnnotator function
-                onCancel={() => setCommentModal({ show: false, action: null, annotationId: null, comment: '' })}
-                initialComment={commentModal.comment}
-                annotationId={commentModal.annotationId}
-            />
 
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>

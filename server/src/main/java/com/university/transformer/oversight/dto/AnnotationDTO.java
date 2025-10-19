@@ -1,22 +1,25 @@
+// Create/Update AnnotationDTO.java
 package com.university.transformer.oversight.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 public class AnnotationDTO {
-    private Long id;
-    private String boxSessionId;
-    private String actionType; // "ADDED", "EDITED", or "DELETED"
-    private AnnotationDTO originalState; // The state before the action
-    private String type;
+    private Long id; // null for new annotations, DB ID for existing ones
+    private String type; // Initial type (AI_DETECTED, USER_ADDED, etc.)
     private double x;
     private double y;
     private double width;
     private double height;
     private String comments;
-    private String userId;
-    private LocalDateTime timestamp;
+
+    // New Fields for persistence and tracking
+    private String userId; // User who last modified/created
+    private LocalDateTime timestamp; // Last modification time
+
+    // Transient fields for the frontend/save logic
+    private String boxSessionId; // The temporary ID (e.g., 'ai-0' or 'user_new-1')
+    private String actionType; // 'ADDED', 'EDITED', 'DELETED' (Used during save process)
+    private AnnotationDTO originalState; // Used to track the state before an edit/delete (optional)
 }

@@ -285,7 +285,7 @@ const InspectionDetailPage = () => {
                                     ) : hasThermalImage ? (
                                         isAnnotating ? (
                                             <ImageAnnotator
-                                                // ... props remain the same ...
+                                                key={refreshKey}
                                                 inspectionId={inspectionId}
                                                 imageUrl={thermalImageUrl}
                                                 initialAnnotations={anomalyResult?.detectionJsonOutput}

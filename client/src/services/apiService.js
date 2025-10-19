@@ -84,21 +84,17 @@ export const getAnnotatedAnomalyImage = (inspectionId) => {
     });
 };
 
-// --- ANNOTATION FUNCTIONS ---
-
 export const getAnnotations = async (inspectionId) => {
     const response = await axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`);
     return response.data;
 };
 
-export const saveAnnotations = async (inspectionId, saveRequest) => {
+export const saveAnnotations = async (inspectionId, finalAnnotations) => {
     // The payload must match the AnnotationSaveRequest DTO structure on the backend
+    const saveRequest = {
+        finalAnnotations: finalAnnotations
+    };
 
     const response = await axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`, saveRequest);
-    return response.data;
-};
-
-export const getAnnotationLogs = async (inspectionId) => {
-    const response = await axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/annotation-logs`);
     return response.data;
 };

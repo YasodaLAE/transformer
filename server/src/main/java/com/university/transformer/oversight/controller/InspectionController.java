@@ -140,8 +140,6 @@ public class InspectionController {
         }
     }
 
-    // --- Annotation Data Endpoints ---
-
     @GetMapping("/{inspectionId}/annotations")
     public ResponseEntity<List<AnnotationDTO>> getAnnotationsForInspection(@PathVariable Long inspectionId) {
         List<AnnotationDTO> annotations = annotationService.getAnnotationsByInspectionId(inspectionId);
@@ -150,11 +148,10 @@ public class InspectionController {
 
     @PostMapping("/{inspectionId}/annotations")
     public ResponseEntity<Void> saveAnnotationsForInspection(@PathVariable Long inspectionId, @RequestBody AnnotationSaveRequest request) {
-        // Pass both the final annotations list and the loggable changes list to the service
+        // Pass ONLY the final annotations list to the service
         annotationService.saveAnnotations(
                 inspectionId,
-                request.getFinalAnnotations(),
-                request.getLoggableChanges()
+                request.getFinalAnnotations()
         );
         return ResponseEntity.ok().build();
     }

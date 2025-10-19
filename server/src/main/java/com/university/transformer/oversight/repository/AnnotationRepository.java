@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface AnnotationRepository extends JpaRepository<Annotation, Long> {
     List<Annotation> findByInspectionId(Long inspectionId);
-
+    List<Annotation> findByInspectionIdAndIsDeletedFalse(Long inspectionId);
     void deleteByInspectionId(Long inspectionId);
 }

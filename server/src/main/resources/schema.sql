@@ -2,10 +2,11 @@
 --  DROP TABLES (Children First, Then Parents)
 -- =================================================================
 -- These tables depend on 'inspection', so they must be dropped first.
+
 DROP TABLE IF EXISTS annotations;             -- <-- NEW DEPENDENCY
 DROP TABLE IF EXISTS anomaly_detection_result;
 DROP TABLE IF EXISTS anomaly;
-DROP TABLE IF EXISTS annotation_logs;
+
 DROP TABLE IF EXISTS thermal_image;
 -- (Include any other child tables, like 'file_data', etc.)
 
@@ -77,13 +78,19 @@ CREATE TABLE anomaly_detection_result (
 CREATE TABLE annotations (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     inspection_id BIGINT NOT NULL,
-    annotation_type VARCHAR(255) NOT NULL,
     x DOUBLE NOT NULL,
     y DOUBLE NOT NULL,
     width DOUBLE NOT NULL,
     height DOUBLE NOT NULL,
     comments TEXT,
+
+    -- Fields for tracking the action and user
+    annotation_type VARCHAR(255) NOT NULL, -- Will store: 'INITIAL_AI', 'USER_ADDED', 'USER_VALIDATED', 'USER_DELETED'
     user_id VARCHAR(255),
     timestamp DATETIME,
+
+    -- NEW: Soft Delete Flag
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+
     FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
 );
