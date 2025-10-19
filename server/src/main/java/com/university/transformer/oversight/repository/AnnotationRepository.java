@@ -15,7 +15,7 @@ public interface AnnotationRepository extends JpaRepository<Annotation, Long> {
             // Inspection/Context Data
             "i.id, i.inspectionNo, ti.fileName, " +
             // Final User Annotation State & Coordinates
-            "a.id, a.currentStatus, a.comments, " +
+            "a.id, a.currentStatus, a.faultType, a.comments, " +
             "a.x, a.y, a.width, a.height, " +
             // Annotator Metadata
             "a.userId, a.timestamp, " +

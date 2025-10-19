@@ -48,6 +48,7 @@ public class FeedbackExportServiceImpl implements FeedbackExportService { // ⬅
                     // Final Annotation State
                     dto.setAnnotationId(annotation.getId());
                     dto.setFinalStatus(annotation.getCurrentStatus());
+                    dto.setFaultType(annotation.getFaultType());
                     dto.setX(annotation.getX());
                     dto.setY(annotation.getY());
                     dto.setWidth(annotation.getWidth());

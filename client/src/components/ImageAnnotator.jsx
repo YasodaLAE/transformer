@@ -390,7 +390,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                                 <option value="" disabled>Select Fault Type</option>
                                 <option value="Faulty">Faulty</option>
                                 <option value="Potentially Faulty">Potentially Faulty</option>
-                                
+
                             </Form.Control>
                         </Form.Group>
                         <Form.Group className="mb-1" controlId="annotationComments">

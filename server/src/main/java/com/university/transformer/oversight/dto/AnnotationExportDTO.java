@@ -1,13 +1,13 @@
 // src/main/java/com/university/transformer/oversight/dto/AnnotationExportDTO.java
 package com.university.transformer.oversight.dto;
-import lombok.NoArgsConstructor; // Good practice to include
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 // Note: Use Lombok @Data for getters/setters/constructors if available, 
 // otherwise, add them manually.
+@Getter
+@Setter
 @Data
 @NoArgsConstructor // Ensure a default constructor exists for general use
 
@@ -20,7 +20,8 @@ public class AnnotationExportDTO {
 
     // Final User Annotation State
     private Long annotationId;
-    private String finalStatus; // e.g., USER_EDITED, USER_DELETED, FAULTY
+    private String finalStatus;
+    private String faultType;
     private String comments;
 
     // Final Bounding Box (Coordinates)
@@ -40,7 +41,7 @@ public class AnnotationExportDTO {
 
     public AnnotationExportDTO(
             Long inspectionId, String inspectionNo, String imageFileName,
-            Long annotationId, String finalStatus, String comments,
+            Long annotationId, String finalStatus, String faultType, String comments,
             double x, double y, double width, double height,
             String annotatorId, LocalDateTime lastUpdated,
             String originalSource, Double aiConfidence, Integer aiSeverityScore) {
@@ -49,6 +50,7 @@ public class AnnotationExportDTO {
         this.inspectionNo = inspectionNo;
         this.imageFileName = imageFileName;
         this.annotationId = annotationId;
+        this.faultType = faultType;
         this.finalStatus = finalStatus;
         this.comments = comments;
         this.x = x;
