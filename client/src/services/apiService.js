@@ -102,3 +102,8 @@ export const saveAnnotations = async (inspectionId, finalAnnotations) => {
 export const getAllAnnotationsForDisplay = (inspectionId) => {
     return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations/all-for-display`);
 };
+
+export const exportFeedbackLog = (inspectionId) => {
+    // Note: We tell axios we expect a 'blob' response type for file download handling
+    return axios.get(`${API_BASE_URL}/api/export/inspection/${inspectionId}/feedback-log`, { responseType: 'blob' });
+};

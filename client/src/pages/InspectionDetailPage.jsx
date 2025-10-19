@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection, getAnnotations, getAllAnnotationsForDisplay } from '../services/apiService';
+import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection, getAnnotations, getAllAnnotationsForDisplay, exportFeedbackLog } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner, Form } from 'react-bootstrap';
@@ -199,6 +199,29 @@ const InspectionDetailPage = () => {
         }
     };
 
+    const handleExportFeedback = async () => {
+        try {
+            // response.data is the JSON blob from the backend
+            const response = await exportFeedbackLog(inspectionId);
+            const blob = new Blob([response.data], { type: 'application/json' });
+
+            // Trigger file download using a temporary URL
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `feedback_log_inspection_${inspectionId}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url); // Clean up the URL
+
+            showOk('Feedback log successfully exported as JSON.');
+        } catch (err) {
+            showErr('Failed to export feedback log. Check server logs.');
+            console.error("Export error:", err);
+        }
+    };
+
     if (loading) return <Spinner animation="border" role="status"><span className="visually-hidden">Loading...</span></Spinner>;
     if (error) return <p className="text-danger">{error}</p>;
     if (!inspection) return <p>Inspection not found.</p>;
@@ -343,9 +366,14 @@ const InspectionDetailPage = () => {
             {activeAnomalyDetails && activeAnomalyDetails.length > 0 && !isAnnotating && (
                 <Card className="mt-4 rounded-4 shadow-sm">
                     <Card.Body>
+{/*                         <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4> */}
+                        <div className="d-flex justify-content-between align-items-center mb-3">
                         <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4>
+                        <Button variant="outline-dark" size="sm" onClick={handleExportFeedback}>
+                            <i className="bi bi-download me-1"></i> Export Feedback Log (JSON)
+                        </Button>
+                        </div>
                         <ul className="list-group list-group-flush">
-                            {/* 💥 MODIFIED MAPPING to use activeAnomalyDetails */}
                             {activeAnomalyDetails.map((anomaly, index) => {
                                 // Check if the object contains the older, raw AI structure (which has a 'location' object)
                                 const isRawAIData = anomaly.location && anomaly.location.x_min !== undefined;
