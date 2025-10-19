@@ -71,7 +71,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                 .map(existingAnn -> {
                     // Mark the deleted box with the final action status
                     existingAnn.setDeleted(true);
-                    existingAnn.setType("USER_DELETED");
+                    existingAnn.setCurrentStatus("USER_DELETED");
 
                     // Use the user/timestamp from the first incoming DTO for audit trail of the save operation
                     existingAnn.setUserId(finalAnnotations.get(0).getUserId());
@@ -88,14 +88,46 @@ public class AnnotationServiceImpl implements AnnotationService {
         List<Annotation> toSave = finalAnnotations.stream()
                 .map(dto -> {
                     Annotation annotation;
-                    String finalType;
+                    String newStatus;
 
                     if (dto.getId() == null) {
-                        // 🎯 CASE A: New Box (INSERT)
+
                         annotation = new Annotation();
-                        finalType = "USER_ADDED";
+
+                        // 💥 MODIFIED LOGIC: Check for AI metrics in the DTO
+                        if (dto.getAiConfidence() != null || dto.getAiSeverityScore() != null) {
+                            // This is an AI-detected box being saved for the first time
+                            annotation.setOriginalSource("AI");
+                            //newStatus = dto.getCurrentStatus() != null ? dto.getCurrentStatus() : "FAULTY";
+                            // Map the AI details for persistence
+                            annotation.setAiConfidence(dto.getAiConfidence());
+                            annotation.setAiSeverityScore(dto.getAiSeverityScore());
+                            boolean isModified =
+                                    (dto.getOriginalX() != null && Math.abs(dto.getX() - dto.getOriginalX()) > 0.001) ||
+                                            (dto.getOriginalY() != null && Math.abs(dto.getY() - dto.getOriginalY()) > 0.001) ||
+                                            (dto.getOriginalWidth() != null && Math.abs(dto.getWidth() - dto.getOriginalWidth()) > 0.001) ||
+                                            (dto.getOriginalHeight() != null && Math.abs(dto.getHeight() - dto.getOriginalHeight()) > 0.001) ||
+                                            (dto.getComments() != null && !dto.getComments().isEmpty()); // Check if comments were added
+
+                            // Check if the coordinates in the DTO match the original AI coordinates.
+                            if (isModified) {
+                                newStatus = "USER_EDITED";
+                            } else {
+                                // No edit detected, set status to the AI's original status (or a validated status)
+                                // We use FAULTY to denote it passed through and was not modified.
+                                newStatus = dto.getCurrentStatus() != null ? dto.getCurrentStatus() : "FAULTY";
+                            }
+                        } else {
+                            // This is a genuinely new User-Added box
+                            annotation.setOriginalSource("USER");
+                            newStatus = "USER_ADDED";
+
+                            // Clear AI details for user-added boxes
+                            annotation.setAiConfidence(null);
+                            annotation.setAiSeverityScore(null);
+                        }
                     } else {
-                        // 🎯 CASE B: Existing Box (UPDATE/EDIT)
+
                         annotation = currentMap.get(dto.getId());
 
                         if (annotation == null) {
@@ -112,7 +144,12 @@ public class AnnotationServiceImpl implements AnnotationService {
                                         Math.abs(annotation.getHeight() - dto.getHeight()) > 0.001 ||
                                         (annotation.getComments() != null ? !annotation.getComments().equals(dto.getComments()) : dto.getComments() != null);
 
-                        finalType = isEdited ? "USER_EDITED" : "USER_VALIDATED";
+                        if (isEdited) {
+                            newStatus = "USER_EDITED";
+                        } else {
+                            // Keep the original status (e.g., FAULTY, USER_ADDED, USER_EDITED from previous save)
+                            newStatus = annotation.getCurrentStatus();
+                        }
                     }
 
                     // Map DTO fields to Entity
@@ -124,7 +161,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                     annotation.setComments(dto.getComments());
                     annotation.setUserId(dto.getUserId());
                     annotation.setTimestamp(dto.getTimestamp());
-                    annotation.setType(finalType);
+                    annotation.setCurrentStatus(newStatus);
                     annotation.setDeleted(false); // Ensure new/edited boxes are not deleted
 
                     return annotation;
@@ -143,7 +180,8 @@ public class AnnotationServiceImpl implements AnnotationService {
     private AnnotationDTO convertToDTO(Annotation annotation) {
         AnnotationDTO dto = new AnnotationDTO();
         dto.setId(annotation.getId());
-        dto.setType(annotation.getType());
+        dto.setCurrentStatus(annotation.getCurrentStatus()); // ⬅️ Use new field name
+        dto.setOriginalSource(annotation.getOriginalSource());
         dto.setX(annotation.getX());
         dto.setY(annotation.getY());
         dto.setWidth(annotation.getWidth());
@@ -151,6 +189,8 @@ public class AnnotationServiceImpl implements AnnotationService {
         dto.setComments(annotation.getComments());
         dto.setUserId(annotation.getUserId());
         dto.setTimestamp(annotation.getTimestamp());
+        dto.setAiConfidence(annotation.getAiConfidence());
+        dto.setAiSeverityScore(annotation.getAiSeverityScore());
         // Note: boxSessionId, actionType, originalState are transient, so not read from DB
         return dto;
     }

@@ -89,13 +89,19 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     const aiAnnotations = JSON.parse(initialAnnotations || '[]');
                     const formattedAnnotations = aiAnnotations.map((ann, index) => ({
                         id: `ai-${index}`,
+                        originalSource: 'AI',
                         boxSessionId: `ai-${index}`,
                         x: ann.location.x_min,
                         y: ann.location.y_min,
                         width: ann.location.x_max - ann.location.x_min,
                         height: ann.location.y_max - ann.location.y_min,
-                        type: ann.type,
+                        aiConfidence: ann.confidence,
+                        aiSeverityScore: ann.severity_score,
                         comments: '',
+                        originalX: ann.location.x_min,
+                        originalY: ann.location.y_min,
+                        originalWidth: ann.location.x_max - ann.location.x_min,
+                        originalHeight: ann.location.y_max - ann.location.y_min,
                     }));
                     setAnnotations(formattedAnnotations);
                     initialAnnotationsRef.current = formattedAnnotations; // Store the initial state
@@ -108,11 +114,13 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                         const aiAnnotations = JSON.parse(initialAnnotations || '[]');
                         const formattedAnnotations = aiAnnotations.map((ann, index) => ({
                             id: `ai-${index}`,
+                            originalSource: 'AI',
                             x: ann.location.x_min,
                             y: ann.location.y_min,
                             width: ann.location.x_max - ann.location.x_min,
                             height: ann.location.y_max - ann.location.y_min,
-                            type: ann.type,
+                            aiConfidence: ann.confidence,
+                            aiSeverityScore: ann.severity_score,
                             comments: '',
                         }));
                         setAnnotations(formattedAnnotations);
@@ -242,7 +250,14 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
     const handleMouseUp = () => {
         if (!isDrawing || !newAnnotation) return;
         if (Math.abs(newAnnotation.width) > 5 || Math.abs(newAnnotation.height) > 5) {
-            const finalAnnotation = { ...newAnnotation, type: 'user_added' };
+            const finalAnnotation = {
+                        ...newAnnotation,
+                        currentStatus: 'PENDING_SAVE',
+                        originalSource: 'USER', // ⬅️ Ensure this is set for new boxes
+                        // 🎯 NEW: Explicitly set AI-related fields to null for a new user box
+                        aiConfidence: null,
+                        aiSeverityScore: null,
+                    };
             if (finalAnnotation.width < 0) {
                 finalAnnotation.x += finalAnnotation.width;
                 finalAnnotation.width *= -1;

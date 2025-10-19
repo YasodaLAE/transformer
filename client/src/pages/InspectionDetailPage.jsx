@@ -93,13 +93,15 @@ const InspectionDetailPage = () => {
                     } else {
                         // Priority 2: Parse and use the raw AI result
                         const aiDetails = JSON.parse(resultResponse.data.detectionJsonOutput || '[]').map(ann => ({
-                            type: ann.type || 'Faulty',
+//                             type: ann.type || 'Faulty',
+                            currentStatus: ann.type || 'FAULTY', // ⬅️ Use 'currentStatus'
+                            originalSource: 'AI',
                             x: ann.location.x_min,
                             y: ann.location.y_min,
                             width: ann.location.x_max - ann.location.x_min,
                             height: ann.location.y_max - ann.location.y_min,
-                            confidence: ann.confidence,
-                            severity_score: ann.severity_score,
+                            aiConfidence: ann.confidence, // ⬅️ NEW
+                            aiSeverityScore: ann.severity_score, // ⬅️ NEW
                         }));
                         setActiveAnomalyDetails(aiDetails);
                     }
@@ -334,21 +336,65 @@ const InspectionDetailPage = () => {
                                 const xMax = isRawAIData ? anomaly.location.x_max : (anomaly.x + anomaly.width);
                                 const yMax = isRawAIData ? anomaly.location.y_max : (anomaly.y + anomaly.height);
 
-                                return (
-                                    <li key={anomaly.id || index} className="list-group-item">
-                                        <strong>Anomaly {index + 1}:</strong>
-                                        {/* Use anomaly.type from DTO if available, otherwise default */}
-                                        <span className={`badge ms-2 ${anomaly.type === 'Faulty' ? 'bg-danger' : 'bg-warning'}`}>{anomaly.type || 'USER_VALIDATED'}</span><br/>
+                                const sourceTag = anomaly.originalSource === 'USER'
+                                            ? <span className="badge bg-info ms-2">User Added</span>
+                                            : <span className="badge bg-secondary ms-2">AI Detected</span>;
 
-                                        <small className="text-muted">
-                                            Coordinates: ({Math.round(xMin)}, {Math.round(yMin)}) to ({Math.round(xMax)}, {Math.round(yMax)})
-                                            {anomaly.confidence && ` | Confidence: ${anomaly.confidence}`}
-                                            {anomaly.severity_score && ` | Severity Score: ${anomaly.severity_score}`}
-                                            {anomaly.comments && ` | Notes: ${anomaly.comments}`}
-                                        </small>
-                                    </li>
-                                );
-                            })}
+                                        let statusTagColor;
+                                        let statusTagText;
+
+                                        switch (anomaly.currentStatus) {
+                                            // ... (Status logic remains the same) ...
+                                            case 'USER_ADDED':
+                                                statusTagColor = 'bg-success';
+                                                statusTagText = 'Added by ' + (anomaly.userId || 'Unknown');
+                                                break;
+                                            case 'USER_EDITED':
+                                                statusTagColor = 'bg-warning text-dark';
+                                                statusTagText = 'Edited by ' + (anomaly.userId || 'Unknown');
+                                                break;
+                                            case 'USER_VALIDATED':
+                                                statusTagColor = 'bg-primary';
+                                                statusTagText = 'Validated by ' + (anomaly.userId || 'Unknown');
+                                                break;
+                                            case 'USER_DELETED': // Should be filtered out, but good for completeness
+                                                statusTagColor = 'bg-danger';
+                                                statusTagText = 'DELETED';
+                                                break;
+                                            default:
+                                                // This captures initial AI statuses like 'FAULTY'
+                                                statusTagColor = 'bg-danger';
+                                                statusTagText = anomaly.currentStatus || 'Faulty';
+                                        }
+                                        const statusTag = <span className={`badge ms-2 ${statusTagColor}`}>{statusTagText}</span>;
+
+
+                                    return (
+                                            <li key={anomaly.id || index} className="list-group-item">
+                                                <strong>Anomaly {index + 1}:</strong>
+
+                                                {/* 🎯 DISPLAY BOTH TAGS */}
+                                                {sourceTag}
+                                                {statusTag}
+                                                <br/>
+
+                                                <small className="text-muted">
+                                                    Coordinates: ({Math.round(xMin)}, {Math.round(yMin)}) to ({Math.round(xMax)}, {Math.round(yMax)})
+
+                                                    {/* 🎯 CRITICAL FIX 1: Check for the new DTO field names */}
+                                                    {anomaly.aiConfidence && ` | Confidence: ${anomaly.aiConfidence}`}
+                                                    {anomaly.aiSeverityScore && ` | Severity Score: ${anomaly.aiSeverityScore}`}
+
+                                                    {/* CRITICAL FIX 2: KEEPING OLD LOGIC FOR RAW AI DATA (when not yet saved) */}
+                                                    {/* When loading *raw* AI data, the fields are named 'confidence' and 'severity_score' */}
+                                                    {!anomaly.aiConfidence && anomaly.confidence && ` | Confidence: ${anomaly.confidence}`}
+                                                    {!anomaly.aiSeverityScore && anomaly.severity_score && ` | Severity Score: ${anomaly.severity_score}`}
+
+                                                    {anomaly.comments && ` | Notes: ${anomaly.comments}`}
+                                                </small>
+                                            </li>
+                                        );
+                                    })}
                             </ul>
                                 </Card.Body>
                             </Card>

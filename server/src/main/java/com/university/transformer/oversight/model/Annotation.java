@@ -24,8 +24,19 @@ public class Annotation {
     private Inspection inspection;
 
     // Mapping 'type' field in Java to 'annotation_type' column in DB
+//    @Column(name = "annotation_type", nullable = false)
+//    private String type; // Will store the final state type, e.g., "USER_VALIDATED" or "USER_ADDED"
     @Column(name = "annotation_type", nullable = false)
-    private String type; // Will store the final state type, e.g., "USER_VALIDATED" or "USER_ADDED"
+    private String currentStatus; // ⬅️ RENAMED: Maps to 'annotation_type' in DB. Stores status like "USER_VALIDATED".
+
+    @Column(name = "original_source", nullable = false) // ⬅️ NEW FIELD
+    private String originalSource; // Stores the provenance: 'AI' or 'USER' (NEVER CHANGES)
+
+    @Column(name = "ai_confidence")
+    private Double aiConfidence;
+
+    @Column(name = "ai_severity_score")
+    private Integer aiSeverityScore;
 
     // Bounding box coordinates
     private double x;

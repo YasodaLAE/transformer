@@ -2,7 +2,7 @@
 --  DROP TABLES (Children First, Then Parents)
 -- =================================================================
 -- These tables depend on 'inspection', so they must be dropped first.
-
+DROP TABLE IF EXISTS annotation_logs;
 DROP TABLE IF EXISTS annotations;             -- <-- NEW DEPENDENCY
 DROP TABLE IF EXISTS anomaly_detection_result;
 DROP TABLE IF EXISTS anomaly;
@@ -86,9 +86,11 @@ CREATE TABLE annotations (
 
     -- Fields for tracking the action and user
     annotation_type VARCHAR(255) NOT NULL, -- Will store: 'INITIAL_AI', 'USER_ADDED', 'USER_VALIDATED', 'USER_DELETED'
+    original_source VARCHAR(255) NOT NULL DEFAULT 'AI',
     user_id VARCHAR(255),
     timestamp DATETIME,
-
+    ai_confidence DOUBLE,
+    ai_severity_score INT,
     -- NEW: Soft Delete Flag
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
 
