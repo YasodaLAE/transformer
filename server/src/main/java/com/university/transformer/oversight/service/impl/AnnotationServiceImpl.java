@@ -58,7 +58,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             return;
         }
 
-        // 🎯 IMPORTANT: Only run this if no existing (non-deleted) annotations are present
+
         List<Annotation> existingAnnotations = annotationRepository.findByInspectionId(inspectionId);
         if (!existingAnnotations.isEmpty()) {
             // Already have annotations (either AI or user). Do nothing.
@@ -85,7 +85,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                 annotation.setOriginalSource("AI");
                 annotation.setAiConfidence(node.has("confidence") ? node.get("confidence").asDouble() : null);
                 annotation.setAiSeverityScore(node.has("severity_score") ? node.get("severity_score").asInt() : null);
-
+                annotation.setFaultType(node.has("type") ? node.get("type").asText() : "FAULTY");
                 // Map Bounding Box Coordinates
                 if (node.has("location")) {
                     JsonNode loc = node.get("location");
@@ -201,6 +201,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                                             (dto.getOriginalY() != null && Math.abs(dto.getY() - dto.getOriginalY()) > 0.001) ||
                                             (dto.getOriginalWidth() != null && Math.abs(dto.getWidth() - dto.getOriginalWidth()) > 0.001) ||
                                             (dto.getOriginalHeight() != null && Math.abs(dto.getHeight() - dto.getOriginalHeight()) > 0.001) ||
+                                            (dto.getFaultType() != null && !dto.getFaultType().equals(annotation.getFaultType())) || // Check if faultType was changed on first save
                                             (dto.getComments() != null && !dto.getComments().isEmpty()); // Check if comments were added
 
                             // Check if the coordinates in the DTO match the original AI coordinates.
@@ -236,6 +237,7 @@ public class AnnotationServiceImpl implements AnnotationService {
                                         Math.abs(annotation.getY() - dto.getY()) > 0.001 ||
                                         Math.abs(annotation.getWidth() - dto.getWidth()) > 0.001 ||
                                         Math.abs(annotation.getHeight() - dto.getHeight()) > 0.001 ||
+                                        (annotation.getFaultType() != null ? !annotation.getFaultType().equals(dto.getFaultType()) : dto.getFaultType() != null) ||
                                         (annotation.getComments() != null ? !annotation.getComments().equals(dto.getComments()) : dto.getComments() != null);
 
                         if (isEdited) {
@@ -257,7 +259,7 @@ public class AnnotationServiceImpl implements AnnotationService {
 //                    annotation.setTimestamp(dto.getTimestamp());
                     annotation.setCurrentStatus(newStatus);
                     annotation.setDeleted(false); // Ensure new/edited boxes are not deleted
-
+                    annotation.setFaultType(dto.getFaultType());
                     return annotation;
                 })
                 .collect(Collectors.toList());
@@ -285,6 +287,7 @@ public class AnnotationServiceImpl implements AnnotationService {
         dto.setTimestamp(annotation.getTimestamp());
         dto.setAiConfidence(annotation.getAiConfidence());
         dto.setAiSeverityScore(annotation.getAiSeverityScore());
+        dto.setFaultType(annotation.getFaultType());
         // Note: boxSessionId, actionType, originalState are transient, so not read from DB
         return dto;
     }

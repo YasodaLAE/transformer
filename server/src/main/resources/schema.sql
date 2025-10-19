@@ -84,6 +84,9 @@ CREATE TABLE annotations (
     height DOUBLE NOT NULL,
     comments TEXT,
 
+    -- NEW FIELD ADDED HERE
+    fault_type VARCHAR(50),
+
     -- Fields for tracking the action and user
     annotation_type VARCHAR(255) NOT NULL, -- Will store: 'INITIAL_AI', 'USER_ADDED', 'USER_VALIDATED', 'USER_DELETED'
     original_source VARCHAR(255) NOT NULL DEFAULT 'AI',

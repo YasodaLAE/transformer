@@ -144,6 +144,7 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
                     annotation.setAiConfidence(node.has("confidence") ? node.get("confidence").asDouble() : null);
                     // The severity score is often an integer in models, but if it comes as a float, use Double
                     annotation.setAiSeverityScore(node.has("severity_score") ? node.get("severity_score").asInt() : null);
+                    annotation.setFaultType(node.has("type") ? node.get("type").asText() : "FAULTY");
 
                     // Map Bounding Box Coordinates
                     if (node.has("location")) {

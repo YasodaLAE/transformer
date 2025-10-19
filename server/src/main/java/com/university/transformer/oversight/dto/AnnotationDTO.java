@@ -17,7 +17,7 @@ public class AnnotationDTO {
     private double width;
     private double height;
     private String comments;
-
+    private String faultType;
     // New Fields for persistence and tracking
     private String userId; // User who last modified/created
     private LocalDateTime timestamp; // Last modification time

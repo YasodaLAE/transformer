@@ -23,13 +23,10 @@ public class Annotation {
     @JsonBackReference("inspection-annotations")
     private Inspection inspection;
 
-    // Mapping 'type' field in Java to 'annotation_type' column in DB
-//    @Column(name = "annotation_type", nullable = false)
-//    private String type; // Will store the final state type, e.g., "USER_VALIDATED" or "USER_ADDED"
     @Column(name = "annotation_type", nullable = false)
-    private String currentStatus; // ⬅️ RENAMED: Maps to 'annotation_type' in DB. Stores status like "USER_VALIDATED".
+    private String currentStatus;
 
-    @Column(name = "original_source", nullable = false) // ⬅️ NEW FIELD
+    @Column(name = "original_source", nullable = false)
     private String originalSource; // Stores the provenance: 'AI' or 'USER' (NEVER CHANGES)
 
     @Column(name = "ai_confidence")
@@ -51,4 +48,8 @@ public class Annotation {
     @UpdateTimestamp
     private LocalDateTime timestamp;
     private boolean isDeleted = false; // Maps to is_deleted in DB
+
+    @Column(name = "fault_type")
+    private String faultType;
+
 }

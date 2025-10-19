@@ -78,7 +78,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
 
                 // If the API returns a non-empty array, it's the user's saved work.
                 if (savedAnnotations && savedAnnotations.length > 0) {
-                    const formatted = savedAnnotations.map(ann => ({ ...ann, id: ann.id.toString(), boxSessionId: ann.id.toString() }));
+                    const formatted = savedAnnotations.map(ann => ({ ...ann, id: ann.id.toString(), boxSessionId: ann.id.toString(),faultType: ann.faultType, }));
                                     setAnnotations(formatted);
                                     initialAnnotationsRef.current = formatted; // Store the initial state
 
@@ -102,6 +102,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                         originalY: ann.location.y_min,
                         originalWidth: ann.location.x_max - ann.location.x_min,
                         originalHeight: ann.location.y_max - ann.location.y_min,
+                        faultType: ann.type,
                     }));
                     setAnnotations(formattedAnnotations);
                     initialAnnotationsRef.current = formattedAnnotations; // Store the initial state
@@ -147,6 +148,22 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
             }
         };
 
+    // --- NEW HANDLER FOR FAULT TYPE CHANGE ---
+        const handleFaultTypeChange = (e) => {
+            const newFaultType = e.target.value;
+            setAnnotations(prev => {
+                const index = prev.findIndex(r => r.id === selectedId);
+                if (index !== -1) {
+                    const newRects = [...prev];
+                    // Update the faultType field on the selected annotation
+                    newRects[index] = { ...newRects[index], faultType: newFaultType };
+                    return newRects;
+                }
+                return prev;
+            });
+        };
+        // -----------------------------------------
+
     useEffect(() => {
             const handleKeyDown = (e) => {
                 if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -173,6 +190,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                 id: isTransientId ? null : ann.id,
                 userId: userId,
                 timestamp: timestamp,
+                faultType: ann.faultType,
 
                 // Annotation Type will be set by the backend (USER_ADDED if id is null, USER_VALIDATED if id exists)
                 // We keep the original 'type' here, the service overrides it.
@@ -256,6 +274,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                         originalSource: 'USER',
                         aiConfidence: null,
                         aiSeverityScore: null,
+                        faultType: null,
                     };
             if (finalAnnotation.width < 0) {
                 finalAnnotation.x += finalAnnotation.width;
@@ -359,6 +378,21 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                             Edit Annotation Details (Box ID: {selectedAnnotation.id.toString().replace('user_new-', 'NEW-')})
                             <small className="text-muted">Source: {selectedAnnotation.originalSource}</small>
                         </Card.Title>
+
+                        {/* --- NEW FAULT TYPE DROPDOWN --- */}
+                        <Form.Group className="mb-3" controlId="faultType">
+                            <Form.Label className="small fw-bold">Fault Type:</Form.Label>
+                            <Form.Control
+                                as="select"
+                                value={selectedAnnotation.faultType || ''}
+                                onChange={handleFaultTypeChange}
+                            >
+                                <option value="" disabled>Select Fault Type</option>
+                                <option value="Faulty">Faulty</option>
+                                <option value="Potentially Faulty">Potentially Faulty</option>
+                                
+                            </Form.Control>
+                        </Form.Group>
                         <Form.Group className="mb-1" controlId="annotationComments">
                             <Form.Label className="small fw-bold">Optional Comments/Notes:</Form.Label>
                             <Form.Control

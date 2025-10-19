@@ -105,6 +105,7 @@ const InspectionDetailPage = () => {
                             height: ann.location.y_max - ann.location.y_min,
                             aiConfidence: ann.confidence, // ⬅️ NEW
                             aiSeverityScore: ann.severity_score, // ⬅️ NEW
+                            faultType: ann.faultType,
                         }));
                         setActiveAnomalyDetails(aiDetails);
                     }
