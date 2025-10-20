@@ -8,9 +8,11 @@ import InspectionPage from './pages/InspectionPage'
 import { AuthProvider } from './hooks/AuthContext';
 import InspectionDetailPage from './pages/InspectionDetailPage';
 import AllInspectionsPage from './pages/AllInspectionsPage';
+import { TrainingStatusProvider } from './context/TrainingStatusContext.jsx'; // Note the .jsx extension
 
 function App() {
     return (
+        <TrainingStatusProvider>
         <AuthProvider>
         <Router>
             <Layout>
@@ -25,6 +27,7 @@ function App() {
             </Layout>
         </Router>
         </AuthProvider>
+        </TrainingStatusProvider>
     );
 }
 

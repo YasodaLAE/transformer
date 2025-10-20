@@ -1,46 +1,45 @@
+import React from 'react';
+import { triggerModelFineTuning } from '../services/apiService';
+// Import the custom hook
+import { useTrainingStatus } from '../context/TrainingStatusContext.jsx';
 
-import React, { useState } from 'react';
-import { triggerModelFineTuning } from '../services/apiService'; // Adjust path as needed
 /**
  * The main Dashboard component.
- * Serves as the landing page or home screen after a user logs in.
- * Currently functions as a placeholder for key performance indicators (KPIs)
- * and summary statistics in future development phases.
  */
 const DashboardPage = () => {
-    const [isTraining, setIsTraining] = useState(false);
-    const [trainingStatus, setTrainingStatus] = useState(null); // 'success', 'error', or null
+    // Destructure the global state variables and setters from the context
+    const { isTraining, setIsTraining, trainingStatus, setTrainingStatus } = useTrainingStatus();
 
     const handleFineTune = async () => {
-        if (isTraining) return; // Prevent double-click
+        if (isTraining) return;
 
+        // 1. Set global state to RUNNING (this persists across navigation)
         setIsTraining(true);
         setTrainingStatus(null);
 
         try {
-            // Call the Spring Boot endpoint
+            // 2. Blocking API call (waits for Python process to finish on server)
             const response = await triggerModelFineTuning();
 
-            // The process starts successfully on the backend
-            console.log("Fine-tuning initiated:", response.data);
+            console.log("Fine-tuning completed:", response.data);
 
-            // NOTE: Since the backend is non-blocking (runs in a separate thread),
-            // the response here only confirms the START. We keep loading until
-            // a later mechanism (like polling or WebSockets, not implemented here)
-            // confirms the END.
-
-            // For this simple example, we'll keep it loading for a set time
-            // and assume success, or check the server logs for the real status.
-            setTimeout(() => {
-                setIsTraining(false);
-                setTrainingStatus('success');
-            }, 5000); // Simulate a short-running process for UI feedback
+            // 3. Set global state to SUCCESS
+            setIsTraining(false);
+            setTrainingStatus('success');
 
         } catch (error) {
-            console.error('Error initiating fine-tuning:', error);
+            console.error('Error during fine-tuning:', error);
+
+            let message = 'Model fine-tuning failed. Please check server logs.';
+            if (error.response && error.response.data) {
+                // Use the error message returned from the Spring Boot body
+                message = error.response.data;
+            }
+
+            // 4. Set global state to ERROR
             setIsTraining(false);
             setTrainingStatus('error');
-            alert('Failed to start model fine-tuning process. Check server connection and logs.');
+            alert(message);
         }
     };
 
@@ -68,10 +67,12 @@ const DashboardPage = () => {
                 onClick={handleFineTune}
                 disabled={isTraining}
             >
+                {/* Conditional spinner only shows when isTraining is true */}
                 {isTraining && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>}
                 {getButtonText()}
             </button>
 
+            {/* Success Notification */}
             {trainingStatus === 'success' && (
                 <div className="alert alert-success mt-3" role="alert">
                     The model fine-tuning process has successfully completed on the server!
@@ -79,6 +80,7 @@ const DashboardPage = () => {
                 </div>
             )}
 
+            {/* Error Notification */}
             {trainingStatus === 'error' && (
                 <div className="alert alert-danger mt-3" role="alert">
                     Model fine-tuning failed. Please check the Spring Boot console for detailed Python errors.

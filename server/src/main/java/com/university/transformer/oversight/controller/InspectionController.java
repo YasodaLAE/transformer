@@ -70,24 +70,27 @@ public class InspectionController {
         return new ResponseEntity<>(newInspection, HttpStatus.CREATED);
     }
 
+    // NEW CORRECT SYNCHRONOUS CONTROLLER METHOD
     @PostMapping("/finetune-model")
     public ResponseEntity<String> triggerModelFineTuning() {
-        // Use a separate thread or asynchronous execution for long-running processes
-        // For simplicity, we use a simple thread here, but a dedicated ExecutorService 
-        // or @Async would be better in production.
-        new Thread(() -> {
-            try {
-                String newModelName = fineTuningService.generateDatasetAndFineTune();
-                logger.info("Fine-tuning complete. New model: {}", newModelName);
-                // In a real app, you would save this new model name to a ModelVersion table
-                // and perhaps use WebSockets to notify the user.
-            } catch (Exception e) {
-                logger.error("Fine-tuning failed.", e);
-                // Use a database table or similar to log and report the failure status
-            }
-        }).start();
+        try {
+            // The service call (generateDatasetAndFineTune) is synchronous
+            // and contains process.waitFor(), so it will block until Python finishes.
+            String newModelName = fineTuningService.generateDatasetAndFineTune();
+            logger.info("Fine-tuning successful. New model: {}", newModelName);
 
-        return ResponseEntity.ok("Model fine-tuning process started in the background. Check logs for progress.");
+            // This response is only sent AFTER the fine-tuning is complete.
+            return ResponseEntity.ok("Model fine-tuning completed successfully. New model: " + newModelName);
+        } catch (RuntimeException e) {
+            // This catches failure from process.waitFor() returning non-zero, etc.
+            logger.error("Fine-tuning failed.", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Model fine-tuning failed. Reason: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Fine-tuning encountered an unexpected error.", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Model fine-tuning failed due to an error.");
+        }
     }
 
     @GetMapping("/by-transformer/{transformerId}")
