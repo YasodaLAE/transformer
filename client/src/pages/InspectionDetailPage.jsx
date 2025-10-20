@@ -294,7 +294,7 @@ const InspectionDetailPage = () => {
                                 {isDetecting ? (<><Spinner animation="border" size="sm" className="me-2" />Running Anomaly Detection...</>) : anomalyResult ? (`Detection Complete`) : ('Detection Pending/Not Run')}
                             </small>
                         )}
-                        {hasThermalImage && hasBaselineImage && (
+                        {hasThermalImage && isAdmin && hasBaselineImage && (
                             <div className="d-flex align-items-center bg-light p-2 rounded-3 border">
                                 <label className="me-3 text-dark small fw-bold text-nowrap">Confidence Threshold:</label>
                                 <Form.Range id="tempThresholdSlider" value={tempThreshold} onChange={(e) => setTempThreshold(parseFloat(e.target.value))} min="0.0" max="1.0" step="0.01" style={{ width: '150px' }} className="me-3" disabled={isDetecting} />
@@ -304,9 +304,10 @@ const InspectionDetailPage = () => {
                                     <Button variant="outline-secondary" onClick={() => setTempThreshold(t => Math.min(1.0, t + 0.01))} disabled={isDetecting || tempThreshold >= 1.00} style={{ width: '25px' }}><i className="bi bi-plus-lg"></i></Button>
                                 </div>
                                 <span className="me-3 small">%</span>
+                                { isAdmin &&
                                 <Button variant="success" onClick={handleRunDetectionClick} disabled={isDetecting || !hasThermalImage || !hasBaselineImage}>
                                     {isDetecting ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="bi bi-arrow-clockwise me-1"></i>} Re-Run
-                                </Button>
+                                </Button> }
                             </div>
                         )}
                     </div>
@@ -350,7 +351,7 @@ const InspectionDetailPage = () => {
                                                     <img src={finalDisplayImageUrl} alt="Annotated Thermal" style={{ maxWidth: '100%' }} key={finalDisplayImageUrl} />
                                                     <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small>
                                                 </div>
-                                                {anomalyResult && (<Button variant="primary" onClick={() => setIsAnnotating(true)} className="mt-2"><i className="bi bi-pencil-square me-2"></i>Correct Annotations</Button>)}
+                                                {isAdmin && anomalyResult && (<Button variant="primary" onClick={() => setIsAnnotating(true)} className="mt-2"><i className="bi bi-pencil-square me-2"></i>Correct Annotations</Button>)}
                                                 </>
                                             )
                                         ) : showThermalUploader ? (
@@ -370,9 +371,10 @@ const InspectionDetailPage = () => {
 {/*                         <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4> */}
                         <div className="d-flex justify-content-between align-items-center mb-3">
                         <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4>
+                        { isAdmin &&
                         <Button variant="outline-dark" size="sm" onClick={handleExportFeedback}>
                             <i className="bi bi-download me-1"></i> Export Feedback Log (JSON)
-                        </Button>
+                        </Button> }
                         </div>
                         <ul className="list-group list-group-flush">
                             {activeAnomalyDetails.map((anomaly, index) => {

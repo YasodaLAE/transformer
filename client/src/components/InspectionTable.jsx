@@ -54,7 +54,7 @@ const InspectionTable = ({ inspections, onDelete, onEdit, showTransformerColumn 
                            <th>Maintenance Date & Time</th>
                            <th>Status</th>
                            <th></th>
-                           {isAdmin && <th></th>} 
+                           {isAdmin && <th></th>}
                        </tr>
                    </thead>
                    <tbody>

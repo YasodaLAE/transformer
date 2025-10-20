@@ -1,6 +1,6 @@
 import React from 'react';
 import { triggerModelFineTuning } from '../services/apiService';
-// Import the custom hook
+import { useAuth } from '../hooks/AuthContext';
 import { useTrainingStatus } from '../context/TrainingStatusContext.jsx';
 
 /**
@@ -9,6 +9,7 @@ import { useTrainingStatus } from '../context/TrainingStatusContext.jsx';
 const DashboardPage = () => {
     // Destructure the global state variables and setters from the context
     const { isTraining, setIsTraining, trainingStatus, setTrainingStatus } = useTrainingStatus();
+    const { isAdmin } = useAuth();
 
     const handleFineTune = async () => {
         if (isTraining) return;
@@ -44,9 +45,9 @@ const DashboardPage = () => {
     };
 
     const getButtonText = () => {
-        if (isTraining) return 'Fine-Tuning Running... (Check Server Logs)';
-        if (trainingStatus === 'success') return 'Fine-Tuning Finished! ✅';
-        return 'Start Model Fine-Tuning with User Data';
+        if (isTraining) return 'Fine-Tuning Running...';
+        if (trainingStatus === 'success') return 'Fine-Tuning Finished!';
+        return 'Start Model Fine-Tuning';
     }
 
     return (
@@ -55,15 +56,24 @@ const DashboardPage = () => {
             <p>Welcome to the Oversight Transformer Management System.</p>
 
             <hr/>
-
-            <h3>AI Model Fine-Tuning</h3>
+            {isAdmin && (
+                <>
+            <h4>Anomaly Detection Model Fine-tuning</h4>
             <p>
-                Use this button to re-train the anomaly detection model using all user-added and user-edited annotations
-                from the database. This process runs in the background.
+                Click to fine-tune the anomaly detection model using all user modified annotations.
+            </p>
+            <p>
+                This process runs in the background.
             </p>
 
             <button
-                className={`btn ${isTraining ? 'btn-warning' : 'btn-primary'} btn-lg`}
+                className={`btn ${
+                        isTraining
+                            ? 'btn-warning' // Yellow/Warning when running
+                            : trainingStatus === 'success'
+                                ? 'btn-success' // Green/Success when finished
+                                : 'btn-primary' // Blue/Primary for the initial state
+                    } btn-lg`}
                 onClick={handleFineTune}
                 disabled={isTraining}
             >
@@ -86,6 +96,8 @@ const DashboardPage = () => {
                     Model fine-tuning failed. Please check the Spring Boot console for detailed Python errors.
                 </div>
             )}
+        </>
+        )}
         </div>
     );
 };
