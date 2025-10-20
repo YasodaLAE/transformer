@@ -48,14 +48,13 @@ const InspectionTable = ({ inspections, onDelete, onEdit, showTransformerColumn 
        <table className="table table-striped">
                    <thead>
                        <tr>
-                           {/* Conditionally display the Transformer column */}
                            {showTransformerColumn && <th>Transformer No.</th>}
                            <th>Inspection No.</th>
                            <th>Inspected Date & Time</th>
                            <th>Maintenance Date & Time</th>
                            <th>Status</th>
-                           <th></th> {/* Column for View Link */}
-                           {isAdmin && <th></th>} {/* Column for Actions Dropdown */}
+                           <th></th>
+                           {isAdmin && <th></th>} 
                        </tr>
                    </thead>
                    <tbody>
