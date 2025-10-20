@@ -7,7 +7,7 @@ import Toast from './Toast';
 import { Button, ButtonGroup, Form, Card } from 'react-bootstrap';
 import CommentModal from './CommentModal';
 
-const AnnotationRect = ({ shapeProps, isSelected, onSelect, onChange }) => {
+const AnnotationRect = ({ shapeProps, isSelected, onSelect, onChange, scale }) => {
     const shapeRef = useRef();
     const trRef = useRef();
 
@@ -18,36 +18,55 @@ const AnnotationRect = ({ shapeProps, isSelected, onSelect, onChange }) => {
         }
     }, [isSelected]);
 
+    const unscaleAttrs = (node) => {
+            return {
+                id: shapeProps.id, // Keep the ID
+                x: node.x() / scale,
+                y: node.y() / scale,
+                width: node.width(),
+                height: node.height(),
+            };
+        };
+
     return (
-        <>
-            <Rect
-                onClick={onSelect}
-                onTap={onSelect}
-                ref={shapeRef}
-                {...shapeProps}
-                draggable
-                stroke="red"
-                strokeWidth={2}
-                onDragEnd={(e) => onChange({ ...shapeProps, x: e.target.x(), y: e.target.y() })}
-                onTransformEnd={(e) => {
-                    const node = shapeRef.current;
-                    const scaleX = node.scaleX();
-                    const scaleY = node.scaleY();
-                    node.scaleX(1);
-                    node.scaleY(1);
-                    onChange({
-                        ...shapeProps,
-                        x: node.x(),
-                        y: node.y(),
-                        width: Math.max(5, node.width() * scaleX),
-                        height: Math.max(5, node.height() * scaleY),
-                    });
-                }}
-            />
-            {isSelected && <Transformer ref={trRef} boundBoxFunc={(oldBox, newBox) => newBox.width < 5 || newBox.height < 5 ? oldBox : newBox} />}
-        </>
-    );
-};
+            <>
+                <Rect
+                    onClick={onSelect}
+                    onTap={onSelect}
+                    ref={shapeRef}
+                    {...shapeProps}
+                    draggable
+                    stroke="red"
+                    strokeWidth={2}
+                    onDragEnd={(e) => {
+                        const node = shapeRef.current;
+                        // UN-SCALE before calling onChange
+                        onChange({ ...shapeProps, ...unscaleAttrs(node) });
+                    }}
+                    onTransformEnd={(e) => {
+                        const node = shapeRef.current;
+                        const scaleX = node.scaleX();
+                        const scaleY = node.scaleY();
+                        // Reset scale to 1 on the node (Konva best practice)
+                        node.scaleX(1);
+                        node.scaleY(1);
+
+                        // Calculate new UN-SCALED width/height and UN-SCALED x/y
+                        onChange({
+                            ...shapeProps,
+                            id: shapeProps.id,
+                            x: node.x() / scale,
+                            y: node.y() / scale,
+                            width: Math.max(5, (node.width() * scaleX) / scale), // Un-scale width
+                            height: Math.max(5, (node.height() * scaleY) / scale), // Un-scale height
+                        });
+                    }}
+                />
+                {/* The Transformer itself should not be scaled, only the position/size of the shape */}
+                {isSelected && <Transformer ref={trRef} boundBoxFunc={(oldBox, newBox) => newBox.width * scale < 5 || newBox.height * scale < 5 ? oldBox : newBox} />}
+            </>
+        );
+    };
 
 const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotationsSaved, onCancel }) => {
     const [annotations, setAnnotations] = useState([]);
@@ -57,6 +76,9 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
     const [toast, setToast] = useState(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [newAnnotation, setNewAnnotation] = useState(null);
+    const containerRef = useRef(null);
+    const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
+    const [scale, setScale] = useState(1);
 
     const initialAnnotationsRef = useRef([]); // To hold the initial state for comparison
     const [loggableChanges, setLoggableChanges] = useState([]); // Array to store logs
@@ -174,6 +196,28 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
             return () => window.removeEventListener('keydown', handleKeyDown);
         }, [selectedId, annotations]);
 
+    useEffect(() => {
+            const calculateSize = () => {
+                if (containerRef.current && image) {
+                    // Get the width of the container (e.g., the browser window width or the parent div)
+                    const containerWidth = containerRef.current.clientWidth;
+
+                    // Calculate the height to maintain the aspect ratio
+                    const containerHeight = containerWidth * (image.height / image.width);
+
+                    setContainerSize({ width: containerWidth, height: containerHeight });
+
+                    // Calculate the scale factor
+                    const newScale = containerWidth / image.width;
+                    setScale(newScale);
+                }
+            };
+
+            // Initialize and listen for window resize
+            calculateSize();
+            window.addEventListener('resize', calculateSize);
+            return () => window.removeEventListener('resize', calculateSize);
+        }, [image]);
 
     const handleSave = async () => {
         const userId = user ? user.username : 'unknown_user';
@@ -256,39 +300,49 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
             return;
         }
         const { x, y } = e.target.getStage().getPointerPosition();
+
+        // Start new box creation with SCALED coordinates
         setNewAnnotation({ x, y, width: 0, height: 0, id: `new-${annotations.length + 1}` });
     };
 
     const handleMouseMove = (e) => {
         if (!isDrawing || !newAnnotation) return;
         const { x, y } = e.target.getStage().getPointerPosition();
+        // Update new box with SCALED coordinates
         setNewAnnotation({ ...newAnnotation, width: x - newAnnotation.x, height: y - newAnnotation.y });
     };
 
     const handleMouseUp = () => {
-        if (!isDrawing || !newAnnotation) return;
-        if (Math.abs(newAnnotation.width) > 5 || Math.abs(newAnnotation.height) > 5) {
-            const finalAnnotation = {
-                        ...newAnnotation,
-                        currentStatus: 'PENDING_SAVE',
-                        originalSource: 'USER',
-                        aiConfidence: null,
-                        aiSeverityScore: null,
-                        faultType: null,
-                    };
-            if (finalAnnotation.width < 0) {
-                finalAnnotation.x += finalAnnotation.width;
-                finalAnnotation.width *= -1;
+            if (!isDrawing || !newAnnotation) return;
+            if (Math.abs(newAnnotation.width) > 5 || Math.abs(newAnnotation.height) > 5) {
+
+                // UN-SCALE the final box coordinates before saving to state
+                let finalAnnotation = {
+                    ...newAnnotation,
+                    x: newAnnotation.x / scale,
+                    y: newAnnotation.y / scale,
+                    width: newAnnotation.width / scale,
+                    height: newAnnotation.height / scale,
+                    currentStatus: 'PENDING_SAVE',
+                    originalSource: 'USER',
+                    aiConfidence: null,
+                    aiSeverityScore: null,
+                    faultType: null,
+                };
+
+                if (finalAnnotation.width < 0) {
+                    finalAnnotation.x += finalAnnotation.width;
+                    finalAnnotation.width *= -1;
+                }
+                if (finalAnnotation.height < 0) {
+                    finalAnnotation.y += finalAnnotation.height;
+                    finalAnnotation.height *= -1;
+                }
+                setAnnotations([...annotations, finalAnnotation]);
             }
-            if (finalAnnotation.height < 0) {
-                finalAnnotation.y += finalAnnotation.height;
-                finalAnnotation.height *= -1;
-            }
-            setAnnotations([...annotations, finalAnnotation]);
-        }
-        setNewAnnotation(null);
-        setIsDrawing(false);
-    };
+            setNewAnnotation(null);
+            setIsDrawing(false);
+        };
 
     const selectedAnnotation = annotations.find(a => a.id === selectedId);
 
@@ -307,36 +361,58 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
     };
 
     return (
-        <div>
+        <div ref={containerRef} style={{ width: '100%', maxWidth: '100%', margin: '0 auto' }}>
             <Stage
-                width={image ? image.width : 800}
-                height={image ? image.height : 600}
+                width={containerSize.width} // Use container's calculated width
+                height={containerSize.height} // Use container's calculated height
                 style={{ border: '1px solid grey', cursor: isDrawing ? 'crosshair' : 'default' }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
             >
                 <Layer>
-                    <Image image={image} name="backgroundImage" />
+                    <Image
+                        image={image}
+                        name="backgroundImage"
+                        scaleX={scale} // <-- Apply the scale here
+                        scaleY={scale} // <-- Apply the scale here
+                        width={image ? image.width : 0} // Konva image dimensions should be raw
+                        height={image ? image.height : 0} // Konva image dimensions should be raw
+                    />
                     {annotations.map((rect, i) => (
                         <AnnotationRect
                             key={rect.id || `ai-${i}`}
-                            shapeProps={rect}
+                            scale={scale}
+                            shapeProps={{
+                                ...rect,
+                                // Scale down the annotation coordinates and dimensions
+                                x: rect.x * scale,
+                                y: rect.y * scale,
+                                width: rect.width * scale,
+                                height: rect.height * scale,
+                                // Note: The original unscaled values are still in `rect`
+                            }}
                             isSelected={(rect.id || `ai-${i}`) === selectedId}
                             onSelect={() => {
                                 setIsDrawing(false);
                                 setSelectedId(rect.id || `ai-${i}`);
                             }}
-                            onChange={(newAttrs) => {
-                                const rects = [...annotations];
-                                const index = rects.findIndex(r => (r.id || `ai-${rects.indexOf(r)}`) === newAttrs.id);
-                                if (index !== -1) {
-                                    rects[index] = newAttrs;
-                                    setAnnotations(rects);
-                                }
-                            }}
+//                             onChange={(newAttrs) => {
+//                                 // IMPORTANT: When changing, scale back up to save original coordinates!
+//                                 const unscaledAttrs = {
+//                                     ...newAttrs,
+//                                     x: newAttrs.x / scale,
+//                                     y: newAttrs.y / scale,
+//                                     width: newAttrs.width / scale,
+//                                     height: newAttrs.height / scale,
+//                                 };
+//                                 handleAnnotateChange(unscaledAttrs); // Your existing handler needs to be updated too!
+//                             }
+                        onChange={handleAnnotateChange}
+
                         />
                     ))}
+                    {/* New annotation is drawn with SCALED coordinates */}
                     {newAnnotation && <Rect stroke="blue" strokeWidth={2} {...newAnnotation} />}
                 </Layer>
             </Stage>
@@ -351,24 +427,10 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     </Button>
                 </ButtonGroup>
 
-{/*                 <ButtonGroup size="sm"> */}
-{/*                     <Button variant="secondary" onClick={onCancel}> */}
-{/*                         Discard Changes */}
-{/*                     </Button> */}
-{/*                     <Button variant="primary" onClick={handleSave}> */}
-{/*                         Save Annotations */}
-{/*                     </Button> */}
-{/*                 </ButtonGroup> */}
             </div>
 
             <div className="d-flex justify-content-between align-items-center mt-3">
 
-{/*                 <ButtonGroup size="sm"> */}
-{/*                      */}{/* ... Discard Changes button ... */}
-{/*                     <Button variant="primary" onClick={handleSave}> */}
-{/*                         Save Annotations */}
-{/*                     </Button> */}
-{/*                 </ButtonGroup> */}
             </div>
 
             {selectedAnnotation && (
