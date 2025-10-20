@@ -22,7 +22,7 @@ def fine_tune_yolo_model(data_yaml_path, initial_model_path, output_path):
 
     results = model.train(
         data=data_yaml_path,
-        epochs=250,
+        epochs=10,
         imgsz=640,
         batch=8,
         patience=50,

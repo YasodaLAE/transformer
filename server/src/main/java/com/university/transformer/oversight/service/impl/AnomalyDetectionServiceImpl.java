@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -52,13 +54,32 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
     private final FileStorageService fileStorageService;
     private final AnnotationRepository annotationRepository;
 
+    private static String currentProductionModelName;
+
+    @Value("${ml.model-output-dir}")
+    private String modelOutputDir; // e.g., src/main/resources/ml_models
+
+    // Path to your detector.py script
+    private static final String DETECTOR_SCRIPT_PATH = "./scripts/detector.py"; // Adjust path as needed
+
+
+    public static void setCurrentProductionModelName(String newModelName) {
+        currentProductionModelName = newModelName;
+        logger.info("Production model updated to: {}", newModelName);
+    }
+
     @Autowired
     public AnomalyDetectionServiceImpl(
+            @Value("${ml.production-model-name}") String initialModelName,
             InspectionRepository inspectionRepository,
             ThermalImageRepository thermalImageRepository,
             AnomalyDetectionResultRepository resultRepository,
             FileStorageService fileStorageService,
-            AnnotationRepository annotationRepository) {
+            AnnotationRepository annotationRepository
+             ) {
+        if (currentProductionModelName == null) {
+            currentProductionModelName = initialModelName;
+        }
         this.inspectionRepository = inspectionRepository;
         this.thermalImageRepository = thermalImageRepository;
         this.resultRepository = resultRepository;
@@ -91,7 +112,13 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         logger.info("With maintenance image: {}", pythonMaintenancePath);
         logger.info("With baseline image: {}", pythonBaselinePath);
 
-        ProcessBuilder pb = new ProcessBuilder("python", PYTHON_SCRIPT_PATH, pythonMaintenancePath, pythonBaselinePath, pythonOutputPath, String.valueOf(tempThresholdPercentage));
+        Path modelPath = Paths.get(modelOutputDir, currentProductionModelName).toAbsolutePath();
+        String absoluteModelPath = modelPath.toString();
+
+        // Ensure the detector script exists
+        Path scriptPath = Paths.get(DETECTOR_SCRIPT_PATH).toAbsolutePath();
+
+        ProcessBuilder pb = new ProcessBuilder("python", PYTHON_SCRIPT_PATH, pythonMaintenancePath, pythonBaselinePath, pythonOutputPath, String.valueOf(tempThresholdPercentage), absoluteModelPath);
         Process p = pb.start();
 
         // Capture output and errors

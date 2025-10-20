@@ -37,7 +37,7 @@ def get_baseline_intensity(baseline_path):
     print(f"Calculated Baseline Intensity Proxy (median): {baseline:.2f}", file=sys.stderr)
     return int(baseline)
 
-def run_detection(maintenance_image_path, baseline_image_path, save_folder, threshold_percentage):
+def run_detection(maintenance_image_path, baseline_image_path, save_folder, threshold_percentage, model_path):
     if not os.path.exists(maintenance_image_path) or not os.path.exists(baseline_image_path):
         return {
             "error": f"Image not found. Maintenance: {maintenance_image_path}, Baseline: {baseline_image_path}",
@@ -46,7 +46,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
 
     try:
         os.makedirs(save_folder, exist_ok=True)
-        model = YOLO(MODEL_PATH)
+        model = YOLO(model_path)
     except Exception as e:
         return {"error": f"Model or path setup failed: {e}", "overall_status": "UNCERTAIN"}
 
@@ -158,12 +158,12 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
             "timestamp": datetime.utcnow().isoformat(),
             "image_width": img_w,
             "image_height": img_h,
-            "model_version": "v1.0",
+            "model_version": os.path.basename(model_path),
         }
     }
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
+    if len(sys.argv) < 5 or len(sys.argv) > 6:
         print(json.dumps({
             "error": "Usage: python detector.py <maintenance_img_path> <baseline_img_path> <output_save_folder_path> <temp_threshold_percentage>",
             "overall_status": "UNCERTAIN"
@@ -174,6 +174,12 @@ if __name__ == "__main__":
     baseline_image_path = sys.argv[2]
     output_save_folder = sys.argv[3]
 
+    if len(sys.argv) == 6:
+        MODEL_TO_USE = sys.argv[5]
+    else:
+        # Fallback to the original model path
+        MODEL_TO_USE = r"./server/src/main/resources/best.pt"
+
     try:
         threshold_percentage = float(sys.argv[4])
     except ValueError:
@@ -183,5 +189,5 @@ if __name__ == "__main__":
         }))
         sys.exit(1)
 
-    result = run_detection(maintenance_image_path, baseline_image_path, output_save_folder, threshold_percentage)
+    result = run_detection(maintenance_image_path, baseline_image_path, output_save_folder, threshold_percentage, MODEL_TO_USE)
     print(json.dumps(result, indent=4))

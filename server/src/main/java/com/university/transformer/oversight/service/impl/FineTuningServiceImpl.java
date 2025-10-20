@@ -39,7 +39,7 @@ public class FineTuningServiceImpl implements FineTuningService {
     private String trainingScriptPath;
 
     // Assuming you have an initial model (e.g., yolov8n.pt) in your resources
-    private static final String INITIAL_MODEL_PATH = "src/main/resources/ml_models/yolov8n.pt";
+    private static final String INITIAL_MODEL_PATH = "server/src/main/resources/best.pt";
 
     // Yolo Class Mapping (fault_type to class_id)
     private static final String FAULTY_CLASS_ID = "1";
@@ -229,6 +229,7 @@ public class FineTuningServiceImpl implements FineTuningService {
         if (!finished || process.exitValue() != 0) {
             throw new RuntimeException("YOLO fine-tuning failed or timed out. Check server logs for Python errors.");
         }
+        AnomalyDetectionServiceImpl.setCurrentProductionModelName(newModelName);
 
         logger.info("Fine-tuning successful. New model saved to: {}", outputModelPath);
         return newModelName;
