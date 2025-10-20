@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Form, Modal, Alert } from 'react-bootstrap'; // Removed unused imports
+import { Button, Form, Modal, Alert } from 'react-bootstrap';
 import { uploadBaselineImage } from '../services/apiService';
 import { useAuth } from '../hooks/AuthContext';
 
@@ -16,7 +16,7 @@ const BaselineImageUploader = ({ transformerId, onUploadSuccess }) => {
     const [success, setSuccess] = useState(null);
     const [condition, setCondition] = useState(''); // Stores selected environmental condition
 
-    const { user } = useAuth(); // Get authenticated user for 'uploader' metadata
+    const { user } = useAuth();
 
     const handleFileChange = (e) => {
         // Capture the file object when input changes
@@ -52,7 +52,6 @@ const BaselineImageUploader = ({ transformerId, onUploadSuccess }) => {
             setSuccess("Baseline image uploaded successfully!");
             setShowModal(false); // Close the modal on success
 
-            // Notify parent component (e.g., InspectionPage) to refresh its data
             onUploadSuccess(selectedFile.name);
         } catch (err) {
             console.error('Upload failed:', err);

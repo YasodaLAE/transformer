@@ -102,7 +102,7 @@ public class AnnotationServiceImpl implements AnnotationService {
 
                 // Set default/required fields
                 annotation.setComments(null);
-                annotation.setUserId("AI_SYSTEM"); // Indicate the 'user' that created it
+                annotation.setUserId("AI");
                 // timestamp is set automatically by @UpdateTimestamp
                 annotation.setDeleted(false);
 

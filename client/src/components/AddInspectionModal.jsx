@@ -5,8 +5,8 @@ import { createInspection, updateInspection } from '../services/apiService';
 
 /**
  * Converts a JavaScript Date or ISO string into the 'datetime-local' input format (YYYY-MM-DDTHH:MI).
- * This is necessary because HTML input type="datetime-local" requires this specific string format.
  */
+
 function toDatetimeLocal(value) {
   if (!value) return '';
   const d = typeof value === 'string' ? new Date(value) : value;
@@ -93,7 +93,7 @@ const AddInspectionModal = ({
     setError(null);
 
     const inspectedBy = user?.username;
-    // Determine the final transformer ID based on context (edit, dedicated page, or dropdown)
+    // Determine the final transformer ID based on context
     const finalTransformerId =
       inspectionToEdit?.transformer?.id ||
       transformerId ||
@@ -161,7 +161,6 @@ const AddInspectionModal = ({
         {error && <div className="alert alert-danger">{error}</div>}
 
         <Form onSubmit={handleSubmit}>
-          {/* Transformer Selection: Only visible if NOT editing and NOT on a dedicated transformer page */}
           {!inspectionToEdit && !transformerId && (
             <Form.Group className="mb-3">
               <Form.Label>Transformer</Form.Label>

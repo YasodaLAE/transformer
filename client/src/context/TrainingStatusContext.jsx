@@ -1,17 +1,16 @@
 import React, { createContext, useState, useContext } from 'react';
 
-// 1. Create the Context
+//Create the Context
 const TrainingStatusContext = createContext();
 
-// 2. Create the Provider Component
+// Create the Provider Component
 export const TrainingStatusProvider = ({ children }) => {
     // State to track if the training process is running
     const [isTraining, setIsTraining] = useState(false);
 
-    // State to track the last outcome: 'success', 'error', or null
+    // State to track the last outcome
     const [trainingStatus, setTrainingStatus] = useState(null);
 
-    // This value will be provided to consuming components
     const value = {
         isTraining,
         setIsTraining,
@@ -26,7 +25,7 @@ export const TrainingStatusProvider = ({ children }) => {
     );
 };
 
-// 3. Create a Custom Hook for easy consumption
+// Create a Custom Hook for easy consumption
 export const useTrainingStatus = () => {
     return useContext(TrainingStatusContext);
 };

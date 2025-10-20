@@ -6,7 +6,7 @@ import AddInspectionModal from '../components/AddInspectionModal';
 import InspectionTable from '../components/InspectionTable';
 import { useAuth } from '../hooks/AuthContext';
 import BaselineImageUploader from '../components/BaselineImageUploader';
-import { getAllTransformers } from '../services/apiService'; // Needed for the AddInspectionModal dropdown
+import { getAllTransformers } from '../services/apiService';
 import Spinner from '../components/Spinner';
 import Toast from '../components/Toast';
 

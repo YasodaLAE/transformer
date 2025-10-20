@@ -76,7 +76,7 @@ const InspectionDetailPage = () => {
                     const allAnnotationsResponse = await getAllAnnotationsForDisplay(inspectionId);
                     savedAnnotationsForDisplay = allAnnotationsResponse.data;
 
-                    // Check for existence based on non-deleted annotations for image annotation logic
+                    // Check for existence based on non deleted annotations for image annotation logic
                     const activeAnnotations = savedAnnotationsForDisplay.filter(a => a.currentStatus !== 'USER_DELETED');
                     userAnnotationExists = activeAnnotations && activeAnnotations.length > 0;
                     setHasUserAnnotations(userAnnotationExists);
@@ -91,20 +91,19 @@ const InspectionDetailPage = () => {
                     detectionTriggeredRef.current = true;
 
                     if (userAnnotationExists) {
-                        // Priority 1: Use user's saved annotations (AnnotationDTOs)
+                        // Use user's saved annotations
                         setActiveAnomalyDetails(savedAnnotationsForDisplay);
                     } else {
-                        // Priority 2: Parse and use the raw AI result
+                        //  Parse and use the raw AI result
                         const aiDetails = JSON.parse(resultResponse.data.detectionJsonOutput || '[]').map(ann => ({
-//                             type: ann.type || 'Faulty',
-                            currentStatus: ann.type || 'FAULTY', // ⬅️ Use 'currentStatus'
+                            currentStatus: ann.type || 'FAULTY',
                             originalSource: 'AI',
                             x: ann.location.x_min,
                             y: ann.location.y_min,
                             width: ann.location.x_max - ann.location.x_min,
                             height: ann.location.y_max - ann.location.y_min,
-                            aiConfidence: ann.confidence, // ⬅️ NEW
-                            aiSeverityScore: ann.severity_score, // ⬅️ NEW
+                            aiConfidence: ann.confidence,
+                            aiSeverityScore: ann.severity_score,
                             faultType: ann.faultType,
                         }));
                         setActiveAnomalyDetails(aiDetails);
@@ -187,7 +186,7 @@ const InspectionDetailPage = () => {
         if (!ts) return '';
         try {
             const date = new Date(ts);
-            return new Intl.DateTimeFormat('en-GB', { // 'en-GB' for DD/MM/YYYY format
+            return new Intl.DateTimeFormat('en-GB', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
@@ -235,11 +234,10 @@ const InspectionDetailPage = () => {
     const aiAnalyzedImageUrl = anomalyResult ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}` : thermalImageUrl;
     const userAnnotatedImageUrl = `${API_BASE_URL}/api/inspections/${inspectionId}/annotations/image?key=${refreshKey}`;
     const displayImageUrl = hasUserAnnotations
-        ? userAnnotatedImageUrl // If user saved anything, show the user-annotated image.
-        : aiAnalyzedImageUrl; // Otherwise, show the AI-analyzed image.
+        ? userAnnotatedImageUrl // If user saved anything, show the user annotated image.
+        : aiAnalyzedImageUrl; // Otherwise, show the AI analyzed image.
 
-    // We don't need the refreshKey logic anymore since fetchData updates the state, triggering reload.
-    // If you still want the instant refresh: use refreshKey in the URL:
+
     const finalDisplayImageUrl = `${displayImageUrl}&k=${refreshKey}`; // Append refreshKey for instant update after save
 
     const getStatusBadgeColor = (status) => {
@@ -339,8 +337,8 @@ const InspectionDetailPage = () => {
                                                 onAnnotationsSaved={() => {
                                                     setIsAnnotating(false);
                                                     setRefreshKey(prev => prev + 1); // Triggers visual refresh
-//                                                     setActiveAnomalyDetails(finalAnnotations);
-                                                    fetchData(); // 💥 IMPORTANT: Re-fetch data to update 'hasUserAnnotations' status!
+//
+                                                    fetchData();
                                                 }}
                                                 onCancel={() => setIsAnnotating(false)}
                                             />
@@ -368,7 +366,7 @@ const InspectionDetailPage = () => {
             {activeAnomalyDetails && activeAnomalyDetails.length > 0 && !isAnnotating && (
                 <Card className="mt-4 rounded-4 shadow-sm">
                     <Card.Body>
-{/*                         <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4> */}
+
                         <div className="d-flex justify-content-between align-items-center mb-3">
                         <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4>
                         { isAdmin &&
@@ -378,7 +376,7 @@ const InspectionDetailPage = () => {
                         </div>
                         <ul className="list-group list-group-flush">
                             {activeAnomalyDetails.map((anomaly, index) => {
-                                // Check if the object contains the older, raw AI structure (which has a 'location' object)
+                                // Check if the object contains the older raw AI structure
                                 const isRawAIData = anomaly.location && anomaly.location.x_min !== undefined;
 
                                 // Determine coordinates for display
@@ -395,7 +393,7 @@ const InspectionDetailPage = () => {
                                         let statusTagText;
 
                                         switch (anomaly.currentStatus) {
-                                            // ... (Status logic remains the same) ...
+
                                             case 'USER_ADDED':
                                                 statusTagColor = 'bg-success';
                                                 statusTagText = 'Added by ' + (anomaly.userId || 'Unknown');
@@ -408,12 +406,12 @@ const InspectionDetailPage = () => {
                                                 statusTagColor = 'bg-primary';
                                                 statusTagText = 'Validated by ' + (anomaly.userId || 'Unknown');
                                                 break;
-                                            case 'USER_DELETED': // 💥 Handle the deleted status
+                                            case 'USER_DELETED':
                                                 statusTagColor = 'bg-dark';
                                                 statusTagText = 'Deleted by ' + (anomaly.userId || 'Unknown');
                                                 break;
                                             default:
-                                                // This captures initial AI statuses like 'FAULTY'
+                                                // This captures initial AI statuses
                                                 statusTagColor = 'bg-danger';
                                                 statusTagText = anomaly.currentStatus || 'Faulty';
                                         }
@@ -428,25 +426,23 @@ const InspectionDetailPage = () => {
                                                         {sourceTag}
                                                         {statusTag}
                                                     </div>
-                                                    {/* 💥 NEW TIMESTAMP DISPLAY */}
+
                                                     {formattedTimestamp && (
                                                         <small className="text-muted ms-3 fw-bold">
                                                             Last Updated: {formattedTimestamp}
                                                         </small>
                                                     )}
                                                 </div>
-{/*                                                 <br/> */}
 
 
                                                 <small className="text-muted">
                                                     Coordinates: ({Math.round(xMin)}, {Math.round(yMin)}) to ({Math.round(xMax)}, {Math.round(yMax)})
 
-                                                    {/* 🎯 CRITICAL FIX 1: Check for the new DTO field names */}
+
                                                     {anomaly.aiConfidence && ` | Confidence: ${anomaly.aiConfidence}`}
                                                     {anomaly.aiSeverityScore && ` | Severity Score: ${anomaly.aiSeverityScore}`}
 
-                                                    {/* CRITICAL FIX 2: KEEPING OLD LOGIC FOR RAW AI DATA (when not yet saved) */}
-                                                    {/* When loading *raw* AI data, the fields are named 'confidence' and 'severity_score' */}
+
                                                     {!anomaly.aiConfidence && anomaly.confidence && ` | Confidence: ${anomaly.confidence}`}
                                                     {!anomaly.aiSeverityScore && anomaly.severity_score && ` | Severity Score: ${anomaly.severity_score}`}
 

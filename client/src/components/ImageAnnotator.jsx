@@ -47,7 +47,7 @@ const AnnotationRect = ({ shapeProps, isSelected, onSelect, onChange, scale }) =
                         const node = shapeRef.current;
                         const scaleX = node.scaleX();
                         const scaleY = node.scaleY();
-                        // Reset scale to 1 on the node (Konva best practice)
+                        // Reset scale to 1 on the node
                         node.scaleX(1);
                         node.scaleY(1);
 
@@ -62,7 +62,7 @@ const AnnotationRect = ({ shapeProps, isSelected, onSelect, onChange, scale }) =
                         });
                     }}
                 />
-                {/* The Transformer itself should not be scaled, only the position/size of the shape */}
+
                 {isSelected && <Transformer ref={trRef} boundBoxFunc={(oldBox, newBox) => newBox.width * scale < 5 || newBox.height * scale < 5 ? oldBox : newBox} />}
             </>
         );
@@ -98,7 +98,6 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
             try {
                 const savedAnnotations = await getAnnotations(inspectionId);
 
-                // If the API returns a non-empty array, it's the user's saved work.
                 if (savedAnnotations && savedAnnotations.length > 0) {
                     const formatted = savedAnnotations.map(ann => ({ ...ann, id: ann.id.toString(), boxSessionId: ann.id.toString(),faultType: ann.faultType, }));
                                     setAnnotations(formatted);
@@ -106,7 +105,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
 
                 }
                 // If the API returns an empty array, it means there are no saved annotations.
-                // In this "first-time" case, we fall back to the AI's initial data.
+                // In this first time case, we fall back to the AI's initial data.
                 else if (initialAnnotations) {
                     const aiAnnotations = JSON.parse(initialAnnotations || '[]');
                     const formattedAnnotations = aiAnnotations.map((ann, index) => ({
@@ -159,8 +158,6 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
 
 
     const handleDelete = () => {
-            // We no longer need the CommentModal logic for logging.
-            // We will just remove the box and rely on the final save to record the deletion.
             if (selectedId) {
                 if (window.confirm("Are you sure you want to delete this annotation box?")) {
                     setAnnotations(prev => prev.filter(ann => ann.id !== selectedId));
@@ -184,7 +181,6 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                 return prev;
             });
         };
-        // -----------------------------------------
 
     useEffect(() => {
             const handleKeyDown = (e) => {
@@ -199,7 +195,7 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
     useEffect(() => {
             const calculateSize = () => {
                 if (containerRef.current && image) {
-                    // Get the width of the container (e.g., the browser window width or the parent div)
+                    // Get the width of the container
                     const containerWidth = containerRef.current.clientWidth;
 
                     // Calculate the height to maintain the aspect ratio
@@ -221,10 +217,10 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
 
     const handleSave = async () => {
         const userId = user ? user.username : 'unknown_user';
-        const timestamp = new Date().toISOString(); // Sent as ISO string, Spring converts to LocalDateTime
+        const timestamp = new Date().toISOString(); // Sent as ISO string
 
         const finalAnnotationsToSave = annotations.map(ann => {
-            // Determine if the ID is a transient session ID (like "ai-0" or "user_new-1")
+            // Determine if the ID is a transient session ID
             const isTransientId = typeof ann.id === 'string' && (ann.id.startsWith('ai-') || ann.id.startsWith('user_new-') || ann.id.startsWith('new-'));
 
             const finalAnn = {
@@ -236,14 +232,9 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                 timestamp: timestamp,
                 faultType: ann.faultType,
 
-                // Annotation Type will be set by the backend (USER_ADDED if id is null, USER_VALIDATED if id exists)
-                // We keep the original 'type' here, the service overrides it.
             };
 
-//             // Clean up transient fields
-//             delete finalAnn.boxSessionId;
-//             delete finalAnn.actionType;
-//             delete finalAnn.originalState;
+
 
             return finalAnn;
         });
@@ -263,17 +254,11 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     setSelectedId(null); // Clear selected ID
             showOk('Annotations saved successfully!');
             if (onAnnotationsSaved) onAnnotationsSaved();
-//             setTimeout(() => {
-//                 if (onAnnotationsSaved) onAnnotationsSaved(finalAnnotationsToSave);
-//             }, 1500);
         } catch (error) {
             showErr('Failed to save annotations.');
             console.error("Save annotation error:", error);
         }
     };
-
-// ... existing code ...
-
 
     const handleAnnotateChange = (newAttrs) => {
             setAnnotations(prev => {
@@ -281,9 +266,6 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                 if (index !== -1) {
                     const newRects = [...prev];
                     const originalAnnotation = newRects[index];
-
-                    // Check for movement/resize and update comments if needed (optional)
-                    // For a simpler workflow, we just update the coordinates immediately.
 
                     newRects[index] = { ...originalAnnotation, ...newAttrs };
                     return newRects;
@@ -374,10 +356,10 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                     <Image
                         image={image}
                         name="backgroundImage"
-                        scaleX={scale} // <-- Apply the scale here
-                        scaleY={scale} // <-- Apply the scale here
-                        width={image ? image.width : 0} // Konva image dimensions should be raw
-                        height={image ? image.height : 0} // Konva image dimensions should be raw
+                        scaleX={scale}
+                        scaleY={scale}
+                        width={image ? image.width : 0}
+                        height={image ? image.height : 0}
                     />
                     {annotations.map((rect, i) => (
                         <AnnotationRect
@@ -390,29 +372,17 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
                                 y: rect.y * scale,
                                 width: rect.width * scale,
                                 height: rect.height * scale,
-                                // Note: The original unscaled values are still in `rect`
+
                             }}
                             isSelected={(rect.id || `ai-${i}`) === selectedId}
                             onSelect={() => {
                                 setIsDrawing(false);
                                 setSelectedId(rect.id || `ai-${i}`);
                             }}
-//                             onChange={(newAttrs) => {
-//                                 // IMPORTANT: When changing, scale back up to save original coordinates!
-//                                 const unscaledAttrs = {
-//                                     ...newAttrs,
-//                                     x: newAttrs.x / scale,
-//                                     y: newAttrs.y / scale,
-//                                     width: newAttrs.width / scale,
-//                                     height: newAttrs.height / scale,
-//                                 };
-//                                 handleAnnotateChange(unscaledAttrs); // Your existing handler needs to be updated too!
-//                             }
                         onChange={handleAnnotateChange}
 
                         />
                     ))}
-                    {/* New annotation is drawn with SCALED coordinates */}
                     {newAnnotation && <Rect stroke="blue" strokeWidth={2} {...newAnnotation} />}
                 </Layer>
             </Stage>
@@ -480,9 +450,6 @@ const ImageAnnotator = ({ inspectionId, imageUrl, initialAnnotations, onAnnotati
 
                                 </ButtonGroup>
                 <ButtonGroup size="sm">
-{/*                     <Button variant="secondary" onClick={onCancel}> */}
-{/*                         Discard Changes */}
-{/*                     </Button> */}
                     <Button variant="primary" onClick={handleSave}>
                         Save Annotations
                     </Button>

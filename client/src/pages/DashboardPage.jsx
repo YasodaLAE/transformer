@@ -14,17 +14,17 @@ const DashboardPage = () => {
     const handleFineTune = async () => {
         if (isTraining) return;
 
-        // 1. Set global state to RUNNING (this persists across navigation)
+        // Set global state to RUNNING
         setIsTraining(true);
         setTrainingStatus(null);
 
         try {
-            // 2. Blocking API call (waits for Python process to finish on server)
+            // Blocking API call (waits for Python process to finish on server)
             const response = await triggerModelFineTuning();
 
             console.log("Fine-tuning completed:", response.data);
 
-            // 3. Set global state to SUCCESS
+            // Set global state to SUCCESS
             setIsTraining(false);
             setTrainingStatus('success');
 
@@ -37,7 +37,7 @@ const DashboardPage = () => {
                 message = error.response.data;
             }
 
-            // 4. Set global state to ERROR
+            // Set global state to ERROR
             setIsTraining(false);
             setTrainingStatus('error');
             alert(message);

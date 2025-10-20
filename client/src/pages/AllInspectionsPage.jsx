@@ -4,14 +4,14 @@ import { getAllInspections, deleteInspection, getAllTransformers, exportAllFeedb
 import { Button } from 'react-bootstrap';
 import { useAuth } from '../hooks/AuthContext';
 import AddInspectionModal from '../components/AddInspectionModal';
-import PageNavButtons from '../components/PageNavButtons'; // Component for navigation/filtering (imported but not shown)
+import PageNavButtons from '../components/PageNavButtons'; // Component for navigation & filtering
 import Spinner from '../components/Spinner';
 import Toast from '../components/Toast';
 
 
 /**
  * Main page component to display a list of all inspections across all transformers.
- * It handles data fetching, state management for adding/editing, searching, and deleting records.
+ * It handles data fetching, state management for adding,editing, searching, and deleting records.
  */
 const AllInspectionsPage = () => {
     // State for storing fetched data
@@ -45,9 +45,9 @@ const AllInspectionsPage = () => {
 
             setTransformers(transformersResponse.data);
 
-            // Create a quick lookup map (Transformer ID -> Transformer Object)
+            // Create a lookup map (Transformer ID -> Transformer Object)
             const transformerMap = transformersResponse.data.reduce((map, transformer) => {
-                map[transformer.id] = transformer; // Assuming transformerId in DTO is now transformer.id
+                map[transformer.id] = transformer;
                 return map;
             }, {});
 
@@ -73,7 +73,7 @@ const AllInspectionsPage = () => {
         fetchAllData();
     }, []);
 
-    // Filter inspections based on the search term (Transformer ID)
+    // Filter inspections based on the search term
     const filteredInspections = inspections.filter(inspection =>
         (inspection.transformer?.transformerId?.toString().toLowerCase().includes(searchTerm.toLowerCase()))
     );
@@ -131,7 +131,7 @@ const AllInspectionsPage = () => {
       if (window.confirm('Are you sure you want to delete this inspection? This will also delete all associated images/results.')) {
         try {
           await deleteInspection(inspectionId);
-          // Optimistically update the list by filtering out the deleted item
+          //  update the list by filtering out the deleted item
           setInspections(prev => prev.filter(i => i.id !== inspectionId));
           showOk('Inspection deleted');
         } catch (error) {
@@ -153,14 +153,13 @@ const AllInspectionsPage = () => {
     return (
         <div className="content-card">
                  <div className="d-flex justify-content-between align-items-center mb-3">
-                     {/* Left-aligned group: Heading and Add button */}
+
                      <div className="d-flex align-items-center gap-2">
                          <h2 className="mb-0">All Inspections</h2>
                          {isAdmin && (
                              <>
                               <Button onClick={handleOpenAddModal}>Add Inspection</Button>
 
-                              {/* 💥 NEW BUTTON */}
                               <Button
                                   variant="outline-primary"
                                   onClick={handleExportAllFeedback}
@@ -183,7 +182,7 @@ const AllInspectionsPage = () => {
                              onChange={(e) => setSearchTerm(e.target.value)}
                          />
                          <div className="d-flex align-items-center">
-                         {/* Navigation component (e.g., to switch to Transformer list view) */}
+                         {/* Navigation component  */}
                          <PageNavButtons activeTab="inspections" />
                          </div>
                      </div>
@@ -193,7 +192,7 @@ const AllInspectionsPage = () => {
                     inspections={filteredInspections}
                     onDelete={handleDelete}
                     onEdit={handleOpenEditModal}
-                    // Since this is the "All Inspections" page, we want to show the Transformer column
+                    // show the Transformer column
                     showTransformerColumn={true}
                 />
             ) : (

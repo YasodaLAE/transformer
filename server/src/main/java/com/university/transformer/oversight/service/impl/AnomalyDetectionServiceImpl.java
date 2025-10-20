@@ -189,7 +189,7 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
 
                     // Set default/required audit fields
                     annotation.setComments(null);
-                    annotation.setUserId("AI_SYSTEM");
+                    annotation.setUserId("AI");
                     annotation.setDeleted(false);
                     // Timestamp is set automatically by @UpdateTimestamp
 
