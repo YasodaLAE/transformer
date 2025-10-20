@@ -7,6 +7,7 @@ import com.university.transformer.oversight.model.AnomalyDetectionResult;
 import com.university.transformer.oversight.model.Inspection;
 import com.university.transformer.oversight.service.AnnotationService;
 import com.university.transformer.oversight.service.AnomalyDetectionService;
+import com.university.transformer.oversight.service.FineTuningService;
 import com.university.transformer.oversight.service.InspectionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -32,7 +33,8 @@ public class InspectionController {
     private AnomalyDetectionService anomalyDetectionService;
     @Autowired
     private AnnotationService annotationService;
-
+    @Autowired
+    private FineTuningService fineTuningService;
     // --- Inspection CRUD Endpoints ---
 
     @GetMapping
@@ -66,6 +68,26 @@ public class InspectionController {
     public ResponseEntity<Inspection> createInspection(@RequestBody Inspection inspection) {
         Inspection newInspection = inspectionService.saveInspection(inspection);
         return new ResponseEntity<>(newInspection, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/finetune-model")
+    public ResponseEntity<String> triggerModelFineTuning() {
+        // Use a separate thread or asynchronous execution for long-running processes
+        // For simplicity, we use a simple thread here, but a dedicated ExecutorService 
+        // or @Async would be better in production.
+        new Thread(() -> {
+            try {
+                String newModelName = fineTuningService.generateDatasetAndFineTune();
+                logger.info("Fine-tuning complete. New model: {}", newModelName);
+                // In a real app, you would save this new model name to a ModelVersion table
+                // and perhaps use WebSockets to notify the user.
+            } catch (Exception e) {
+                logger.error("Fine-tuning failed.", e);
+                // Use a database table or similar to log and report the failure status
+            }
+        }).start();
+
+        return ResponseEntity.ok("Model fine-tuning process started in the background. Check logs for progress.");
     }
 
     @GetMapping("/by-transformer/{transformerId}")

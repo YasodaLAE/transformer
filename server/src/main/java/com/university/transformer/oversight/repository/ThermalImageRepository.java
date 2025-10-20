@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface ThermalImageRepository extends JpaRepository<ThermalImage, Long> {
     Optional<ThermalImage> findByInspectionId(Long inspectionId);
+    ThermalImage findByInspectionIdAndImageType(Long inspectionId, ThermalImage.ImageType imageType);
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 public interface AnnotationRepository extends JpaRepository<Annotation, Long> {
     List<Annotation> findByInspectionId(Long inspectionId);
     List<Annotation> findByInspectionIdAndIsDeletedFalse(Long inspectionId);
+
     void deleteByInspectionId(Long inspectionId);
 
     @Query("SELECT new com.university.transformer.oversight.dto.AnnotationExportDTO(" +

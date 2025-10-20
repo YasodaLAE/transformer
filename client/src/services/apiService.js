@@ -114,3 +114,8 @@ export const exportAllFeedbackLog = () => {
         responseType: 'blob'
     });
 };
+
+export const triggerModelFineTuning = () => {
+    // New endpoint for triggering the process
+    return axios.post(`${API_BASE_URL}/api/inspections/finetune-model`);
+};

@@ -1,0 +1,7 @@
+path: D:/oversight/./server/src/main/resources/dataset
+train: images
+val: images
+
+# Classes
+nc: 2
+names: ['potentially_faulty', 'faulty']
