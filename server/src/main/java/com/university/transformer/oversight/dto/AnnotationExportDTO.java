@@ -1,15 +1,13 @@
-// src/main/java/com/university/transformer/oversight/dto/AnnotationExportDTO.java
 package com.university.transformer.oversight.dto;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
-// Note: Use Lombok @Data for getters/setters/constructors if available, 
-// otherwise, add them manually.
+
 @Getter
 @Setter
 @Data
-@NoArgsConstructor // Ensure a default constructor exists for general use
+@NoArgsConstructor
 
 public class AnnotationExportDTO {
 
@@ -34,7 +32,7 @@ public class AnnotationExportDTO {
     private String annotatorId;
     private LocalDateTime lastUpdated;
 
-    // Original AI Data (Copied from Anomaly.java)
+    // Original AI Data
     private String originalSource; // AI or USER
     private Double aiConfidence;
     private Integer aiSeverityScore;

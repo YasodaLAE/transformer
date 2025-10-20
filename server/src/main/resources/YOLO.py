@@ -1,9 +1,9 @@
 from ultralytics import YOLO
 
-# 1. Initialize the Model
+# Initialize the Model
 model = YOLO('yolov8n.pt')
 
-# 2. Train the Model
+# Train the Model
 
 
 

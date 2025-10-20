@@ -44,7 +44,6 @@ import java.util.ArrayList;
 public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
 
     private static final Logger logger = LoggerFactory.getLogger(AnomalyDetectionServiceImpl.class);
-    // Use a more robust path for the script
     private static final String PYTHON_SCRIPT_PATH = new File("server/src/main/resources/detector.py").getAbsolutePath();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -57,10 +56,10 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
     private static String currentProductionModelName;
 
     @Value("${ml.model-output-dir}")
-    private String modelOutputDir; // e.g., src/main/resources/ml_models
+    private String modelOutputDir;
 
-    // Path to your detector.py script
-    private static final String DETECTOR_SCRIPT_PATH = "./scripts/detector.py"; // Adjust path as needed
+
+    private static final String DETECTOR_SCRIPT_PATH = "./scripts/detector.py";
 
 
     public static void setCurrentProductionModelName(String newModelName) {
@@ -115,7 +114,7 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         Path modelPath = Paths.get(modelOutputDir, currentProductionModelName).toAbsolutePath();
         String absoluteModelPath = modelPath.toString();
 
-        // Ensure the detector script exists
+
         Path scriptPath = Paths.get(DETECTOR_SCRIPT_PATH).toAbsolutePath();
 
         ProcessBuilder pb = new ProcessBuilder("python", PYTHON_SCRIPT_PATH, pythonMaintenancePath, pythonBaselinePath, pythonOutputPath, String.valueOf(tempThresholdPercentage), absoluteModelPath);
@@ -146,12 +145,11 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
         String detectionJson = objectMapper.writeValueAsString(outputMap.get("anomalies"));
         Inspection inspection = inspectionRepository.findById(inspectionId).orElseThrow(() -> new RuntimeException("Inspection not found."));
 
-        // --- THIS IS THE NEW LINE TO ADD ---
         // Before saving the new AI result, delete any old manual annotations for this inspection.
         annotationRepository.deleteByInspectionId(inspectionId);
 
         if (detectionJson != null && !detectionJson.trim().isEmpty()) {
-            // Check if 'anomalies' is an array before processing
+            // Check if anomalies is an array before processing
             JsonNode detectionsNode = objectMapper.readTree(detectionJson);
             logger.info("Detection JSON successfully parsed as an array with {} elements.", detectionsNode.size());
             if (detectionsNode.isArray()) {
@@ -163,13 +161,13 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
                     // Link to the inspection
                     annotation.setInspection(inspection);
 
-                    // Set AI-specific fields
+                    // Set AI specific fields
                     annotation.setCurrentStatus(node.has("type") ? node.get("type").asText() : "FAULTY");
                     annotation.setOriginalSource("AI");
 
-                    // Note: aiConfidence and aiSeverityScore will be mapped to the new column names in your DTO
+
                     annotation.setAiConfidence(node.has("confidence") ? node.get("confidence").asDouble() : null);
-                    // The severity score is often an integer in models, but if it comes as a float, use Double
+
                     annotation.setAiSeverityScore(node.has("severity_score") ? node.get("severity_score").asInt() : null);
                     annotation.setFaultType(node.has("type") ? node.get("type").asText() : "FAULTY");
 
@@ -191,7 +189,6 @@ public class AnomalyDetectionServiceImpl implements AnomalyDetectionService {
                     annotation.setComments(null);
                     annotation.setUserId("AI");
                     annotation.setDeleted(false);
-                    // Timestamp is set automatically by @UpdateTimestamp
 
                     aiAnnotations.add(annotation);
                 }

@@ -1,12 +1,11 @@
 package com.university.transformer.oversight.dto;
 
-// This is a simple DTO to match the JSON body sent by React
 
 public class DetectionRequest {
     private String baselineFileName;
     private Double tempThresholdPercentage;
 
-    // Getters and Setters (REQUIRED for Spring to deserialize JSON)
+    // Getters and Setters
 
     public String getBaselineFileName() {
         return baselineFileName;

@@ -42,8 +42,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Use allowedOriginPatterns instead of allowedOrigins to support wildcards
-        // when allowCredentials is true.
         configuration.setAllowedOriginPatterns(List.of("http://localhost:5173", "https://*.usercontent.goog"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));

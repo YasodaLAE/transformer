@@ -8,7 +8,7 @@ import InspectionPage from './pages/InspectionPage'
 import { AuthProvider } from './hooks/AuthContext';
 import InspectionDetailPage from './pages/InspectionDetailPage';
 import AllInspectionsPage from './pages/AllInspectionsPage';
-import { TrainingStatusProvider } from './context/TrainingStatusContext.jsx'; // Note the .jsx extension
+import { TrainingStatusProvider } from './context/TrainingStatusContext.jsx';
 
 function App() {
     return (

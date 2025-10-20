@@ -20,13 +20,13 @@ import org.springframework.web.multipart.MultipartFile;
 import com.university.transformer.oversight.dto.AnnotationSaveRequest;
 import java.io.IOException;
 import java.util.List;
-import org.slf4j.Logger; // 💥 Import Logger
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/inspections")
 public class InspectionController {
-    private static final Logger logger = LoggerFactory.getLogger(InspectionController.class); // 💥 Define logger
+    private static final Logger logger = LoggerFactory.getLogger(InspectionController.class);
     @Autowired
     private InspectionService inspectionService;
     @Autowired
@@ -51,7 +51,7 @@ public class InspectionController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            // Set a dynamic filename based on the current timestamp
+            // Set a dynamic filename
             String filename = "all_anomaly_feedback_" + System.currentTimeMillis() + ".json";
             headers.setContentDispositionFormData("attachment", filename);
 
@@ -70,19 +70,19 @@ public class InspectionController {
         return new ResponseEntity<>(newInspection, HttpStatus.CREATED);
     }
 
-    // NEW CORRECT SYNCHRONOUS CONTROLLER METHOD
+
     @PostMapping("/finetune-model")
     public ResponseEntity<String> triggerModelFineTuning() {
         try {
-            // The service call (generateDatasetAndFineTune) is synchronous
-            // and contains process.waitFor(), so it will block until Python finishes.
+            // The service call is synchronous
+            // it will block until Python finishes.
             String newModelName = fineTuningService.generateDatasetAndFineTune();
             logger.info("Fine-tuning successful. New model: {}", newModelName);
 
-            // This response is only sent AFTER the fine-tuning is complete.
+            // This response is only sent after the fine-tuning is complete.
             return ResponseEntity.ok("Model fine-tuning completed successfully. New model: " + newModelName);
         } catch (RuntimeException e) {
-            // This catches failure from process.waitFor() returning non-zero, etc.
+            // This catches failure from process.waitFor() returning non-zero,
             logger.error("Fine-tuning failed.", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Model fine-tuning failed. Reason: " + e.getMessage());
@@ -210,7 +210,7 @@ public class InspectionController {
         return ResponseEntity.ok(annotations);
     }
 
-    // --- NEW ENDPOINT FOR USER-EDITED IMAGE ---
+
     @GetMapping("/{inspectionId}/annotations/image")
     public ResponseEntity<Resource> viewUserAnnotatedImage(@PathVariable Long inspectionId) {
         try {

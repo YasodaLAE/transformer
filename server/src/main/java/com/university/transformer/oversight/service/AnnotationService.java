@@ -1,8 +1,6 @@
-// AnnotationService.java (Interface)
 package com.university.transformer.oversight.service;
 
 import com.university.transformer.oversight.dto.AnnotationDTO;
-import com.university.transformer.oversight.dto.AnnotationSaveRequest; // Import the DTO
 import java.io.IOException;
 import java.util.List;
 

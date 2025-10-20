@@ -22,7 +22,7 @@ public class InspectionDTO {
 
     private String notes;
 
-    // --- Transformer Summary Fields (Flattened for UI convenience) ---
+    // --- Transformer Summary Fields ---
     private Long transformerDbId;
     private String region;
     private String poleId;
@@ -31,12 +31,11 @@ public class InspectionDTO {
     private String transformerBaselineImageName;
     private String transformerId;
 
-    // --- Related Entities ---
     // The single thermal image linked to this inspection
     private ThermalImageDTO thermalImage;
 
     /**
-     * Constructor maps data from the JPA entity (Inspection) to the DTO.
+     * Constructor maps data from the JPA entity  to the DTO.
      */
     public InspectionDTO(Inspection inspection) {
         // Copy direct Inspection fields

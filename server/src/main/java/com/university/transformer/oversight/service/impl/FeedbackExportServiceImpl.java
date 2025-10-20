@@ -8,13 +8,13 @@ import com.university.transformer.oversight.model.Annotation;
 import com.university.transformer.oversight.model.Inspection;
 import com.university.transformer.oversight.repository.AnnotationRepository;
 import com.university.transformer.oversight.repository.InspectionRepository;
-import com.university.transformer.oversight.service.FeedbackExportService; // ⬅️ Import the new Interface
+import com.university.transformer.oversight.service.FeedbackExportService;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service // ⬅️ The implementation class gets the @Service annotation
-public class FeedbackExportServiceImpl implements FeedbackExportService { // ⬅️ Implements the interface
+@Service
+public class FeedbackExportServiceImpl implements FeedbackExportService {
 
     private final InspectionRepository inspectionRepository;
     private final AnnotationRepository annotationRepository;

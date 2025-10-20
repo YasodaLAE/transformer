@@ -1,5 +1,3 @@
-// AnnotationServiceImpl.java (Implementation)
-
 package com.university.transformer.oversight.service.impl;
 
 import com.university.transformer.oversight.dto.AnnotationDTO;
@@ -12,11 +10,9 @@ import com.university.transformer.oversight.repository.InspectionRepository;
 import com.university.transformer.oversight.service.AnnotationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.fasterxml.jackson.databind.ObjectMapper; // 💥 Add this import
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,14 +36,10 @@ public class AnnotationServiceImpl implements AnnotationService {
     @Override
     public byte[] exportAllAnnotationsAsJson() throws IOException {
 
-        // 1. Fetch the data using the new joined repository query
+        // Fetch the data using the new joined repository query
         List<AnnotationExportDTO> dtos = annotationRepository.findAllAnnotationsForExport();
 
-        // 2. Use the injected ObjectMapper
-        // We use the existing injected/configured 'objectMapper' if possible, otherwise we configure a new one.
-        // Assuming your injected 'objectMapper' is configured for JavaTimeModule.
-
-        // Serialize the list of DTOs into a pretty-printed JSON byte array
+        // Use the injected ObjectMapper
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(dtos);
     }
 
@@ -61,7 +53,7 @@ public class AnnotationServiceImpl implements AnnotationService {
 
         List<Annotation> existingAnnotations = annotationRepository.findByInspectionId(inspectionId);
         if (!existingAnnotations.isEmpty()) {
-            // Already have annotations (either AI or user). Do nothing.
+            // Already have annotations. Do nothing.
             return;
         }
 
@@ -76,7 +68,7 @@ public class AnnotationServiceImpl implements AnnotationService {
             List<Annotation> newAnnotations = new ArrayList<>();
 
             for (JsonNode node : detections) {
-                // Assuming the structure is: [{ "type": "...", "confidence": ..., "severity_score": ..., "location": { "x_min": ..., ... } }]
+
                 Annotation annotation = new Annotation();
                 annotation.setInspection(inspection);
 
@@ -110,11 +102,11 @@ public class AnnotationServiceImpl implements AnnotationService {
             }
 
             annotationRepository.saveAll(newAnnotations);
-            // No need to flush here, as we exit the method.
+
 
         } catch (IOException e) {
             System.err.println("Error parsing AI detection JSON: " + e.getMessage());
-            // Log or throw a specific exception if needed
+
         }
     }
 
@@ -133,7 +125,6 @@ public class AnnotationServiceImpl implements AnnotationService {
         if (!inspectionRepository.existsById(inspectionId)) {
             throw new ResourceNotFoundException("Inspection not found with id: " + inspectionId);
         }
-        // Assuming your repository has a method to find ALL annotations by inspectionId
         List<Annotation> allAnnotations = annotationRepository.findByInspectionId(inspectionId);
         return allAnnotations.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
@@ -144,21 +135,21 @@ public class AnnotationServiceImpl implements AnnotationService {
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Inspection not found with id: " + inspectionId));
 
-        // 1. Get current non-deleted annotations from the database
+        //Get current non-deleted annotations from the database
         List<Annotation> currentAnnotations = annotationRepository.findByInspectionIdAndIsDeletedFalse(inspectionId);
 
-        // Map existing active DB boxes by their ID (Long)
+        // Map existing active DB boxes by their ID
         Map<Long, Annotation> currentMap = currentAnnotations.stream()
                 .collect(Collectors.toMap(Annotation::getId, a -> a));
 
         // Set of IDs present in the final list from the frontend
         Set<Long> incomingIds = finalAnnotations.stream()
-                // Only care about existing boxes (non-null IDs)
+                // Only care about existing boxes
                 .filter(dto -> dto.getId() != null)
                 .map(AnnotationDTO::getId)
                 .collect(Collectors.toSet());
 
-        // 2. Process Deletions (Soft Delete)
+        // Process Deletions
         // Any box in the DB but NOT in the incoming list was deleted by the user.
         List<Annotation> deletedAnnotations = currentAnnotations.stream()
                 .filter(existingAnn -> !incomingIds.contains(existingAnn.getId()))
@@ -167,18 +158,18 @@ public class AnnotationServiceImpl implements AnnotationService {
                     existingAnn.setDeleted(true);
                     existingAnn.setCurrentStatus("USER_DELETED");
 
-                    // Use the user/timestamp from the first incoming DTO for audit trail of the save operation
+                    // Use the user/timestamp
                     existingAnn.setUserId(finalAnnotations.get(0).getUserId());
                     existingAnn.setTimestamp(finalAnnotations.get(0).getTimestamp());
                     return existingAnn;
                 })
                 .collect(Collectors.toList());
 
-        // Save the soft-deleted entities
+        // Save the soft deleted entities
         annotationRepository.saveAll(deletedAnnotations);
         annotationRepository.flush();
 
-        // 3. Process Additions (id == null) and Edits (id != null)
+        // Process Additions and Edits
         List<Annotation> toSave = finalAnnotations.stream()
                 .map(dto -> {
                     Annotation annotation;
@@ -188,11 +179,10 @@ public class AnnotationServiceImpl implements AnnotationService {
 
                         annotation = new Annotation();
 
-                        // 💥 MODIFIED LOGIC: Check for AI metrics in the DTO
                         if (dto.getAiConfidence() != null || dto.getAiSeverityScore() != null) {
                             // This is an AI-detected box being saved for the first time
                             annotation.setOriginalSource("AI");
-                            //newStatus = dto.getCurrentStatus() != null ? dto.getCurrentStatus() : "FAULTY";
+
                             // Map the AI details for persistence
                             annotation.setAiConfidence(dto.getAiConfidence());
                             annotation.setAiSeverityScore(dto.getAiSeverityScore());
@@ -208,16 +198,16 @@ public class AnnotationServiceImpl implements AnnotationService {
                             if (isModified) {
                                 newStatus = "USER_EDITED";
                             } else {
-                                // No edit detected, set status to the AI's original status (or a validated status)
-                                // We use FAULTY to denote it passed through and was not modified.
+                                // No edit detected, set status to the AI's original status
+
                                 newStatus = dto.getCurrentStatus() != null ? dto.getCurrentStatus() : "FAULTY";
                             }
                         } else {
-                            // This is a genuinely new User-Added box
+                            // This is a  new User Added box
                             annotation.setOriginalSource("USER");
                             newStatus = "USER_ADDED";
 
-                            // Clear AI details for user-added boxes
+                            // Clear AI details for user added boxes
                             annotation.setAiConfidence(null);
                             annotation.setAiSeverityScore(null);
                         }
@@ -226,9 +216,6 @@ public class AnnotationServiceImpl implements AnnotationService {
                         annotation = currentMap.get(dto.getId());
 
                         if (annotation == null) {
-                            // This handles the error you had before. An existing ID was sent,
-                            // but it wasn't found in the active DB set. Throw an exception,
-                            // as this is a stale or corrupted ID from the client.
                             throw new ResourceNotFoundException("Cannot find active annotation with ID: " + dto.getId() + " for update. Data mismatch.");
                         }
 
@@ -243,20 +230,19 @@ public class AnnotationServiceImpl implements AnnotationService {
                         if (isEdited) {
                             newStatus = "USER_EDITED";
                         } else {
-                            // Keep the original status (e.g., FAULTY, USER_ADDED, USER_EDITED from previous save)
+                            // Keep the original status
                             newStatus = annotation.getCurrentStatus();
                         }
                     }
 
                     // Map DTO fields to Entity
-                    annotation.setInspection(inspection); // Safe now, as annotation is either new or retrieved
+                    annotation.setInspection(inspection);
                     annotation.setX(dto.getX());
                     annotation.setY(dto.getY());
                     annotation.setWidth(dto.getWidth());
                     annotation.setHeight(dto.getHeight());
                     annotation.setComments(dto.getComments());
                     annotation.setUserId(dto.getUserId());
-//                    annotation.setTimestamp(dto.getTimestamp());
                     annotation.setCurrentStatus(newStatus);
                     annotation.setDeleted(false); // Ensure new/edited boxes are not deleted
                     annotation.setFaultType(dto.getFaultType());
@@ -265,18 +251,15 @@ public class AnnotationServiceImpl implements AnnotationService {
                 .collect(Collectors.toList());
 
         if (!toSave.isEmpty()) {
-            // JPA handles the magic:
-            // - Entities with null ID are inserted (new boxes).
-            // - Entities with non-null ID are updated (edited boxes).
             annotationRepository.saveAll(toSave);
             annotationRepository.flush();
         }
     }
-    // Helper method to convert Entity to DTO (No change needed)
+    // Helper method to convert Entity to DTO
     private AnnotationDTO convertToDTO(Annotation annotation) {
         AnnotationDTO dto = new AnnotationDTO();
         dto.setId(annotation.getId());
-        dto.setCurrentStatus(annotation.getCurrentStatus()); // ⬅️ Use new field name
+        dto.setCurrentStatus(annotation.getCurrentStatus());
         dto.setOriginalSource(annotation.getOriginalSource());
         dto.setX(annotation.getX());
         dto.setY(annotation.getY());
@@ -288,7 +271,6 @@ public class AnnotationServiceImpl implements AnnotationService {
         dto.setAiConfidence(annotation.getAiConfidence());
         dto.setAiSeverityScore(annotation.getAiSeverityScore());
         dto.setFaultType(annotation.getFaultType());
-        // Note: boxSessionId, actionType, originalState are transient, so not read from DB
         return dto;
     }
 }

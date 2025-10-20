@@ -149,7 +149,7 @@ def run_detection(maintenance_image_path, baseline_image_path, save_folder, thre
     else:
         print(f"Error saving image to: {save_image_path}", file=sys.stderr)
 
-    # 👇 New structured data added but old format preserved
+
     return {
         "overall_status": overall_status,
         "output_image_name": output_image_filename,

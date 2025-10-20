@@ -12,10 +12,10 @@ public class AnomalyDetectionResult {
     private Long id;
 
     @Column(name = "overall_status")
-    private String overallStatus; // FAULTY, POTENTIALLY_FAULTY, NORMAL, UNCERTAIN
+    private String overallStatus; // FAULTY, POTENTIALLY_FAULTY,
 
     @Column(name = "detection_json_output", columnDefinition = "TEXT")
-    private String detectionJsonOutput; // JSON string of the list of anomalies/bounding boxes
+    private String detectionJsonOutput; // JSON string of the list of anomalies
 
     @Column(name = "detected_timestamp")
     private LocalDateTime detectedTimestamp;
@@ -30,7 +30,7 @@ public class AnomalyDetectionResult {
     // --- Constructors, Getters, and Setters ---
     public AnomalyDetectionResult() {}
 
-    // Getters and Setters... (Generate these)
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getOverallStatus() { return overallStatus; }

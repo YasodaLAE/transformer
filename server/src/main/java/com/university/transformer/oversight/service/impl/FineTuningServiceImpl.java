@@ -38,10 +38,9 @@ public class FineTuningServiceImpl implements FineTuningService {
     @Value("${ml.training-script-path}")
     private String trainingScriptPath;
 
-    // Assuming you have an initial model (e.g., yolov8n.pt) in your resources
     private static final String INITIAL_MODEL_PATH = "server/src/main/resources/best.pt";
 
-    // Yolo Class Mapping (fault_type to class_id)
+    // Yolo Class Mapping
     private static final String FAULTY_CLASS_ID = "1";
     private static final String POTENTIALLY_FAULTY_CLASS_ID = "0";
 
@@ -72,8 +71,6 @@ public class FineTuningServiceImpl implements FineTuningService {
      * Generates the content for the YOLO data.yaml file.
      */
     private String generateYoloYaml(String datasetPath) {
-        // We are using the same images/labels for both train and validation in this simple example.
-        // For a real-world scenario, you should split the dataset.
         return String.format(
                 "path: %s\n" +
                         "train: images\n" +
@@ -86,10 +83,6 @@ public class FineTuningServiceImpl implements FineTuningService {
         );
     }
 
-    /**
-     * The main method to orchestrate the fine-tuning process.
-     * @return The path to the newly trained model file.
-     */
     @Override
     @Transactional
     public String generateDatasetAndFineTune() throws Exception {
@@ -99,14 +92,14 @@ public class FineTuningServiceImpl implements FineTuningService {
         Path imagesDir = datasetRoot.resolve("images");
         Path labelsDir = datasetRoot.resolve("labels");
 
-        // 1. Clean and Setup Dataset Directories
+        // Setup Dataset Directories
         Files.createDirectories(imagesDir);
         Files.createDirectories(labelsDir);
         // Delete all previous content to ensure a fresh dataset
         Files.walk(imagesDir).skip(1).map(Path::toFile).forEach(File::delete);
         Files.walk(labelsDir).skip(1).map(Path::toFile).forEach(File::delete);
 
-        // 2. Identify Target Images (Inspections with user feedback)
+        // Identify Target Images
         // Find inspection_ids that have at least one USER_ADDED or USER_EDITED annotation.
         String sql = "SELECT DISTINCT inspection_id FROM annotations " +
                 "WHERE annotation_type IN ('USER_ADDED', 'USER_EDITED') AND is_deleted = FALSE";
@@ -119,12 +112,12 @@ public class FineTuningServiceImpl implements FineTuningService {
             throw new RuntimeException("No images with user-modified annotations found to fine-tune.");
         }
 
-        // 3. Process each inspection
+        // Process each inspection
         for (Object idObject : inspectionIds) {
-            // NOTE: Casting from DB result to Long/BigInteger can be tricky. Using Number.longValue() is robust.
+
             Long inspectionId = ((Number) idObject).longValue();
 
-            // a. Get the Maintenance ThermalImage
+            // Get the Maintenance ThermalImage
             ThermalImage maintenanceImage = thermalImageRepository.findByInspectionIdAndImageType(
                     inspectionId, ThermalImage.ImageType.MAINTENANCE);
 
@@ -140,27 +133,26 @@ public class FineTuningServiceImpl implements FineTuningService {
                 continue;
             }
 
-            // b. Get Image Dimensions
+            //Get Image Dimensions
             int[] dimensions = getImageDimensions(sourceImagePath);
             double imgWidth = dimensions[0];
             double imgHeight = dimensions[1];
 
-            // c. Copy Image to Dataset/images
+            // Copy Image to Dataset/images
             String newImageName = "insp_" + inspectionId + "_" + maintenanceImage.getFileName();
             Path destinationImagePath = imagesDir.resolve(newImageName);
             Files.copy(sourceImagePath, destinationImagePath);
 
-            // d. Get All Annotations (including AI ones) for this inspection, excluding soft-deleted
+            // Get All Annotations for this inspection, excluding soft deleted
             List<Annotation> annotations = annotationRepository
                     .findByInspectionIdAndIsDeletedFalse(inspectionId);
 
-            // e. Generate YOLO Label File
+            // Generate YOLO Label File
             Path labelFilePath = labelsDir.resolve(
                     newImageName.substring(0, newImageName.lastIndexOf('.')) + ".txt");
 
             try (BufferedWriter writer = Files.newBufferedWriter(labelFilePath)) {
                 for (Annotation ann : annotations) {
-                    // Normalized coordinates (YOLO format: <class_id> <x_center_norm> <y_center_norm> <width_norm> <height_norm>)
 
                     // Center coordinates (from top-left corner)
                     double x_center = ann.getX() + ann.getWidth() / 2.0;
@@ -189,12 +181,12 @@ public class FineTuningServiceImpl implements FineTuningService {
 
         logger.info("Dataset generation complete. Total images: {}", inspectionIds.size());
 
-        // 4. Generate data.yaml for YOLO
+        // Generate data.yaml for YOLO
         String yamlContent = generateYoloYaml(datasetRoot.toAbsolutePath().toString());
         Path dataYamlPath = datasetRoot.resolve("data.yaml");
         Files.writeString(dataYamlPath, yamlContent);
 
-        // 5. Execute Python Training Script
+        // Execute Python Training Script
         String newModelName = "ft_model_" + System.currentTimeMillis() + ".pt";
         Path outputModelPath = Paths.get(modelOutputDir, newModelName).toAbsolutePath();
         Path scriptPath = Paths.get(trainingScriptPath).toAbsolutePath();

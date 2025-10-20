@@ -6,10 +6,9 @@ import java.time.LocalDateTime;
 
 @Data
 public class AnnotationDTO {
-    private Long id; // null for new annotations, DB ID for existing ones
-    private String currentStatus; // ⬅️ RENAMED: Now maps to the status field
+    private Long id;
+    private String currentStatus;
     private String originalSource;
-//    private String type; // Initial type (AI_DETECTED, USER_ADDED, etc.)
     private Double aiConfidence;
     private Integer aiSeverityScore;
     private double x;
@@ -18,14 +17,13 @@ public class AnnotationDTO {
     private double height;
     private String comments;
     private String faultType;
-    // New Fields for persistence and tracking
     private String userId; // User who last modified/created
     private LocalDateTime timestamp; // Last modification time
 
     // Transient fields for the frontend/save logic
-    private String boxSessionId; // The temporary ID (e.g., 'ai-0' or 'user_new-1')
-    private String actionType; // 'ADDED', 'EDITED', 'DELETED' (Used during save process)
-    private AnnotationDTO originalState; // Used to track the state before an edit/delete (optional)
+    private String boxSessionId; // The temporary ID
+    private String actionType; // 'ADDED', 'EDITED', 'DELETED'
+    private AnnotationDTO originalState;
     private Double originalX;
     private Double originalY;
     private Double originalWidth;

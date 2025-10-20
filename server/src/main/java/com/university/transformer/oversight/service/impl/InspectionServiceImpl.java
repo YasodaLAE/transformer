@@ -1,7 +1,6 @@
 package com.university.transformer.oversight.service.impl;
 
 import com.university.transformer.oversight.dto.InspectionDTO;
-import com.university.transformer.oversight.model.AnomalyDetectionResult;
 import com.university.transformer.oversight.model.Inspection;
 import com.university.transformer.oversight.model.ThermalImage;
 import com.university.transformer.oversight.repository.AnomalyDetectionResultRepository;
@@ -100,7 +99,7 @@ public class InspectionServiceImpl implements InspectionService {
                     inspection.setInspectedDate(updatedInspection.getInspectedDate());
                     inspection.setMaintenanceDate(updatedInspection.getMaintenanceDate());
                     inspection.setStatus(updatedInspection.getStatus());
-                    inspection.setNotes(updatedInspection.getNotes()); // ensure notes persist
+                    inspection.setNotes(updatedInspection.getNotes());
                     return inspectionRepository.save(inspection);
                 })
                 .orElseThrow(() -> new RuntimeException("Inspection not found with id: " + id));
@@ -145,7 +144,7 @@ public class InspectionServiceImpl implements InspectionService {
         Long inspectionId = thermalImage.getInspection().getId();
         Inspection inspection = thermalImage.getInspection();
 
-        // Remove associated anomaly result (and annotated image file)
+        // Remove associated anomaly result
         anomalyDetectionResultRepository.findByInspectionId(inspectionId).ifPresent(result -> {
             if (result.getOutputImageName() != null) {
                 fileStorageService.delete(result.getOutputImageName());
