@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link} from 'react-router-dom';
 import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection, getAnnotations, getAllAnnotationsForDisplay, exportFeedbackLog } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
@@ -238,7 +238,7 @@ const InspectionDetailPage = () => {
         : aiAnalyzedImageUrl; // Otherwise, show the AI analyzed image.
 
 
-    const finalDisplayImageUrl = `${displayImageUrl}&k=${refreshKey}`; // Append refreshKey for instant update after save
+    const finalDisplayImageUrl = `${displayImageUrl}`; // Append refreshKey for instant update after save
 
     const getStatusBadgeColor = (status) => {
         switch (status.toLowerCase()) {
@@ -262,6 +262,12 @@ const InspectionDetailPage = () => {
                             </div>
                             <div className="d-flex flex-column align-items-end">
                                 <div className={`badge rounded-pill text-white ${getStatusBadgeColor(inspection.status)} mb-2`}>{inspection.status}</div>
+                                {/* ... existing buttons ... */}
+
+                                {/* NEW BUTTON FOR MAINTENANCE RECORD */}
+                                <Link to={`/inspections/${inspectionId}/record`} className="btn btn-primary btn-sm ms-2">
+                                    Maintenance Record
+                                </Link>
                                 {isUserLoggedIn && !hasBaselineImage && (<BaselineImageUploader transformerId={transformer.id} onUploadSuccess={fetchData} />)}
                                 {hasBaselineImage && (
                                     <small className="text-muted mt-2 d-flex align-items-center">

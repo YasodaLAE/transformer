@@ -1,22 +1,168 @@
--- src/main/resources/data.sql
+---- src/main/resources/data.sql
+--
+---- 1. TRANSFORMERS
+--INSERT INTO transformer (
+--    id, transformer_id, pole_id, region, transformer_type, details,
+--    baseline_image_condition, baseline_image_name, baseline_image_upload_timestamp, baseline_image_uploader,
+--    capacity, no_of_feeders
+--) VALUES
+--(1, 'AZ-8890', 'EN-122A', 'Nugegoda', 'Bulk', 'Im detail 1', 'Cloudy', 'baseline_1_1756026735344baseline1.jpg', '2025-08-24 03:42:16', 'admin', '1000', 3),
+--(2, 'AZ-1649', 'EN-123A', 'Nugegoda', 'Bulk', 'Im detail 2', 'Sunny', 'baseline_2_1756026773359baseline2.png', '2025-08-24 03:42:54', 'admin2', '1500', 4),
+--(3, 'AZ-7316', 'EN-123A', 'Maharagama', 'Distribution', 'Im detail 3', 'Cloudy', 'baseline_3_1759500597644T8_normal_002.jpg', '2025-10-03 14:09:58', 'admin', '500', 2),
+--(4, 'AZ-4613', 'EN-123B', 'Maharagama', 'Bulk', 'Im detail 4', 'Rainy', 'baseline_4_1759500757413T10_normal_001.jpg', '2025-10-03 14:12:38', 'admin', '2000', 5),
+--(5, 'AX-8993', 'EN-122B', 'Kottawa', 'Distribution', 'Im detail 5', 'Cloudy', 'baseline_5_1759500814090T12_normal_001.jpg', '2025-10-03 14:13:34', 'admin', '750', 3);
+--
+---- 2. INSPECTIONS
+--INSERT INTO inspection (
+--    id, inspection_no, inspected_date, maintenance_date, status, transformer_id, inspected_by, notes
+--) VALUES
+--(1, '000123589', '2025-07-02 00:00:00', '2025-08-02 00:00:00', 'In Progress', 2, 'admin', NULL),
+--(2, '000123590', '2025-07-01 00:00:00', NULL, 'In Progress', 1, 'admin2', NULL),
+--(3, '000123591', '2025-06-13 00:00:00', NULL, 'Pending', 3, 'admin3', NULL),
+--(4, '000123592', '2025-06-06 00:00:00', '2025-08-08 00:00:00', 'Completed', 4, 'admin', NULL),
+--(5, '000123593', '2025-04-25 00:00:00', '2025-08-08 00:00:00', 'Completed', 5, 'admin2', NULL);
+--
+---- 3. THERMAL IMAGES
+--INSERT INTO thermal_image (
+--    id, environmental_condition, file_name, file_path, image_type, upload_timestamp, uploader_id, inspection_id
+--) VALUES
+--(5, 'CLOUDY', 'db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003.png', 'uploads/db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003.png', 'MAINTENANCE', '2025-10-03 19:35:47.927003', 'admin', 1),
+--(7, 'SUNNY', '467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001.png', 'uploads/467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001.png', 'MAINTENANCE', '2025-10-03 19:38:56.203084', 'admin', 2),
+--(8, 'CLOUDY', 'd9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001.jpg', 'uploads/d9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001.jpg', 'MAINTENANCE', '2025-10-03 19:40:12.290164', 'admin', 3),
+--(9, 'CLOUDY', 'b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001.jpg', 'uploads/b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001.jpg', 'MAINTENANCE', '2025-10-03 19:42:48.757768', 'admin', 4),
+--(10, 'SUNNY', '185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001.jpg', 'uploads/185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001.jpg', 'MAINTENANCE', '2025-10-03 19:43:46.697769', 'admin', 5);
+--
+---- 4. ANOMALY RESULTS
+--INSERT INTO anomaly_detection_result (
+--    id, detected_timestamp, detection_json_output, output_image_name, overall_status, inspection_id
+--) VALUES
+--(4, '2025-10-05 01:59:57.744459', '[{"id":1,"type":"Faulty","location":{"x_min":72,"y_min":130,"x_max":153,"y_max":237},"severity_score":2,"confidence":0.9883},{"id":2,"type":"Faulty","location":{"x_min":255,"y_min":129,"x_max":335,"y_max":238},"severity_score":2,"confidence":0.9858},{"id":3,"type":"Faulty","location":{"x_min":164,"y_min":126,"x_max":244,"y_max":239},"severity_score":2,"confidence":0.9797}]', 'db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003_annotated_20251005_015956.png', 'FAULTY', 1),
+--(6, '2025-10-05 02:03:26.191857', '[{"id":1,"type":"Faulty","location":{"x_min":164,"y_min":131,"x_max":245,"y_max":202},"severity_score":2,"confidence":0.9797},{"id":2,"type":"Faulty","location":{"x_min":257,"y_min":130,"x_max":332,"y_max":202},"severity_score":2,"confidence":0.949},{"id":3,"type":"Faulty","location":{"x_min":138,"y_min":131,"x_max":152,"y_max":195},"severity_score":2,"confidence":0.8831}]', '467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001_annotated_20251005_020325.png', 'FAULTY', 2),
+--(7, '2025-10-05 02:01:57.428870', '[{"id":1,"type":"Faulty","location":{"x_min":1127,"y_min":805,"x_max":1291,"y_max":1057},"severity_score":2,"confidence":0.9104}]', 'd9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001_annotated_20251005_020156.jpg', 'FAULTY', 3),
+--(8, '2025-10-05 02:02:21.772516', '[{"id":1,"type":"Faulty","location":{"x_min":1252,"y_min":795,"x_max":1320,"y_max":872},"severity_score":2,"confidence":0.7637}]', 'b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001_annotated_20251005_020220.jpg', 'FAULTY', 4),
+--(9, '2025-10-05 02:02:56.651265', '[{"id":2,"type":"Faulty","location":{"x_min":1185,"y_min":633,"x_max":1274,"y_max":710},"severity_score":2,"confidence":0.9011},{"id":3,"type":"Faulty","location":{"x_min":1043,"y_min":510,"x_max":1165,"y_max":680},"severity_score":2,"confidence":0.8612}]', '185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001_annotated_20251005_020255.jpg', 'FAULTY', 5);
+--
+---- 5. ANNOTATIONS
+--INSERT INTO annotations (
+--    id, inspection_id, x, y, width, height, comments, fault_type, annotation_type, original_source, user_id, timestamp, ai_confidence, ai_severity_score, is_deleted
+--) VALUES
+--(1, 1, 164, 131, 81, 71, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:09', 0.9797, 2, 0),
+--(2, 1, 257, 130, 75, 72, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:09', 0.949, 2, 0),
+--(3, 1, 138, 131, 14, 64, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:09', 0.8831, 2, 0),
+--(4, 2, 72, 130, 81, 107, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:24', 0.9883, 2, 0),
+--(5, 2, 255, 129, 80, 109, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:24', 0.9858, 2, 0),
+--(6, 2, 164, 126, 80, 113, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:24', 0.9797, 2, 0),
+--(7, 3, 1127, 805, 164, 252, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:43', 0.9104, 2, 0),
+--(8, 4, 1252, 795, 68, 77, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:33:00', 0.7637, 2, 0),
+--(9, 5, 1185, 633, 89, 77, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:33:13', 0.9011, 2, 0),
+--(10, 5, 1043, 510, 122, 170, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:33:13', 0.8612, 2, 0);
 
--- Insert 5 sample transformers
-INSERT INTO `transformer` VALUES (1,'AZ-8890','EN-122A','Nugegoda','Bulk','Im detail 1','Cloudy','baseline_1_1756026735344baseline1.jpg','2025-08-24 03:42:16','admin','1000','3'),(2,'AZ-1649','EN-123A','Nugegoda','Bulk','Im detail 2','Sunny','baseline_2_1756026773359baseline2.png','2025-08-24 03:42:54','admin2','1500','4'),(3,'AZ-7316','EN-123A','Maharagama','Distribution','Im detail 3','Cloudy','baseline_3_1759500597644T8_normal_002.jpg','2025-10-03 14:09:58','admin','500','2'),(4,'AZ-4613','EN-123B','Maharagama','Bulk','Im detail 4','Rainy','baseline_4_1759500757413T10_normal_001.jpg','2025-10-03 14:12:38','admin','2000','5'),(5,'AX-8993','EN-122B','Kottawa','Distribution','Im detail 5','Cloudy','baseline_5_1759500814090T12_normal_001.jpg','2025-10-03 14:13:34','admin','750','3');
+-- ================================
+-- 1. TRANSFORMERS
+-- ================================
+INSERT INTO transformer (
+    id, transformer_id, pole_id, region, transformer_type, details,
+    baseline_image_condition, baseline_image_name, baseline_image_upload_timestamp,
+    baseline_image_uploader, capacity, no_of_feeders
+) VALUES
+(1, 'AZ-8890', 'EN-122A', 'Nugegoda', 'Bulk', 'Im detail 1', 'Cloudy',
+ 'baseline_1_1756026735344baseline1.jpg', '2025-08-24 03:42:16', 'admin', '1000', 3),
+(2, 'AZ-1649', 'EN-123A', 'Nugegoda', 'Bulk', 'Im detail 2', 'Sunny',
+ 'baseline_2_1756026773359baseline2.png', '2025-08-24 03:42:54', 'admin2', '1500', 4),
+(3, 'AZ-7316', 'EN-123A', 'Maharagama', 'Distribution', 'Im detail 3', 'Cloudy',
+ 'baseline_3_1759500597644T8_normal_002.jpg', '2025-10-03 14:09:58', 'admin', '500', 2),
+(4, 'AZ-4613', 'EN-123B', 'Maharagama', 'Bulk', 'Im detail 4', 'Rainy',
+ 'baseline_4_1759500757413T10_normal_001.jpg', '2025-10-03 14:12:38', 'admin', '2000', 5),
+(5, 'AX-8993', 'EN-122B', 'Kottawa', 'Distribution', 'Im detail 5', 'Cloudy',
+ 'baseline_5_1759500814090T12_normal_001.jpg', '2025-10-03 14:13:34', 'admin', '750', 3);
 
---  transformers have IDs 1 through 5
---INSERT INTO inspection (id, inspection_no, inspected_date, maintenance_date, status, transformer_id, inspected_by)
---VALUES
---(1, '000123589', '2025-07-02', '2025-08-02', 'In Progress', 2, 'admin'),
---(2, '000123590', '2025-07-01', NULL, 'In Progress', 1, 'admin2'),
---(3, '000123591', '2025-06-13', NULL, 'Pending', 3, 'admin3'),
---(4, '000123592', '2025-06-06', '2025-08-08', 'Completed', 4, 'admin'),
---(5, '000123593', '2025-04-25', '2025-08-08', 'Completed', 5, 'admin2');
-INSERT INTO `inspection` VALUES (1,'000123589','2025-07-02 00:00:00','2025-08-02 00:00:00','In Progress',2,'admin',NULL),(2,'000123590','2025-07-01 00:00:00',NULL,'In Progress',1,'admin2',NULL),(3,'000123591','2025-06-13 00:00:00',NULL,'Pending',3,'admin3',NULL),(4,'000123592','2025-06-06 00:00:00','2025-08-08 00:00:00','Completed',4,'admin',NULL),(5,'000123593','2025-04-25 00:00:00','2025-08-08 00:00:00','Completed',5,'admin2',NULL);
+-- ================================
+-- 2. INSPECTIONS
+-- ================================
+INSERT INTO inspection (
+    id, inspection_no, inspected_date, maintenance_date,
+    status, transformer_id, inspected_by, notes
+) VALUES
+(1, '000123590', '2025-07-01 00:00:00', NULL, 'In Progress', 1, 'admin2', NULL),
+(2, '000123589', '2025-07-02 00:00:00', '2025-08-02 00:00:00', 'In Progress', 2, 'admin', NULL),
+(3, '000123591', '2025-06-13 00:00:00', NULL, 'Pending', 3, 'admin3', NULL),
+(4, '000123592', '2025-06-06 00:00:00', '2025-08-08 00:00:00', 'Completed', 4, 'admin', NULL),
+(5, '000123593', '2025-04-25 00:00:00', '2025-08-08 00:00:00', 'Completed', 5, 'admin2', NULL);
 
--- Insert sample thermal images
-INSERT INTO `thermal_image` VALUES (5,'CLOUDY','db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003.png','D:\\oversight\\uploads\\db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003.png','MAINTENANCE','2025-10-03 19:35:47.927003','admin',2),(7,'SUNNY','467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001.png','D:\\oversight\\uploads\\467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001.png','MAINTENANCE','2025-10-03 19:38:56.203084','admin',1),(8,'CLOUDY','d9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001.jpg','D:\\oversight\\uploads\\d9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001.jpg','MAINTENANCE','2025-10-03 19:40:12.290164','admin',3),(9,'CLOUDY','b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001.jpg','D:\\oversight\\uploads\\b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001.jpg','MAINTENANCE','2025-10-03 19:42:48.757768','admin',4),(10,'SUNNY','185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001.jpg','D:\\oversight\\uploads\\185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001.jpg','MAINTENANCE','2025-10-03 19:43:46.697769','admin',5);
+-- ================================
+-- 3. THERMAL IMAGES (Corrected to match Code 1 exactly)
+-- ================================
+INSERT INTO thermal_image (
+    id, environmental_condition, file_name, file_path,
+    image_type, upload_timestamp, uploader_id, inspection_id
+) VALUES
+(5, 'CLOUDY', 'db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003.png',
+ 'D:\\oversight\\uploads\\db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003.png',
+ 'MAINTENANCE', '2025-10-03 19:35:47.927003', 'admin', 2),
 
--- Insert sample thermal images with bounding boxes
-INSERT INTO `anomaly_detection_result` VALUES (4,'2025-10-05 01:59:57.744459','[{\"id\":1,\"type\":\"Faulty\",\"location\":{\"x_min\":72,\"y_min\":130,\"x_max\":153,\"y_max\":237},\"severity_score\":2,\"confidence\":0.9883},{\"id\":2,\"type\":\"Faulty\",\"location\":{\"x_min\":255,\"y_min\":129,\"x_max\":335,\"y_max\":238},\"severity_score\":2,\"confidence\":0.9858},{\"id\":3,\"type\":\"Faulty\",\"location\":{\"x_min\":164,\"y_min\":126,\"x_max\":244,\"y_max\":239},\"severity_score\":2,\"confidence\":0.9797}]','db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003_annotated_20251005_015956.png','FAULTY',2),(6,'2025-10-05 02:03:26.191857','[{\"id\":1,\"type\":\"Faulty\",\"location\":{\"x_min\":164,\"y_min\":131,\"x_max\":245,\"y_max\":202},\"severity_score\":2,\"confidence\":0.9797},{\"id\":2,\"type\":\"Faulty\",\"location\":{\"x_min\":257,\"y_min\":130,\"x_max\":332,\"y_max\":202},\"severity_score\":2,\"confidence\":0.949},{\"id\":3,\"type\":\"Faulty\",\"location\":{\"x_min\":138,\"y_min\":131,\"x_max\":152,\"y_max\":195},\"severity_score\":2,\"confidence\":0.8831}]','467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001_annotated_20251005_020325.png','FAULTY',1),(7,'2025-10-05 02:01:57.428870','[{\"id\":1,\"type\":\"Faulty\",\"location\":{\"x_min\":1127,\"y_min\":805,\"x_max\":1291,\"y_max\":1057},\"severity_score\":2,\"confidence\":0.9104}]','d9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001_annotated_20251005_020156.jpg','FAULTY',3),(8,'2025-10-05 02:02:21.772516','[{\"id\":1,\"type\":\"Faulty\",\"location\":{\"x_min\":1252,\"y_min\":795,\"x_max\":1320,\"y_max\":872},\"severity_score\":2,\"confidence\":0.7637}]','b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001_annotated_20251005_020220.jpg','FAULTY',4),(9,'2025-10-05 02:02:56.651265','[{\"id\":2,\"type\":\"Faulty\",\"location\":{\"x_min\":1185,\"y_min\":633,\"x_max\":1274,\"y_max\":710},\"severity_score\":2,\"confidence\":0.9011},{\"id\":3,\"type\":\"Faulty\",\"location\":{\"x_min\":1043,\"y_min\":510,\"x_max\":1165,\"y_max\":680},\"severity_score\":2,\"confidence\":0.8612}]','185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001_annotated_20251005_020255.jpg','FAULTY',5);
+(7, 'SUNNY', '467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001.png',
+ 'D:\\oversight\\uploads\\467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001.png',
+ 'MAINTENANCE', '2025-10-03 19:38:56.203084', 'admin', 1),
 
-INSERT INTO `annotations` VALUES (1,1,164,131,81,71,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:32:09',0.9797,2,0),(2,1,257,130,75,72,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:32:09',0.949,2,0),(3,1,138,131,14,64,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:32:09',0.8831,2,0),(4,2,72,130,81,107,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:32:24',0.9883,2,0),(5,2,255,129,80,109,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:32:24',0.9858,2,0),(6,2,164,126,80,113,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:32:24',0.9797,2,0),(7,3,1127,805,164,252,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:32:43',0.9104,2,0),(8,4,1252,795,68,77,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:33:00',0.7637,2,0),(9,5,1185,633,89,77,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:33:13',0.9011,2,0),(10,5,1043,510,122,170,'','FAULTY','FAULTY','AI','admin','2025-10-19 21:33:13',0.8612,2,0);
+(8, 'CLOUDY', 'd9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001.jpg',
+ 'D:\\oversight\\uploads\\d9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001.jpg',
+ 'MAINTENANCE', '2025-10-03 19:40:12.290164', 'admin', 3),
+
+(9, 'CLOUDY', 'b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001.jpg',
+ 'D:\\oversight\\uploads\\b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001.jpg',
+ 'MAINTENANCE', '2025-10-03 19:42:48.757768', 'admin', 4),
+
+(10, 'SUNNY', '185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001.jpg',
+ 'D:\\oversight\\uploads\\185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001.jpg',
+ 'MAINTENANCE', '2025-10-03 19:43:46.697769', 'admin', 5);
+
+-- ================================
+-- 4. ANOMALY DETECTION RESULTS (Corrected to match Code 1)
+-- ================================
+INSERT INTO anomaly_detection_result (
+    id, detected_timestamp, detection_json_output,
+    output_image_name, overall_status, inspection_id
+) VALUES
+(4, '2025-10-05 01:59:57.744459',
+ '[{\"id\":1,\"type\":\"Faulty\",\"location\":{\"x_min\":72,\"y_min\":130,\"x_max\":153,\"y_max\":237},\"severity_score\":2,\"confidence\":0.9883},{\"id\":2,\"type\":\"Faulty\",\"location\":{\"x_min\":255,\"y_min\":129,\"x_max\":335,\"y_max\":238},\"severity_score\":2,\"confidence\":0.9858},{\"id\":3,\"type\":\"Faulty\",\"location\":{\"x_min\":164,\"y_min\":126,\"x_max\":244,\"y_max\":239},\"severity_score\":2,\"confidence\":0.9797}]',
+ 'db7196d2-9bfc-4553-9e1b-41c78957d0bf_T2_faulty_003_annotated_20251005_015956.png',
+ 'FAULTY', 2),
+
+(6, '2025-10-05 02:03:26.191857',
+ '[{\"id\":1,\"type\":\"Faulty\",\"location\":{\"x_min\":164,\"y_min\":131,\"x_max\":245,\"y_max\":202},\"severity_score\":2,\"confidence\":0.9797},{\"id\":2,\"type\":\"Faulty\",\"location\":{\"x_min\":257,\"y_min\":130,\"x_max\":332,\"y_max\":202},\"severity_score\":2,\"confidence\":0.949},{\"id\":3,\"type\":\"Faulty\",\"location\":{\"x_min\":138,\"y_min\":131,\"x_max\":152,\"y_max\":195},\"severity_score\":2,\"confidence\":0.8831}]',
+ '467f7691-ac5e-4b35-8048-bd9dea5a848d_T2_faulty_001_annotated_20251005_020325.png',
+ 'FAULTY', 1),
+
+(7, '2025-10-05 02:01:57.428870',
+ '[{\"id\":1,\"type\":\"Faulty\",\"location\":{\"x_min\":1127,\"y_min\":805,\"x_max\":1291,\"y_max\":1057},\"severity_score\":2,\"confidence\":0.9104}]',
+ 'd9568780-7cd0-4603-8a6a-f1c3570e67b4_T8_faulty_001_annotated_20251005_020156.jpg',
+ 'FAULTY', 3),
+
+(8, '2025-10-05 02:02:21.772516',
+ '[{\"id\":1,\"type\":\"Faulty\",\"location\":{\"x_min\":1252,\"y_min\":795,\"x_max\":1320,\"y_max\":872},\"severity_score\":2,\"confidence\":0.7637}]',
+ 'b71eee2c-f157-4d4f-b8ba-2f2756fa6029_T10_faulty_001_annotated_20251005_020220.jpg',
+ 'FAULTY', 4),
+
+(9, '2025-10-05 02:02:56.651265',
+ '[{\"id\":2,\"type\":\"Faulty\",\"location\":{\"x_min\":1185,\"y_min\":633,\"x_max\":1274,\"y_max\":710},\"severity_score\":2,\"confidence\":0.9011},{\"id\":3,\"type\":\"Faulty\",\"location\":{\"x_min\":1043,\"y_min\":510,\"x_max\":1165,\"y_max\":680},\"severity_score\":2,\"confidence\":0.8612}]',
+ '185e265c-2d4c-4160-af75-3577f1141464_T12_faulty_001_annotated_20251005_020255.jpg',
+ 'FAULTY', 5);
+
+-- ================================
+-- 5. ANNOTATIONS (Matches Code 1)
+-- ================================
+INSERT INTO annotations (
+    id, inspection_id, x, y, width, height, comments, fault_type,
+    annotation_type, original_source, user_id, timestamp,
+    ai_confidence, ai_severity_score, is_deleted
+) VALUES
+(1, 1, 164, 131, 81, 71, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:09', 0.9797, 2, 0),
+(2, 1, 257, 130, 75, 72, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:09', 0.949, 2, 0),
+(3, 1, 138, 131, 14, 64, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:09', 0.8831, 2, 0),
+(4, 2, 72, 130, 81, 107, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:24', 0.9883, 2, 0),
+(5, 2, 255, 129, 80, 109, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:24', 0.9858, 2, 0),
+(6, 2, 164, 126, 80, 113, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:24', 0.9797, 2, 0),
+(7, 3, 1127, 805, 164, 252, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:32:43', 0.9104, 2, 0),
+(8, 4, 1252, 795, 68, 77, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:33:00', 0.7637, 2, 0),
+(9, 5, 1185, 633, 89, 77, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:33:13', 0.9011, 2, 0),
+(10, 5, 1043, 510, 122, 170, '', 'FAULTY', 'FAULTY', 'AI', 'admin', '2025-10-19 21:33:13', 0.8612, 2, 0);
