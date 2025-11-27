@@ -1,42 +1,70 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from 'react-bootstrap';
 
 const InteractiveImage = ({ imageUrl, anomalies, onSelect, selectedId, onDelete, isAdmin }) => {
-    // Ensure anomalies is an array. It might come in as a JSON string or an object.
+    const imgRef = useRef(null);
+    const [scale, setScale] = useState({ x: 1, y: 1 });
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    // Parse the anomalies list
     let anomalyList = [];
     try {
         anomalyList = typeof anomalies === 'string' ? JSON.parse(anomalies) : anomalies;
     } catch (e) {
-        console.error("Error parsing anomalies for interactive image:", e);
-        anomalyList = [];
+        console.error("Error parsing anomalies:", e);
     }
+    if (!Array.isArray(anomalyList)) anomalyList = [];
 
-    if (!Array.isArray(anomalyList)) {
-        anomalyList = [];
-    }
+    // Function to calculate the scale factor (Displayed Size / Original Size)
+    const updateScale = () => {
+        const img = imgRef.current;
+        if (img && img.naturalWidth > 0) {
+            const currentWidth = img.clientWidth;
+            const currentHeight = img.clientHeight;
+
+            setScale({
+                x: currentWidth / img.naturalWidth,
+                y: currentHeight / img.naturalHeight
+            });
+        }
+    };
+
+    // Update scale when image loads
+    const handleImageLoad = () => {
+        setIsLoaded(true);
+        updateScale();
+    };
+
+    // Update scale when window resizes
+    useEffect(() => {
+        window.addEventListener('resize', updateScale);
+        return () => window.removeEventListener('resize', updateScale);
+    }, []);
+
+    // Update scale if the image URL changes
+    useEffect(() => {
+        if (isLoaded) updateScale();
+    }, [imageUrl, isLoaded]);
 
     return (
         <div style={{ position: 'relative', display: 'inline-block', width: '100%' }}>
             {/* The Image */}
             <img
+                ref={imgRef}
                 src={imageUrl}
                 alt="Analyzed"
-                style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
+                onLoad={handleImageLoad}
+                style={{ display: 'block', width: '100%', height: 'auto' }}
             />
 
             {/* The Overlay Boxes */}
-            {anomalyList.map((anomaly, index) => {
-                // Handle both raw AI data (location object) and saved data (x, y fields)
+            {isLoaded && anomalyList.map((anomaly, index) => {
                 let x, y, w, h;
 
+                // Extract raw coordinates
                 if (anomaly.x !== undefined) {
-                     // Format: Saved Annotation
-                     x = anomaly.x;
-                     y = anomaly.y;
-                     w = anomaly.width;
-                     h = anomaly.height;
+                     x = anomaly.x; y = anomaly.y; w = anomaly.width; h = anomaly.height;
                 } else if (anomaly.location) {
-                    // Format: Raw AI Result
                     x = anomaly.location.x_min;
                     y = anomaly.location.y_min;
                     w = anomaly.location.x_max - anomaly.location.x_min;
@@ -45,8 +73,13 @@ const InteractiveImage = ({ imageUrl, anomalies, onSelect, selectedId, onDelete,
                     return null;
                 }
 
+                // Apply Scale Factor
+                const scaledX = x * scale.x;
+                const scaledY = y * scale.y;
+                const scaledW = w * scale.x;
+                const scaledH = h * scale.y;
+
                 const isSelected = (anomaly.id === selectedId);
-                // Use index as fallback key if id is missing
                 const key = anomaly.id || index;
 
                 return (
@@ -58,17 +91,17 @@ const InteractiveImage = ({ imageUrl, anomalies, onSelect, selectedId, onDelete,
                         }}
                         style={{
                             position: 'absolute',
-                            left: `${x}px`,
-                            top: `${y}px`,
-                            width: `${w}px`,
-                            height: `${h}px`,
-                            border: `2px solid ${isSelected ? '#0dcaf0' : '#dc3545'}`, // Cyan if selected, Red if not
+                            left: `${scaledX}px`,
+                            top: `${scaledY}px`,
+                            width: `${scaledW}px`,
+                            height: `${scaledH}px`,
+                            border: `2px solid ${isSelected ? '#0dcaf0' : '#dc3545'}`,
                             backgroundColor: isSelected ? 'rgba(13, 202, 240, 0.2)' : 'transparent',
                             cursor: 'pointer',
                             zIndex: 10
                         }}
                     >
-                        {/* Label (Index 1, 2, 3...) */}
+                        {/* Label */}
                         <span
                             style={{
                                 position: 'absolute',
@@ -79,14 +112,14 @@ const InteractiveImage = ({ imageUrl, anomalies, onSelect, selectedId, onDelete,
                                 fontSize: '10px',
                                 padding: '1px 4px',
                                 borderRadius: '2px',
-                                fontWeight: 'bold'
+                                fontWeight: 'bold',
+                                whiteSpace: 'nowrap'
                             }}
                         >
-                            {/* CHANGE: Display index + 1 instead of database ID */}
                             {index + 1}
                         </span>
 
-                        {/* Delete Button (Only visible if selected and isAdmin) */}
+                        {/* Delete Button */}
                         {isSelected && isAdmin && onDelete && (
                             <Button
                                 variant="danger"

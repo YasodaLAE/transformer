@@ -31,6 +31,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/inspections/*/annotations").permitAll()
                         .requestMatchers("/api/inspections/*/annotations/image").permitAll()
                         .requestMatchers("/api/inspections/*/annotation-logs").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/transformers/*/maintenance-history").permitAll() // History Viewer 🔥
+                        .requestMatchers(HttpMethod.POST, "/api/inspections/*/maintenance-record").permitAll()
                         .anyRequest().authenticated()
                 );
 

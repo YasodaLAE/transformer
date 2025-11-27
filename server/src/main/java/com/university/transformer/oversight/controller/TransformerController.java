@@ -1,5 +1,6 @@
 package com.university.transformer.oversight.controller;
 
+import com.university.transformer.oversight.dto.MaintenanceRecordDTO;
 import com.university.transformer.oversight.model.Transformer;
 import com.university.transformer.oversight.service.TransformerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,20 @@ public class TransformerController {
         } catch (RuntimeException e) {
             // Returns 404 if transformer not found
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{transformerId}/maintenance-history") // <--- This is the correct mapping
+    public ResponseEntity<List<MaintenanceRecordDTO>> getMaintenanceHistory(@PathVariable Long transformerId) {
+        try {
+            // This is the line that executes the service logic
+            List<MaintenanceRecordDTO> history = transformerService.getMaintenanceHistoryByTransformer(transformerId);
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            // If an error happens here (e.g., NullPointerException during DTO mapping),
+            // the frontend receives a 500 error and the "Failed to load" message.
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

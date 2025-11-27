@@ -3,11 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getMaintenanceRecord, saveMaintenanceRecord, getAllAnnotationsForDisplay } from '../services/apiService';
 import { Form, Button, Card, Row, Col, Spinner, Alert, Image, Table, Badge } from 'react-bootstrap';
 import PageHeader from '../components/Header';
+import Toast from '../components/Toast';
+import { Link } from "react-router-dom";
 
 const MaintenanceRecordPage = () => {
     const API_BASE_URL = 'http://localhost:8080';
     const { inspectionId } = useParams();
     const navigate = useNavigate();
+
+    const [toast, setToast] = useState(null);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -15,6 +19,9 @@ const MaintenanceRecordPage = () => {
 
     const [thermalImageName, setThermalImageName] = useState(null);
     const [anomalies, setAnomalies] = useState([]);
+
+    const showOk = (m) => setToast({ type: 'success', message: m });
+    const showErr = (m) => setToast({ type: 'error', message: m });
 
     const [formData, setFormData] = useState({
         // Transformer & Inspection Context
@@ -115,19 +122,47 @@ const MaintenanceRecordPage = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const cleanDateTime = (value) => {
+        // If the value is 'N/A' or an empty string, send null to Java
+        return (value === 'N/A' || value === '') ? null : value;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
-        setSuccessMsg(null);
+
+
+        // Prepare the cleaned data object
+        const dataToSend = {
+            ...formData,
+
+            // --- FIX: Clean up date/time fields before sending ---
+            // These fields are coming from the read-only sections of the DTO/initial state
+            // and might contain 'N/A' if the Inspection entity didn't have them set.
+            inspectionDate: cleanDateTime(formData.inspectionDate),
+            maintenanceDate: cleanDateTime(formData.maintenanceDate),
+
+            // Ensure any new input fields are also cleaned if necessary,
+            // especially if they map to LocalTime/LocalDate (though text inputs should default to empty string, not "N/A").
+            inspectionEngineerDate: cleanDateTime(formData.inspectionEngineerDate),
+            // ... any other potential date fields ...
+        };
 
         try {
-            await saveMaintenanceRecord(inspectionId, formData);
-            setSuccessMsg("Record saved successfully! Redirecting...");
+            await saveMaintenanceRecord(inspectionId, dataToSend);
+
+            // SUCCESS NOTIFICATION
+            showOk("Maintenance record saved successfully!");
+
+            // OPTIONAL: Keep the navigation, but only after showing the toast.
             setTimeout(() => {
                 navigate(`/inspections/by-inspection/${inspectionId}`);
             }, 1500);
         } catch (err) {
             console.error("Failed to save:", err);
+            // ERROR NOTIFICATION
+            showErr("Failed to save record. Please try again.");
+            // We set the dedicated error state, but the toast also shows the general error.
             setError("Failed to save record. Please try again.");
         }
     };
@@ -140,10 +175,17 @@ const MaintenanceRecordPage = () => {
 
     return (
         <div className="container-fluid mb-5">
-            <PageHeader title="Maintenance Record Sheet" />
+            <Link to={`/inspections/by-inspection/${inspectionId}`} className="btn btn-sm btn-outline-secondary mb-3">
+                <i className="bi bi-arrow-left me-1"></i> Back to Inspection
+            </Link>
+            <div className="mb-4">
+                <h4 className="fw-bold text-primary">
+                    Maintenance Record Sheet
+                </h4>
 
+            </div>
             {error && <Alert variant="danger">{error}</Alert>}
-            {successMsg && <Alert variant="success">{successMsg}</Alert>}
+
 
             <Form onSubmit={handleSubmit}>
 
@@ -488,6 +530,7 @@ const MaintenanceRecordPage = () => {
                     <Button variant="primary" type="submit" size="lg">Save Record</Button>
                 </div>
             </Form>
+            {toast && <Toast {...toast} onClose={() => setToast(null)} />}
         </div>
     );
 };

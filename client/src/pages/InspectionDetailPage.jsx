@@ -247,7 +247,11 @@ const InspectionDetailPage = () => {
         <div className="container-fluid">
             {transformer && (
                 <Card className="mb-4 rounded-4 shadow-sm">
+
                     <Card.Body>
+                        <Link to={`/inspections`} className="btn btn-sm btn-outline-secondary mb-3">
+                            <i className="bi bi-arrow-left me-1"></i> Back to Inspections
+                        </Link>
                         <div className="d-flex justify-content-between align-items-start mb-2">
                             <div className="d-flex flex-column">
                                 <h3 className="fw-bold">{inspection.inspectionNo}</h3>
@@ -258,6 +262,8 @@ const InspectionDetailPage = () => {
                                 <Link to={`/inspections/${inspectionId}/record`} className="btn btn-primary btn-sm mb-2">
                                     <i className="bi bi-file-text me-2"></i>Maintenance Record
                                 </Link>
+
+
 
                                 {isUserLoggedIn && !hasBaselineImage && (
                                     <BaselineImageUploader
@@ -295,6 +301,7 @@ const InspectionDetailPage = () => {
 
             <Card className="rounded-4 shadow-sm mb-4">
                 <Card.Body>
+
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h4>Thermal Image Comparison</h4>
                         {hasThermalImage && (
@@ -330,6 +337,7 @@ const InspectionDetailPage = () => {
                         </Col>
                         <Col md={6}>
                             <Card>
+
                                 <Card.Header className="d-flex justify-content-between align-items-center">
                                     {isAnnotating ? 'Annotation Editor' : 'Analyzed Image'}
                                     {isAdmin && hasThermalImage && !isAnnotating && (<Button variant="outline-danger" size="sm" onClick={() => handleDelete(thermalImage.id)}>Delete</Button>)}

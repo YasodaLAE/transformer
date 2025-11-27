@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.core.io.Resource;
+import com.university.transformer.oversight.dto.MaintenanceRecordDTO; // Import the DTO
 
 public interface TransformerService {
     Transformer saveTransformer(Transformer transformer);
@@ -17,4 +18,5 @@ public interface TransformerService {
     void saveBaselineImage(Long transformerId, MultipartFile file, String condition, String uploader);
     void deleteBaselineImage(Long transformerId);
     Resource loadBaselineImageAsResource(Long transformerId);
+    List<MaintenanceRecordDTO> getMaintenanceHistoryByTransformer(Long transformerId);
 }

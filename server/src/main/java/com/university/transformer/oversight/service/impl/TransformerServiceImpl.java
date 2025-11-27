@@ -1,5 +1,7 @@
 package com.university.transformer.oversight.service.impl;
 
+import com.university.transformer.oversight.model.Inspection;
+import com.university.transformer.oversight.model.MaintenanceRecord;
 import com.university.transformer.oversight.model.Transformer;
 import com.university.transformer.oversight.repository.TransformerRepository;
 import com.university.transformer.oversight.service.FileStorageService;
@@ -8,8 +10,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.university.transformer.oversight.dto.MaintenanceRecordDTO;
+import com.university.transformer.oversight.repository.MaintenanceRecordRepository;
 
+
+import java.util.stream.Collectors;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -24,6 +31,9 @@ public class TransformerServiceImpl implements TransformerService {
 
     @Autowired
     private TransformerRepository transformerRepository;
+
+    @Autowired
+    private MaintenanceRecordRepository maintenanceRecordRepository;
 
     @Autowired
     private FileStorageService fileStorageService;
@@ -142,5 +152,24 @@ public class TransformerServiceImpl implements TransformerService {
         } catch (MalformedURLException e) {
             throw new RuntimeException("Error reading baseline image file: " + e.getMessage());
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true) // Set to read-only for data fetching efficiency
+    public List<MaintenanceRecordDTO> getMaintenanceHistoryByTransformer(Long transformerId) {
+
+        // 1. Fetch all records, eagerly fetching the Inspection entity (using the fixed query)
+        List<MaintenanceRecord> records = maintenanceRecordRepository.findByTransformerId(transformerId);
+
+        // 2. Map the JPA entities to the DTOs
+        return records.stream()
+                .map(record -> {
+                    // Ensure the nested Inspection object is available for the DTO constructor
+                    Inspection inspection = record.getInspection();
+
+                    // The DTO constructor handles the rest of the flattening.
+                    return new MaintenanceRecordDTO(record, inspection);
+                })
+                .collect(Collectors.toList());
     }
 }
