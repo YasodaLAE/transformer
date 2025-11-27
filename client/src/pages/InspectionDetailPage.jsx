@@ -34,6 +34,7 @@ const InspectionDetailPage = () => {
     const [refreshKey, setRefreshKey] = useState(0);
     const [hasUserAnnotations, setHasUserAnnotations] = useState(false);
     const [activeAnomalyDetails, setActiveAnomalyDetails] = useState([]);
+    const [selectedAnomalyId, setSelectedAnomalyId] = useState(null); // Added state for interactive selection
 
     const handleOpenZoomModal = (url, title) => setZoomModal({ show: true, url, title });
     const handleCloseZoomModal = () => setZoomModal({ show: false, url: '', title: '' });
@@ -49,10 +50,8 @@ const InspectionDetailPage = () => {
             const postResponse = await triggerAnomalyDetection(id, currentBaselineImageName, currentTempThreshold);
             setAnomalyResult(postResponse.data);
             setTimestamp(new Date().getTime());
-
             setRefreshKey(prev => prev + 1);
             await fetchData();
-
         } catch (error) {
             showErr('Anomaly detection failed. Check server logs.');
         } finally {
@@ -73,18 +72,16 @@ const InspectionDetailPage = () => {
                 setBaselineImageName(currentBaselineName);
             }
             if (inspectionResponse.data.thermalImage) {
-                let userAnnotationExists = false;
+                let hasHistory = false;
                 let savedAnnotationsForDisplay = [];
 
                 try {
                     const allAnnotationsResponse = await getAllAnnotationsForDisplay(inspectionId);
                     savedAnnotationsForDisplay = allAnnotationsResponse.data;
-                    const activeAnnotations = savedAnnotationsForDisplay.filter(a => a.currentStatus !== 'USER_DELETED');
-                    userAnnotationExists = activeAnnotations && activeAnnotations.length > 0;
-                    setHasUserAnnotations(userAnnotationExists);
+                    // Check if ANY history exists (even deleted ones)
+                    hasHistory = savedAnnotationsForDisplay && savedAnnotationsForDisplay.length > 0;
                 } catch (annotationErr) {
                     console.warn("Could not check for saved annotations:", annotationErr);
-                    setHasUserAnnotations(false);
                 }
 
                 try {
@@ -92,9 +89,15 @@ const InspectionDetailPage = () => {
                     setAnomalyResult(resultResponse.data);
                     detectionTriggeredRef.current = true;
 
-                    if (userAnnotationExists) {
-                        setActiveAnomalyDetails(savedAnnotationsForDisplay);
+                    if (hasHistory) {
+                        // --- FIX: Show User View if history exists ---
+                        setHasUserAnnotations(true);
+                        // Only show non-deleted annotations in the list and image
+                        const visibleAnnotations = savedAnnotationsForDisplay.filter(a => a.currentStatus !== 'USER_DELETED');
+                        setActiveAnomalyDetails(visibleAnnotations);
                     } else {
+                        // --- Fallback to AI View ---
+                        setHasUserAnnotations(false);
                         const aiDetails = JSON.parse(resultResponse.data.detectionJsonOutput || '[]').map(ann => ({
                             currentStatus: ann.type || 'FAULTY',
                             originalSource: 'AI',
@@ -134,6 +137,10 @@ const InspectionDetailPage = () => {
     };
 
     useEffect(() => { fetchData(); }, [inspectionId]);
+
+    const handleSelectAnomaly = (id) => {
+        setSelectedAnomalyId(prevId => (prevId === id ? null : id));
+    };
 
     const handleViewBaselineImage = () => {
         if (transformer) {
@@ -224,11 +231,13 @@ const InspectionDetailPage = () => {
     const hasBaselineImage = !!(transformer && transformer.baselineImageName);
     const thermalImageUrl = hasThermalImage ? `${API_BASE_URL}/files/${thermalImage.fileName}` : '';
     const baselineImageUrl = hasBaselineImage ? `${API_BASE_URL}/api/transformers/${transformer.id}/baseline-image/view?timestamp=${new Date().getTime()}` : '';
-    const aiAnalyzedImageUrl = anomalyResult ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}` : thermalImageUrl;
-    const userAnnotatedImageUrl = `${API_BASE_URL}/api/inspections/${inspectionId}/annotations/image?key=${refreshKey}`;
-    const displayImageUrl = hasUserAnnotations ? userAnnotatedImageUrl : aiAnalyzedImageUrl;
 
-    // Add refresh key to ensure the image updates instantly when modes change
+    // Use raw thermal image as base (InteractiveImage draws boxes on top)
+    const annotatedImageUrl = thermalImageUrl;
+
+    const userAnnotatedImageUrl = `${API_BASE_URL}/api/inspections/${inspectionId}/annotations/image?key=${refreshKey}`;
+    const displayImageUrl = hasUserAnnotations ? userAnnotatedImageUrl : annotatedImageUrl;
+    // Force image refresh with key
     const finalDisplayImageUrl = `${displayImageUrl}&k=${refreshKey}`;
 
     const getStatusBadgeColor = (status) => {
@@ -254,30 +263,16 @@ const InspectionDetailPage = () => {
                             </div>
                             <div className="d-flex flex-column align-items-end">
                                 <div className={`badge rounded-pill text-white ${getStatusBadgeColor(inspection.status)} mb-2`}>{inspection.status}</div>
-
                                 <Link to={`/inspections/${inspectionId}/record`} className="btn btn-primary btn-sm mb-2">
                                     <i className="bi bi-file-text me-2"></i>Maintenance Record
                                 </Link>
-
-                                {isUserLoggedIn && !hasBaselineImage && (
-                                    <BaselineImageUploader
-                                        transformerId={transformer.id}
-                                        onUploadSuccess={fetchData}
-                                    />
-                                )}
+                                {isUserLoggedIn && !hasBaselineImage && (<BaselineImageUploader transformerId={transformer.id} onUploadSuccess={fetchData} />)}
                                 {hasBaselineImage && (
                                     <small className="text-muted mt-2 d-flex align-items-center">
-                                        Baseline:
-                                        <span className="text-primary ms-2 me-2">{baselineImageName}</span>
+                                        Baseline: <span className="text-primary ms-2 me-2">{baselineImageName}</span>
                                         <div className="d-flex align-items-center ms-2">
-                                            <Button variant="outline-info" size="sm" onClick={handleViewBaselineImage} className="me-2 d-flex align-items-center py-1 px-2" title="View Baseline Image">
-                                                <i className="bi bi-eye-fill"></i>
-                                            </Button>
-                                            {isAdmin && (
-                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)} className="d-flex align-items-center py-1 px-2" title="Delete Baseline Image">
-                                                <i className="bi bi-trash-fill"></i>
-                                            </Button>
-                                            )}
+                                            <Button variant="outline-info" size="sm" onClick={handleViewBaselineImage} className="me-2 d-flex align-items-center py-1 px-2" title="View Baseline Image"><i className="bi bi-eye-fill"></i></Button>
+                                            {isAdmin && (<Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)} className="d-flex align-items-center py-1 px-2" title="Delete Baseline Image"><i className="bi bi-trash-fill"></i></Button>)}
                                         </div>
                                     </small>
                                 )}
@@ -351,35 +346,33 @@ const InspectionDetailPage = () => {
                                                 }}
                                                 onCancel={() => setIsAnnotating(false)}
                                             />
-                                            ) : (
-                                                <>
+                                        ) : (
+                                            <>
                                                 <div onClick={() => handleOpenZoomModal(displayImageUrl, 'Analyzed Image')} style={{ cursor: 'zoom-in' }}>
                                                     <InteractiveImage
-                                                        imageUrl={finalDisplayImageUrl}
+                                                        imageUrl={thermalImageUrl}
                                                         anomalies={JSON.stringify(activeAnomalyDetails.map(a => {
                                                             const x = a.x !== undefined ? a.x : (a.location?.x_min || 0);
                                                             const y = a.y !== undefined ? a.y : (a.location?.y_min || 0);
                                                             const w = a.width !== undefined ? a.width : ((a.location?.x_max || 0) - x);
                                                             const h = a.height !== undefined ? a.height : ((a.location?.y_max || 0) - y);
-                                                            return {
-                                                                id: a.id,
-                                                                location: { x_min: x, y_min: y, x_max: x + w, y_max: y + h }
-                                                            };
+                                                            return { id: a.id, x, y, width: w, height: h };
                                                         }))}
                                                         onSelect={(id) => {
                                                              const element = document.getElementById(`anomaly-list-item-${id}`);
                                                              if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                             handleSelectAnomaly(id);
                                                          }}
-                                                        selectedId={null}
+                                                        selectedId={selectedAnomalyId}
                                                         onDelete={() => {}}
                                                         isAdmin={false}
                                                     />
                                                     <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small>
                                                 </div>
                                                 {isAdmin && anomalyResult && (<Button variant="primary" onClick={() => setIsAnnotating(true)} className="mt-2"><i className="bi bi-pencil-square me-2"></i>Correct Annotations</Button>)}
-                                                </>
-                                            )
-                                        ) : showThermalUploader ? (
+                                            </>
+                                        )
+                                    ) : showThermalUploader ? (
                                         <ThermalImageUpload inspectionId={inspection.id} onUploadSuccess={handleImageUploadSuccess} />
                                     ) : (
                                         <div style={{ minHeight: '200px', display: 'grid', placeContent: 'center' }}><p className="text-muted">No thermal image available.</p></div>
@@ -402,7 +395,7 @@ const InspectionDetailPage = () => {
                                 </Button>}
                         </div>
 
-                        {/* Removed redundant Interactive Image from here */}
+                        {/* Interactive Image moved to top card, removed here */}
 
                         <ul className="list-group list-group-flush">
                             {activeAnomalyDetails.map((anomaly, index) => {
@@ -438,7 +431,7 @@ const InspectionDetailPage = () => {
                                     : (anomaly.severity_score ? anomaly.severity_score : <span className="text-muted fst-italic">Manually Added</span>);
 
                                 return (
-                                    <li key={anomalyId} id={`anomaly-list-item-${anomalyId}`} className="list-group-item">
+                                    <li key={anomalyId} id={`anomaly-list-item-${anomalyId}`} className={`list-group-item ${anomalyId === selectedAnomalyId ? 'bg-info-subtle' : ''}`} onClick={() => handleSelectAnomaly(anomalyId)} style={{ transition: 'background-color 0.3s', cursor: 'pointer' }}>
                                         <div className="d-flex justify-content-between align-items-center">
                                             <div>
                                                 <strong>Anomaly {index + 1}:</strong>
@@ -460,6 +453,7 @@ const InspectionDetailPage = () => {
                     </Card.Body>
                 </Card>
             )}
+
             <NotesCard inspectionId={inspection.id} initialNotes={inspection.notes} onSave={handleSaveNotes} showOk={showOk} showErr={showErr} isAdmin={isAdmin} />
             <ZoomableImageModal show={zoomModal.show} onClose={handleCloseZoomModal} imageUrl={zoomModal.url} title={zoomModal.title} />
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}
