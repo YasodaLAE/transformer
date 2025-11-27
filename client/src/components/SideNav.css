@@ -1,0 +1,22 @@
+.side-nav {
+  width: 220px;
+  background-color: #ffffff;
+  border-right: 1px solid #e0e0e0;
+  padding-top: 20px;
+  flex-shrink: 0;
+}
+.side-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.side-nav li a {
+  display: block;
+  padding: 10px 20px;
+  text-decoration: none;
+  color: #333;
+}
+.side-nav li a.active {
+  background-color: #eef2f5;
+  font-weight: bold;
+}

@@ -1,0 +1,143 @@
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:8080'; // The Spring Boot backend URL
+
+export const getAllTransformers = () => {
+    return axios.get(`${API_BASE_URL}/api/transformers`);
+};
+
+export const getTransformerById = (id) => {
+    return axios.get(`${API_BASE_URL}/api/transformers/${id}`);
+};
+
+export const getInspectionsByTransformer = (transformerId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/by-transformer/${transformerId}`);
+};
+
+export const createTransformer = (transformerData) => {
+    return axios.post(`${API_BASE_URL}/api/transformers`, transformerData);
+};
+
+export const deleteTransformer = (id) => {
+    return axios.delete(`${API_BASE_URL}/api/transformers/${id}`);
+};
+
+export const createInspection = (inspectionData) => {
+    return axios.post(`${API_BASE_URL}/api/inspections`, inspectionData);
+};
+
+export const deleteInspection = (id) => {
+    return axios.delete(`${API_BASE_URL}/api/inspections/${id}`);
+};
+
+export const getInspectionById = (id) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${id}`);
+};
+
+export const uploadBaselineImage = (transformerId, formData) => {
+    return axios.post(`${API_BASE_URL}/api/transformers/${transformerId}/baseline-image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};
+
+export const updateInspection = (id, inspectionData) => {
+    return axios.put(`${API_BASE_URL}/api/inspections/${id}`, inspectionData);
+};
+
+export const deleteBaselineImage = (transformerId) => {
+    return axios.delete(`${API_BASE_URL}/api/transformers/${transformerId}/baseline-image`);
+};
+
+export const uploadThermalImage = (inspectionId, formData) => {
+    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/thermal-image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+};
+
+export const deleteThermalImage = (imageId) => {
+    return axios.delete(`${API_BASE_URL}/api/inspections/thermal-image/${imageId}`);
+};
+
+export const updateTransformer = (id, transformerData) => {
+    return axios.put(`${API_BASE_URL}/api/transformers/${id}`, transformerData);
+};
+
+export const getAllInspections = async () => {
+    return axios.get(`${API_BASE_URL}/api/inspections`);
+};
+
+export const getAnomalyDetectionResult = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/anomalies`);
+};
+
+//export const triggerAnomalyDetection = (inspectionId, baselineFileName, tempThresholdPercentage) => {
+//    const requestBody = {
+//            baselineFileName: baselineFileName,
+//            tempThresholdPercentage: tempThresholdPercentage
+//    };
+//    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`, requestBody);
+//};
+
+// In client/src/services/apiService.js
+
+// client/src/services/apiService.js
+
+export const triggerAnomalyDetection = (inspectionId, baselineFileName, threshold) => {
+    // Correct URL and correct JSON Body payload
+    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`, {
+        baselineFileName: baselineFileName,      // Must match field name in DetectionRequest DTO
+        tempThresholdPercentage: threshold       // Must match field name in DetectionRequest DTO
+    });
+};
+
+export const getAnnotatedAnomalyImage = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image`, {
+        responseType: 'blob'
+    });
+};
+
+export const getAnnotations = async (inspectionId) => {
+    const response = await axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`);
+    return response.data;
+};
+
+export const saveAnnotations = async (inspectionId, finalAnnotations) => {
+    // The payload must match the AnnotationSaveRequest DTO structure on the backend
+    const saveRequest = {
+        finalAnnotations: finalAnnotations
+    };
+
+    const response = await axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations`, saveRequest);
+    return response.data;
+};
+
+export const getAllAnnotationsForDisplay = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/annotations/all-for-display`);
+};
+
+export const exportFeedbackLog = (inspectionId) => {
+    // Note: We tell axios we expect a 'blob' response type for file download handling
+    return axios.get(`${API_BASE_URL}/api/export/inspection/${inspectionId}/feedback-log`, { responseType: 'blob' });
+};
+
+export const exportAllFeedbackLog = () => {
+    // Calls the new endpoint: /api/inspections/annotations/export/all
+    return axios.get(`${API_BASE_URL}/api/inspections/annotations/export/all`, {
+        responseType: 'blob'
+    });
+};
+
+export const triggerModelFineTuning = () => {
+    // New endpoint for triggering the process
+    return axios.post(`${API_BASE_URL}/api/inspections/finetune-model`);
+};
+
+// --- PHASE 4: MAINTENANCE RECORDS ---
+
+export const getMaintenanceRecord = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/maintenance-record`);
+};
+
+export const saveMaintenanceRecord = (inspectionId, recordData) => {
+    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/maintenance-record`, recordData);
+};
