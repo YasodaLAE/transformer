@@ -425,7 +425,7 @@ const MaintenanceRecordPage = () => {
                             </Col>
                         </Row>
 
-                        <h7 className="text-secondary">Status</h7>
+                        <h6 className="text-secondary">Status</h6>
                         <Row>
                             {/* Transformer Status */}
                             <Col md={6}>
@@ -465,7 +465,7 @@ const MaintenanceRecordPage = () => {
                         {/* ================= ELECTRICAL READINGS ================= */}
                         <h6 className="text-primary mb-3">Readings</h6>
 
-                        <h7 className="text-secondary">Voltage / Current</h7>
+                        <h6 className="text-secondary">Voltage / Current</h6>
                         <Row className="mb-3">
 
                             <Col md={4}>
