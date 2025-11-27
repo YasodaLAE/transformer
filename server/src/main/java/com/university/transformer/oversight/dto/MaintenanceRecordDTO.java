@@ -5,7 +5,9 @@ import com.university.transformer.oversight.model.Transformer;
 import com.university.transformer.oversight.model.Inspection;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
+import java.time.LocalDateTime; // <-- Updated import to include Time
 import java.time.LocalTime;
 
 @Data
@@ -14,23 +16,32 @@ public class MaintenanceRecordDTO {
 
     private Long id;
     private Long inspectionId;
+    private String inspectionNo;
 
-    // Read-Only Context
+    // --- Read-Only Context (Enhanced) ---
     private String transformerId;
     private String region;
     private String location;
     private String capacity;
     private String poleId;
-    private LocalDate inspectionDate;
+    private String transformerType;
+    private String noOfFeeders;
 
-    // --- NEW FIELD ---
+    // --- Updated to LocalDateTime to include Time ---
+    private LocalDateTime inspectionDate;
+    private LocalDateTime maintenanceDate;
+    // -----------------------------------------------
+
+    private String inspectionStatus;
+
     private String thermalImageFileName;
-    // -----------------
 
-    // Editable Fields
-    private LocalTime jobStartedTime;
-    private LocalTime jobCompletedTime;
+    // New Engineer Info
+    private String inspectorName;
+    private LocalDate inspectionEngineerDate;
+    private LocalTime inspectionEngineerTime;
 
+    // --- Editable Fields ---
     private String voltageL1;
     private String voltageL2;
     private String voltageL3;
@@ -44,11 +55,14 @@ public class MaintenanceRecordDTO {
 
     private String transformerStatus;
     private String recommendedAction;
+    private String correctiveAction;
     private String comments;
 
     public MaintenanceRecordDTO(MaintenanceRecord record, Inspection inspection) {
         this.inspectionId = inspection.getId();
+        this.inspectionNo = inspection.getInspectionNo();
 
+        // Populate Read-Only Data from Transformer
         if (inspection.getTransformer() != null) {
             Transformer t = inspection.getTransformer();
             this.transformerId = t.getTransformerId();
@@ -56,22 +70,29 @@ public class MaintenanceRecordDTO {
             this.location = t.getDetails();
             this.capacity = t.getCapacity();
             this.poleId = t.getPoleId();
+            this.transformerType = t.getTransformerType();
+            this.noOfFeeders = t.getNoOfFeeders();
         }
 
-        this.inspectionDate = inspection.getInspectedDate() != null
-                ? inspection.getInspectedDate().toLocalDate()
-                : null;
+        // Populate Read-Only Data from Inspection
+        // We now assign the full LocalDateTime object directly
+        this.inspectionDate = inspection.getInspectedDate();
+        this.maintenanceDate = inspection.getMaintenanceDate();
+        this.inspectionStatus = inspection.getStatus();
 
-        // --- NEW LOGIC: Get the image filename ---
         if (inspection.getThermalImage() != null) {
             this.thermalImageFileName = inspection.getThermalImage().getFileName();
         }
 
+        // Populate Editable Data
         if (record != null) {
             this.id = record.getId();
-            this.jobStartedTime = record.getJobStartedTime();
-            this.jobCompletedTime = record.getJobCompletedTime();
 
+            // Map New Fields
+            this.inspectorName = record.getInspectorName();
+            this.inspectionEngineerDate = record.getInspectionEngineerDate();
+            this.inspectionEngineerTime = record.getInspectionEngineerTime();
+            this.correctiveAction = record.getCorrectiveAction();
             this.voltageL1 = record.getVoltageL1();
             this.voltageL2 = record.getVoltageL2();
             this.voltageL3 = record.getVoltageL3();

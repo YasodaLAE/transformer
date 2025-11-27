@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
@@ -21,12 +23,12 @@ public class MaintenanceRecord {
     @JsonBackReference
     private Inspection inspection;
 
-    // --- Job Timing ---
-    private LocalTime jobStartedTime;
-    private LocalTime jobCompletedTime;
+    // --- Engineer Information (NEW) ---
+    private String inspectorName;
+    private LocalDate inspectionEngineerDate;
+    private LocalTime inspectionEngineerTime;
 
-    // --- Electrical Readings (FR4.2) ---
-    // Storing as String to allow flexibility (e.g. "230V")
+    // --- Electrical Readings ---
     private String voltageL1;
     private String voltageL2;
     private String voltageL3;
@@ -35,13 +37,16 @@ public class MaintenanceRecord {
     private String currentL2;
     private String currentL3;
 
-    private String oilLevel; // Standard check
-    private String oilTemperature; // Standard check
+    private String oilLevel;
+    private String oilTemperature;
 
-    // --- Status & Remarks (FR4.2) ---
-    private String transformerStatus; // OK, Needs Maintenance, Urgent
+    // --- Status & Remarks ---
+    private String transformerStatus;
     private String recommendedAction;
 
     @Column(columnDefinition = "TEXT")
-    private String comments; // General remarks
+    private String correctiveAction; // (NEW)
+
+    @Column(columnDefinition = "TEXT")
+    private String comments;
 }

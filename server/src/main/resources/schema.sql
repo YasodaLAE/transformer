@@ -15,21 +15,6 @@ DROP TABLE IF EXISTS transformer;
 --  CREATE TABLES (Parents First, Then Children)
 -- =================================================================
 
--- 1. Create 'transformer' table (Parent)
---CREATE TABLE transformer (
---  id BIGINT PRIMARY KEY AUTO_INCREMENT,
---  transformer_id VARCHAR(255),
---  pole_id VARCHAR(255),
---  region VARCHAR(255),
---  transformer_type VARCHAR(255),
---  details VARCHAR(255),
---  baseline_image_condition VARCHAR(255),
---  baseline_image_name VARCHAR(255),
---  baseline_image_upload_timestamp TIMESTAMP,
---  baseline_image_uploader VARCHAR(255),
---  capacity VARCHAR(255),
---  no_of_feeders INT
---);
 CREATE TABLE transformer (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   transformer_id VARCHAR(255),
@@ -109,33 +94,35 @@ CREATE TABLE annotations (
     FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
 );
 
--- ... (Previous tables: transformer, inspection, thermal_image, anomaly_detection_result, annotations remain unchanged) ...
+--- ... (Previous tables unchanged) ...
 
--- 6. MAINTENANCE RECORD TABLE (Simplified)
-CREATE TABLE maintenance_record (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    inspection_id BIGINT NOT NULL UNIQUE,
+ -- 6. MAINTENANCE RECORD TABLE
+ CREATE TABLE maintenance_record (
+     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+     inspection_id BIGINT NOT NULL UNIQUE,
 
-    -- Job Details
-    job_started_time TIME,
-    job_completed_time TIME,
+     -- Engineer Info (NEW)
+     inspector_name VARCHAR(255),
+     inspection_engineer_date DATE,
+     inspection_engineer_time TIME,
 
-    -- Electrical Readings
-    voltage_l1 VARCHAR(50),
-    voltage_l2 VARCHAR(50),
-    voltage_l3 VARCHAR(50),
+     -- Electrical Readings
+     voltage_l1 VARCHAR(50),
+     voltage_l2 VARCHAR(50),
+     voltage_l3 VARCHAR(50),
 
-    current_l1 VARCHAR(50),
-    current_l2 VARCHAR(50),
-    current_l3 VARCHAR(50),
+     current_l1 VARCHAR(50),
+     current_l2 VARCHAR(50),
+     current_l3 VARCHAR(50),
 
-    oil_level VARCHAR(50),
-    oil_temperature VARCHAR(50),
+     oil_level VARCHAR(50),
+     oil_temperature VARCHAR(50),
 
-    -- Status & Remarks
-    transformer_status VARCHAR(50),
-    recommended_action VARCHAR(255),
-    comments TEXT,
+     -- Status & Remarks
+     transformer_status VARCHAR(50),
+     recommended_action VARCHAR(255),
+     corrective_action TEXT,
+     comments TEXT,
 
-    FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
-);
+     FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
+ );

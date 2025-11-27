@@ -39,10 +39,13 @@ public class MaintenanceRecordServiceImpl implements MaintenanceRecordService {
 
         record.setInspection(inspection);
 
-        // Map Simplified Fields
-        record.setJobStartedTime(dto.getJobStartedTime());
-        record.setJobCompletedTime(dto.getJobCompletedTime());
+        // --- Map New Fields ---
+        record.setInspectorName(dto.getInspectorName());
+        record.setInspectionEngineerDate(dto.getInspectionEngineerDate());
+        record.setInspectionEngineerTime(dto.getInspectionEngineerTime());
+        record.setCorrectiveAction(dto.getCorrectiveAction());
 
+        // Map Simplified Fields (No Job Times)
         record.setVoltageL1(dto.getVoltageL1());
         record.setVoltageL2(dto.getVoltageL2());
         record.setVoltageL3(dto.getVoltageL3());

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link} from 'react-router-dom';
-import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection, getAnnotations, getAllAnnotationsForDisplay, exportFeedbackLog } from '../services/apiService';
+import { useParams, Link } from 'react-router-dom';
+import { getInspectionById, deleteThermalImage, deleteBaselineImage, getTransformerById, getAnomalyDetectionResult, triggerAnomalyDetection, updateInspection, getAllAnnotationsForDisplay, exportFeedbackLog } from '../services/apiService';
 import ThermalImageUpload from '../components/ThermalImageUpload';
 import BaselineImageUploader from '../components/BaselineImageUploader';
 import { Card, Row, Col, Button, Spinner, Form } from 'react-bootstrap';
@@ -9,6 +9,7 @@ import Toast from '../components/Toast';
 import ZoomableImageModal from '../components/ZoomableImageModal';
 import NotesCard from '../components/NotesCard';
 import ImageAnnotator from '../components/ImageAnnotator';
+import InteractiveImage from '../components/InteractiveImage';
 
 const InspectionDetailPage = () => {
     const API_BASE_URL = 'http://localhost:8080';
@@ -48,7 +49,10 @@ const InspectionDetailPage = () => {
             const postResponse = await triggerAnomalyDetection(id, currentBaselineImageName, currentTempThreshold);
             setAnomalyResult(postResponse.data);
             setTimestamp(new Date().getTime());
-            setRefreshKey(0); // Reset to show AI image after re-run
+
+            setRefreshKey(prev => prev + 1);
+            await fetchData();
+
         } catch (error) {
             showErr('Anomaly detection failed. Check server logs.');
         } finally {
@@ -75,8 +79,6 @@ const InspectionDetailPage = () => {
                 try {
                     const allAnnotationsResponse = await getAllAnnotationsForDisplay(inspectionId);
                     savedAnnotationsForDisplay = allAnnotationsResponse.data;
-
-                    // Check for existence based on non deleted annotations for image annotation logic
                     const activeAnnotations = savedAnnotationsForDisplay.filter(a => a.currentStatus !== 'USER_DELETED');
                     userAnnotationExists = activeAnnotations && activeAnnotations.length > 0;
                     setHasUserAnnotations(userAnnotationExists);
@@ -91,10 +93,8 @@ const InspectionDetailPage = () => {
                     detectionTriggeredRef.current = true;
 
                     if (userAnnotationExists) {
-                        // Use user's saved annotations
                         setActiveAnomalyDetails(savedAnnotationsForDisplay);
                     } else {
-                        //  Parse and use the raw AI result
                         const aiDetails = JSON.parse(resultResponse.data.detectionJsonOutput || '[]').map(ann => ({
                             currentStatus: ann.type || 'FAULTY',
                             originalSource: 'AI',
@@ -105,6 +105,7 @@ const InspectionDetailPage = () => {
                             aiConfidence: ann.confidence,
                             aiSeverityScore: ann.severity_score,
                             faultType: ann.faultType,
+                            id: ann.id
                         }));
                         setActiveAnomalyDetails(aiDetails);
                     }
@@ -187,12 +188,8 @@ const InspectionDetailPage = () => {
         try {
             const date = new Date(ts);
             return new Intl.DateTimeFormat('en-GB', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false // 24-hour clock
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hour12: false
             }).format(date);
         } catch (e) {
             return ts;
@@ -201,11 +198,8 @@ const InspectionDetailPage = () => {
 
     const handleExportFeedback = async () => {
         try {
-            // response.data is the JSON blob from the backend
             const response = await exportFeedbackLog(inspectionId);
             const blob = new Blob([response.data], { type: 'application/json' });
-
-            // Trigger file download using a temporary URL
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -213,8 +207,7 @@ const InspectionDetailPage = () => {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            URL.revokeObjectURL(url); // Clean up the URL
-
+            URL.revokeObjectURL(url);
             showOk('Feedback log successfully exported as JSON.');
         } catch (err) {
             showErr('Failed to export feedback log. Check server logs.');
@@ -233,12 +226,10 @@ const InspectionDetailPage = () => {
     const baselineImageUrl = hasBaselineImage ? `${API_BASE_URL}/api/transformers/${transformer.id}/baseline-image/view?timestamp=${new Date().getTime()}` : '';
     const aiAnalyzedImageUrl = anomalyResult ? `${API_BASE_URL}/api/inspections/${inspectionId}/anomalies/image?t=${timestamp}` : thermalImageUrl;
     const userAnnotatedImageUrl = `${API_BASE_URL}/api/inspections/${inspectionId}/annotations/image?key=${refreshKey}`;
-    const displayImageUrl = hasUserAnnotations
-        ? userAnnotatedImageUrl // If user saved anything, show the user annotated image.
-        : aiAnalyzedImageUrl; // Otherwise, show the AI analyzed image.
+    const displayImageUrl = hasUserAnnotations ? userAnnotatedImageUrl : aiAnalyzedImageUrl;
 
-
-    const finalDisplayImageUrl = `${displayImageUrl}`; // Append refreshKey for instant update after save
+    // Add refresh key to ensure the image updates instantly when modes change
+    const finalDisplayImageUrl = `${displayImageUrl}&k=${refreshKey}`;
 
     const getStatusBadgeColor = (status) => {
         switch (status.toLowerCase()) {
@@ -248,6 +239,7 @@ const InspectionDetailPage = () => {
             default: return 'bg-secondary';
         }
     };
+
     const isUserLoggedIn = !!user;
     const showThermalUploader = isUserLoggedIn && !hasThermalImage;
 
@@ -262,19 +254,30 @@ const InspectionDetailPage = () => {
                             </div>
                             <div className="d-flex flex-column align-items-end">
                                 <div className={`badge rounded-pill text-white ${getStatusBadgeColor(inspection.status)} mb-2`}>{inspection.status}</div>
-                                {/* ... existing buttons ... */}
 
-                                {/* NEW BUTTON FOR MAINTENANCE RECORD */}
-                                <Link to={`/inspections/${inspectionId}/record`} className="btn btn-primary btn-sm ms-2">
-                                    Maintenance Record
+                                <Link to={`/inspections/${inspectionId}/record`} className="btn btn-primary btn-sm mb-2">
+                                    <i className="bi bi-file-text me-2"></i>Maintenance Record
                                 </Link>
-                                {isUserLoggedIn && !hasBaselineImage && (<BaselineImageUploader transformerId={transformer.id} onUploadSuccess={fetchData} />)}
+
+                                {isUserLoggedIn && !hasBaselineImage && (
+                                    <BaselineImageUploader
+                                        transformerId={transformer.id}
+                                        onUploadSuccess={fetchData}
+                                    />
+                                )}
                                 {hasBaselineImage && (
                                     <small className="text-muted mt-2 d-flex align-items-center">
-                                        Baseline: <span className="text-primary ms-2 me-2">{baselineImageName}</span>
+                                        Baseline:
+                                        <span className="text-primary ms-2 me-2">{baselineImageName}</span>
                                         <div className="d-flex align-items-center ms-2">
-                                            <Button variant="outline-info" size="sm" onClick={handleViewBaselineImage} className="me-2 d-flex align-items-center py-1 px-2" title="View Baseline Image"><i className="bi bi-eye-fill"></i></Button>
-                                            {isAdmin && (<Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)} className="d-flex align-items-center py-1 px-2" title="Delete Baseline Image"><i className="bi bi-trash-fill"></i></Button>)}
+                                            <Button variant="outline-info" size="sm" onClick={handleViewBaselineImage} className="me-2 d-flex align-items-center py-1 px-2" title="View Baseline Image">
+                                                <i className="bi bi-eye-fill"></i>
+                                            </Button>
+                                            {isAdmin && (
+                                            <Button variant="outline-danger" size="sm" onClick={() => handleDeleteBaseline(transformer.id)} className="d-flex align-items-center py-1 px-2" title="Delete Baseline Image">
+                                                <i className="bi bi-trash-fill"></i>
+                                            </Button>
+                                            )}
                                         </div>
                                     </small>
                                 )}
@@ -289,6 +292,7 @@ const InspectionDetailPage = () => {
                     </Card.Body>
                 </Card>
             )}
+
             <Card className="rounded-4 shadow-sm mb-4">
                 <Card.Body>
                     <div className="d-flex justify-content-between align-items-center mb-3">
@@ -308,10 +312,10 @@ const InspectionDetailPage = () => {
                                     <Button variant="outline-secondary" onClick={() => setTempThreshold(t => Math.min(1.0, t + 0.01))} disabled={isDetecting || tempThreshold >= 1.00} style={{ width: '25px' }}><i className="bi bi-plus-lg"></i></Button>
                                 </div>
                                 <span className="me-3 small">%</span>
-                                { isAdmin &&
-                                <Button variant="success" onClick={handleRunDetectionClick} disabled={isDetecting || !hasThermalImage || !hasBaselineImage}>
-                                    {isDetecting ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="bi bi-arrow-clockwise me-1"></i>} Re-Run
-                                </Button> }
+                                {isAdmin &&
+                                    <Button variant="success" onClick={handleRunDetectionClick} disabled={isDetecting || !hasThermalImage || !hasBaselineImage}>
+                                        {isDetecting ? <Spinner animation="border" size="sm" className="me-1" /> : <i className="bi bi-arrow-clockwise me-1"></i>} Re-Run
+                                    </Button>}
                             </div>
                         )}
                     </div>
@@ -339,20 +343,37 @@ const InspectionDetailPage = () => {
                                                 key={refreshKey}
                                                 inspectionId={inspectionId}
                                                 imageUrl={thermalImageUrl}
-                                                initialAnnotations={anomalyResult?.detectionJsonOutput}
+                                                initialAnnotations={anomalyResult?.detectionJsonOutput || '[]'}
                                                 onAnnotationsSaved={() => {
                                                     setIsAnnotating(false);
-                                                    setRefreshKey(prev => prev + 1); // Triggers visual refresh
-//
+                                                    setRefreshKey(prev => prev + 1);
                                                     fetchData();
                                                 }}
                                                 onCancel={() => setIsAnnotating(false)}
                                             />
                                             ) : (
                                                 <>
-                                                {/* Use the calculated displayImageUrl */}
                                                 <div onClick={() => handleOpenZoomModal(displayImageUrl, 'Analyzed Image')} style={{ cursor: 'zoom-in' }}>
-                                                    <img src={finalDisplayImageUrl} alt="Annotated Thermal" style={{ maxWidth: '100%' }} key={finalDisplayImageUrl} />
+                                                    <InteractiveImage
+                                                        imageUrl={finalDisplayImageUrl}
+                                                        anomalies={JSON.stringify(activeAnomalyDetails.map(a => {
+                                                            const x = a.x !== undefined ? a.x : (a.location?.x_min || 0);
+                                                            const y = a.y !== undefined ? a.y : (a.location?.y_min || 0);
+                                                            const w = a.width !== undefined ? a.width : ((a.location?.x_max || 0) - x);
+                                                            const h = a.height !== undefined ? a.height : ((a.location?.y_max || 0) - y);
+                                                            return {
+                                                                id: a.id,
+                                                                location: { x_min: x, y_min: y, x_max: x + w, y_max: y + h }
+                                                            };
+                                                        }))}
+                                                        onSelect={(id) => {
+                                                             const element = document.getElementById(`anomaly-list-item-${id}`);
+                                                             if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                         }}
+                                                        selectedId={null}
+                                                        onDelete={() => {}}
+                                                        isAdmin={false}
+                                                    />
                                                     <small className="text-muted mt-2 d-block">Click image to inspect (Zoom/Pan).</small>
                                                 </div>
                                                 {isAdmin && anomalyResult && (<Button variant="primary" onClick={() => setIsAnnotating(true)} className="mt-2"><i className="bi bi-pencil-square me-2"></i>Correct Annotations</Button>)}
@@ -369,98 +390,76 @@ const InspectionDetailPage = () => {
                     </Row>
                 </Card.Body>
             </Card>
+
             {activeAnomalyDetails && activeAnomalyDetails.length > 0 && !isAnnotating && (
                 <Card className="mt-4 rounded-4 shadow-sm">
                     <Card.Body>
-
                         <div className="d-flex justify-content-between align-items-center mb-3">
-                        <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4>
-                        { isAdmin &&
-                        <Button variant="outline-dark" size="sm" onClick={handleExportFeedback}>
-                            <i className="bi bi-download me-1"></i> Export Feedback Log (JSON)
-                        </Button> }
+                            <h4>Anomaly Details ({activeAnomalyDetails.length} Detected)</h4>
+                            {isAdmin &&
+                                <Button variant="outline-dark" size="sm" onClick={handleExportFeedback}>
+                                    <i className="bi bi-download me-1"></i> Export Feedback Log (JSON)
+                                </Button>}
                         </div>
+
+                        {/* Removed redundant Interactive Image from here */}
+
                         <ul className="list-group list-group-flush">
                             {activeAnomalyDetails.map((anomaly, index) => {
-                                // Check if the object contains the older raw AI structure
                                 const isRawAIData = anomaly.location && anomaly.location.x_min !== undefined;
-
-                                // Determine coordinates for display
                                 const xMin = isRawAIData ? anomaly.location.x_min : anomaly.x;
                                 const yMin = isRawAIData ? anomaly.location.y_min : anomaly.y;
                                 const xMax = isRawAIData ? anomaly.location.x_max : (anomaly.x + anomaly.width);
                                 const yMax = isRawAIData ? anomaly.location.y_max : (anomaly.y + anomaly.height);
+                                const anomalyId = anomaly.id || index;
 
                                 const sourceTag = anomaly.originalSource === 'USER'
-                                            ? <span className="badge bg-info ms-2">User Added</span>
-                                            : <span className="badge bg-secondary ms-2">AI Detected</span>;
+                                    ? <span className="badge bg-info ms-2">User Added</span>
+                                    : <span className="badge bg-secondary ms-2">AI Detected</span>;
 
-                                        let statusTagColor;
-                                        let statusTagText;
+                                let statusTagColor;
+                                let statusTagText;
+                                switch (anomaly.currentStatus) {
+                                    case 'USER_ADDED': statusTagColor = 'bg-success'; statusTagText = 'Added by ' + (anomaly.userId || 'Unknown'); break;
+                                    case 'USER_EDITED': statusTagColor = 'bg-warning text-dark'; statusTagText = 'Edited by ' + (anomaly.userId || 'Unknown'); break;
+                                    case 'USER_VALIDATED': statusTagColor = 'bg-primary'; statusTagText = 'Validated by ' + (anomaly.userId || 'Unknown'); break;
+                                    case 'USER_DELETED': statusTagColor = 'bg-dark'; statusTagText = 'Deleted by ' + (anomaly.userId || 'Unknown'); break;
+                                    default: statusTagColor = 'bg-danger'; statusTagText = anomaly.currentStatus || 'Faulty';
+                                }
+                                const statusTag = <span className={`badge ms-2 ${statusTagColor}`}>{statusTagText}</span>;
+                                const formattedTimestamp = formatTimestamp(anomaly.timestamp);
 
-                                        switch (anomaly.currentStatus) {
+                                const confidenceDisplay = anomaly.aiConfidence
+                                    ? `${(anomaly.aiConfidence * 100).toFixed(1)}%`
+                                    : (anomaly.confidence ? `${(anomaly.confidence * 100).toFixed(1)}%` : <span className="text-muted fst-italic">Manually Added</span>);
 
-                                            case 'USER_ADDED':
-                                                statusTagColor = 'bg-success';
-                                                statusTagText = 'Added by ' + (anomaly.userId || 'Unknown');
-                                                break;
-                                            case 'USER_EDITED':
-                                                statusTagColor = 'bg-warning text-dark';
-                                                statusTagText = 'Edited by ' + (anomaly.userId || 'Unknown');
-                                                break;
-                                            case 'USER_VALIDATED':
-                                                statusTagColor = 'bg-primary';
-                                                statusTagText = 'Validated by ' + (anomaly.userId || 'Unknown');
-                                                break;
-                                            case 'USER_DELETED':
-                                                statusTagColor = 'bg-dark';
-                                                statusTagText = 'Deleted by ' + (anomaly.userId || 'Unknown');
-                                                break;
-                                            default:
-                                                // This captures initial AI statuses
-                                                statusTagColor = 'bg-danger';
-                                                statusTagText = anomaly.currentStatus || 'Faulty';
-                                        }
-                                        const statusTag = <span className={`badge ms-2 ${statusTagColor}`}>{statusTagText}</span>;
+                                const severityDisplay = anomaly.aiSeverityScore
+                                    ? anomaly.aiSeverityScore
+                                    : (anomaly.severity_score ? anomaly.severity_score : <span className="text-muted fst-italic">Manually Added</span>);
 
-                                    const formattedTimestamp = formatTimestamp(anomaly.timestamp);
-                                    return (
-                                            <li key={anomaly.id || index} className="list-group-item">
-                                                <div className="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <strong>Anomaly {index + 1}:</strong>
-                                                        {sourceTag}
-                                                        {statusTag}
-                                                    </div>
-
-                                                    {formattedTimestamp && (
-                                                        <small className="text-muted ms-3 fw-bold">
-                                                            Last Updated: {formattedTimestamp}
-                                                        </small>
-                                                    )}
-                                                </div>
-
-
-                                                <small className="text-muted">
-                                                    Coordinates: ({Math.round(xMin)}, {Math.round(yMin)}) to ({Math.round(xMax)}, {Math.round(yMax)})
-
-
-                                                    {anomaly.aiConfidence && ` | Confidence: ${anomaly.aiConfidence}`}
-                                                    {anomaly.aiSeverityScore && ` | Severity Score: ${anomaly.aiSeverityScore}`}
-
-
-                                                    {!anomaly.aiConfidence && anomaly.confidence && ` | Confidence: ${anomaly.confidence}`}
-                                                    {!anomaly.aiSeverityScore && anomaly.severity_score && ` | Severity Score: ${anomaly.severity_score}`}
-
-                                                    {anomaly.comments && ` | Notes: ${anomaly.comments}`}
-                                                </small>
-                                            </li>
-                                        );
-                                    })}
-                            </ul>
-                                </Card.Body>
-                            </Card>
-                        )}
+                                return (
+                                    <li key={anomalyId} id={`anomaly-list-item-${anomalyId}`} className="list-group-item">
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>Anomaly {index + 1}:</strong>
+                                                {sourceTag}
+                                                {statusTag}
+                                            </div>
+                                            {formattedTimestamp && (<small className="text-muted ms-3 fw-bold">Last Updated: {formattedTimestamp}</small>)}
+                                        </div>
+                                        <small className="text-muted">
+                                            Coordinates: ({Math.round(xMin)}, {Math.round(yMin)}) to ({Math.round(xMax)}, {Math.round(yMax)})
+                                            &nbsp;| Confidence: {confidenceDisplay}
+                                            &nbsp;| Severity Score: {severityDisplay}
+                                            {anomaly.comments && ` | Notes: ${anomaly.comments}`}
+                                        </small>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </Card.Body>
+                </Card>
+            )}
             <NotesCard inspectionId={inspection.id} initialNotes={inspection.notes} onSave={handleSaveNotes} showOk={showOk} showErr={showErr} isAdmin={isAdmin} />
             <ZoomableImageModal show={zoomModal.show} onClose={handleCloseZoomModal} imageUrl={zoomModal.url} title={zoomModal.title} />
             {toast && <Toast {...toast} onClose={() => setToast(null)} />}

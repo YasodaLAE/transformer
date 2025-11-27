@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMaintenanceRecord, saveMaintenanceRecord } from '../services/apiService';
-import { Form, Button, Card, Row, Col, Spinner, Alert, Image } from 'react-bootstrap';
+import { getMaintenanceRecord, saveMaintenanceRecord, getAllAnnotationsForDisplay } from '../services/apiService';
+import { Form, Button, Card, Row, Col, Spinner, Alert, Image, Table, Badge } from 'react-bootstrap';
 import PageHeader from '../components/Header';
 
 const MaintenanceRecordPage = () => {
@@ -14,26 +14,47 @@ const MaintenanceRecordPage = () => {
     const [successMsg, setSuccessMsg] = useState(null);
 
     const [thermalImageName, setThermalImageName] = useState(null);
+    const [anomalies, setAnomalies] = useState([]);
 
     const [formData, setFormData] = useState({
+        // Transformer & Inspection Context
         transformerId: '',
+        inspectionNo: '',
         region: '',
         poleId: '',
-        inspectionDate: '',
+        capacity: '',
+        inspectionDate: '', // This holds the full ISO timestamp
+        maintenanceDate: '',
+        inspectionStatus: '',
 
-        jobStartedTime: '',
-        jobCompletedTime: '',
-
+        // Electrical Readings
         voltageL1: '', voltageL2: '', voltageL3: '',
         currentL1: '', currentL2: '', currentL3: '',
 
+        // Oil Status
         oilLevel: '',
         oilTemperature: '',
 
+        // Conclusion
         transformerStatus: '',
         recommendedAction: '',
         comments: ''
     });
+
+// Helper to ensure Date AND Time are shown
+    const formatDateTime = (isoString) => {
+        if (!isoString) return 'N/A';
+        const date = new Date(isoString);
+        // Format: "24/08/2025, 14:30"
+        return date.toLocaleString('en-GB', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false // Use 24-hour format to be clear
+        });
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -45,12 +66,14 @@ const MaintenanceRecordPage = () => {
 
                 setFormData({
                     transformerId: data.transformerId || '',
+                    inspectionNo: data.inspectionNo || '',
                     region: data.region || '',
                     poleId: data.poleId || '',
-                    inspectionDate: data.inspectionDate || '',
+                    capacity: data.capacity || '',
 
-                    jobStartedTime: data.jobStartedTime || '',
-                    jobCompletedTime: data.jobCompletedTime || '',
+                    inspectionDate: data.inspectionDate || '',
+                    maintenanceDate: data.maintenanceDate || 'N/A',
+                    inspectionStatus: data.inspectionStatus || '',
 
                     voltageL1: data.voltageL1 || '',
                     voltageL2: data.voltageL2 || '',
@@ -67,6 +90,16 @@ const MaintenanceRecordPage = () => {
                     recommendedAction: data.recommendedAction || '',
                     comments: data.comments || ''
                 });
+
+                try {
+                    const anomalyResponse = await getAllAnnotationsForDisplay(inspectionId);
+                    const allAnomalies = anomalyResponse.data || [];
+                    const activeAnomalies = allAnomalies.filter(a => a.currentStatus !== 'USER_DELETED');
+                    setAnomalies(activeAnomalies);
+                } catch (err) {
+                    console.warn("Could not fetch anomalies:", err);
+                }
+
             } catch (err) {
                 console.error("Failed to load record:", err);
                 setError("Could not load maintenance record.");
@@ -89,7 +122,10 @@ const MaintenanceRecordPage = () => {
 
         try {
             await saveMaintenanceRecord(inspectionId, formData);
-            setSuccessMsg("Record saved successfully!");
+            setSuccessMsg("Record saved successfully! Redirecting...");
+            setTimeout(() => {
+                navigate(`/inspections/by-inspection/${inspectionId}`);
+            }, 1500);
         } catch (err) {
             console.error("Failed to save:", err);
             setError("Failed to save record. Please try again.");
@@ -98,7 +134,9 @@ const MaintenanceRecordPage = () => {
 
     if (loading) return <div className="p-5 text-center"><Spinner animation="border" /></div>;
 
-    const imageUrl = thermalImageName ? `${API_BASE_URL}/files/${thermalImageName}` : null;
+    const imageUrl = thermalImageName
+        ? `${API_BASE_URL}/api/inspections/${inspectionId}/annotations/image?t=${new Date().getTime()}`
+        : null;
 
     return (
         <div className="container-fluid mb-5">
@@ -109,11 +147,13 @@ const MaintenanceRecordPage = () => {
 
             <Form onSubmit={handleSubmit}>
 
-                {/* 1. Transformer Info (Read-Only) */}
+                {/* 1. General Information */}
+{/* 1. General Information */}
                 <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-light fw-bold">Transformer Details</Card.Header>
+                    <Card.Header className="bg-light fw-bold">General Information</Card.Header>
                     <Card.Body>
-                        <Row>
+                        {/* Row 1: Transformer Static Data */}
+                        <Row className="mb-3">
                             <Col md={3}>
                                 <Form.Group className="mb-3">
                                     <Form.Label className="text-muted small">Transformer ID</Form.Label>
@@ -134,76 +174,256 @@ const MaintenanceRecordPage = () => {
                             </Col>
                             <Col md={3}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="text-muted small">Inspection Date</Form.Label>
-                                    <Form.Control type="text" value={formData.inspectionDate} readOnly disabled />
+                                    <Form.Label className="text-muted small">Capacity (KVA)</Form.Label>
+                                    <Form.Control type="text" value={formData.capacity} readOnly disabled />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        {/* Row 2: Inspection Specific Data (Starts with Inspection No) */}
+                        <Row>
+                            <Col md={3}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="text-muted small">Inspection No.</Form.Label>
+                                    <Form.Control type="text" value={formData.inspectionNo} readOnly disabled className="fw-bold" />
+                                </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="text-muted small">Inspection Date & Time</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={formatDateTime(formData.inspectionDate)}
+                                        readOnly
+                                        disabled
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="text-muted small">Maintenance Date</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={formatDateTime(formData.maintenanceDate)}
+                                        readOnly
+                                        disabled
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={3}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="text-muted small">Status</Form.Label>
+                                    <div><Badge bg="info" className="p-2">{formData.inspectionStatus}</Badge></div>
                                 </Form.Group>
                             </Col>
                         </Row>
                     </Card.Body>
                 </Card>
-
-                {/* 2. Job Details */}
+                {/* 2. Inspection Reference & Anomalies */}
                 <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-light fw-bold">Job Details</Card.Header>
+                    <Card.Header className="bg-primary text-white fw-bold">Inspection Findings</Card.Header>
                     <Card.Body>
                         <Row>
-                            <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Job Started Time</Form.Label>
-                                    <Form.Control type="time" name="jobStartedTime" value={formData.jobStartedTime} onChange={handleChange} />
-                                </Form.Group>
+                            {/* Image Column */}
+                            <Col md={5} className="text-center border-end">
+                                {imageUrl ? (
+                                    <div style={{ overflow: 'hidden', borderRadius: '4px', backgroundColor: '#f8f9fa', padding: '10px' }}>
+                                        <Image
+                                            src={imageUrl}
+                                            alt="Annotated Thermal Inspection"
+                                            fluid
+                                            style={{ maxHeight: '400px', objectFit: 'contain' }}
+                                            onError={(e) => {
+                                                if (thermalImageName) {
+                                                    e.target.src = `${API_BASE_URL}/files/${thermalImageName}`;
+                                                }
+                                            }}
+                                        />
+                                        <div className="mt-2 text-muted small">Annotated Thermal Image</div>
+                                    </div>
+                                ) : (
+                                    <div className="p-5 text-muted bg-light rounded">
+                                        No thermal image available.
+                                    </div>
+                                )}
                             </Col>
-                            <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Job Completed Time</Form.Label>
-                                    <Form.Control type="time" name="jobCompletedTime" value={formData.jobCompletedTime} onChange={handleChange} />
-                                </Form.Group>
+
+                            {/* Anomalies Table Column */}
+                            <Col md={7}>
+                                <h6 className="fw-bold mb-3 text-secondary">Detected Anomalies</h6>
+                                {anomalies.length > 0 ? (
+                                    <Table striped bordered hover size="sm" style={{ fontSize: '0.85rem' }}>
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Type</th>
+                                                <th>Conf / Severity</th>
+                                                <th>Location (px)</th>
+                                                <th>Source</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {anomalies.map((anomaly, index) => {
+                                                const confidenceDisplay = anomaly.aiConfidence
+                                                    ? `Conf: ${(anomaly.aiConfidence * 100).toFixed(1)}%`
+                                                    : (anomaly.confidence ? `Conf: ${(anomaly.confidence * 100).toFixed(1)}%` : <span className="text-muted fst-italic">Manual</span>);
+
+                                                const severityDisplay = anomaly.aiSeverityScore
+                                                    ? `Sev: ${anomaly.aiSeverityScore}`
+                                                    : (anomaly.severity_score ? `Sev: ${anomaly.severity_score}` : "");
+
+                                                return (
+                                                    <tr key={index}>
+                                                        <td>{index + 1}</td>
+                                                        <td>
+                                                            <Badge bg={anomaly.faultType === 'Faulty' ? 'danger' : 'warning'}>
+                                                                {anomaly.faultType}
+                                                            </Badge>
+                                                        </td>
+                                                        <td>
+                                                            {confidenceDisplay} <br/> {severityDisplay}
+                                                        </td>
+                                                        <td className="font-monospace text-muted small">
+                                                            x:{Math.round(anomaly.x !== undefined ? anomaly.x : anomaly.location?.x_min)}
+                                                            y:{Math.round(anomaly.y !== undefined ? anomaly.y : anomaly.location?.y_min)}<br/>
+                                                            [{Math.round(anomaly.width !== undefined ? anomaly.width : (anomaly.location?.x_max - anomaly.location?.x_min))}x
+                                                             {Math.round(anomaly.height !== undefined ? anomaly.height : (anomaly.location?.y_max - anomaly.location?.y_min))}]
+                                                        </td>
+                                                        <td>
+                                                            {anomaly.originalSource === 'USER' ? (
+                                                                <Badge bg="info">Added by {anomaly.userId || 'User'}</Badge>
+                                                            ) : (
+                                                                <Badge bg="secondary">AI Detected</Badge>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </Table>
+                                ) : (
+                                    <div className="alert alert-light text-center">
+                                        No anomalies detected or all have been resolved.
+                                    </div>
+                                )}
                             </Col>
                         </Row>
                     </Card.Body>
                 </Card>
 
-                {/* --- NEW LOCATION: Inspection Image (Between Job Details and Readings) --- */}
                 <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-primary text-white fw-bold">Inspection Reference Image</Card.Header>
-                    <Card.Body className="text-center">
-                        {imageUrl ? (
-                            <div style={{ overflow: 'hidden', borderRadius: '4px', backgroundColor: '#f8f9fa', padding: '10px' }}>
-                                <Image src={imageUrl} alt="Thermal Inspection" fluid style={{ maxHeight: '500px', objectFit: 'contain' }} />
-                                <div className="mt-2 text-muted small">Thermal Image for Inspection #{inspectionId}</div>
-                            </div>
-                        ) : (
-                            <div className="p-5 text-muted bg-light rounded">
-                                No thermal image available for this inspection.
-                            </div>
-                        )}
-                    </Card.Body>
-                </Card>
+                    <Card.Header className="bg-primary text-white fw-bold">Engineer Records</Card.Header>
 
-                {/* 3. Readings */}
-                <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-light fw-bold">Readings</Card.Header>
                     <Card.Body>
-                        <h6 className="mb-3 text-primary">Voltage & Current</h6>
-                        <Row className="mb-3">
+
+                        {/* ================= ENGINEER INFORMATION ================= */}
+                        <h6 className="text-primary mb-3">Engineer Information</h6>
+
+                        <Row>
+                            {/* Inspector Name */}
                             <Col md={4}>
-                                <Form.Label>Phase 1 (L1)</Form.Label>
-                                <Form.Control placeholder="Voltage (V)" name="voltageL1" value={formData.voltageL1} onChange={handleChange} className="mb-2" />
-                                <Form.Control placeholder="Current (A)" name="currentL1" value={formData.currentL1} onChange={handleChange} />
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Inspector Name</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="inspectorName"
+                                        value={formData.inspectorName || ""}
+                                        onChange={handleChange}
+                                        placeholder="Enter inspector name"
+                                    />
+                                </Form.Group>
                             </Col>
+
+                            {/* Inspection Date */}
                             <Col md={4}>
-                                <Form.Label>Phase 2 (L2)</Form.Label>
-                                <Form.Control placeholder="Voltage (V)" name="voltageL2" value={formData.voltageL2} onChange={handleChange} className="mb-2" />
-                                <Form.Control placeholder="Current (A)" name="currentL2" value={formData.currentL2} onChange={handleChange} />
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Date</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        name="inspectionEngineerDate"
+                                        value={formData.inspectionEngineerDate || ""}
+                                        onChange={handleChange}
+                                    />
+                                </Form.Group>
                             </Col>
+
+                            {/* Inspection Time */}
                             <Col md={4}>
-                                <Form.Label>Phase 3 (L3)</Form.Label>
-                                <Form.Control placeholder="Voltage (V)" name="voltageL3" value={formData.voltageL3} onChange={handleChange} className="mb-2" />
-                                <Form.Control placeholder="Current (A)" name="currentL3" value={formData.currentL3} onChange={handleChange} />
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Time</Form.Label>
+                                    <Form.Control
+                                        type="time"
+                                        name="inspectionEngineerTime"
+                                        value={formData.inspectionEngineerTime || ""}
+                                        onChange={handleChange}
+                                    />
+                                </Form.Group>
                             </Col>
                         </Row>
 
-                        <h6 className="mb-3 text-primary border-top pt-3">Oil Status</h6>
+                        <h7 className="text-secondary">Status</h7>
+                        <Row>
+                            {/* Transformer Status */}
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Transformer Status</Form.Label>
+                                    <Form.Select
+                                        name="transformerStatus"
+                                        value={formData.transformerStatus}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="">-- Select Status --</option>
+                                        <option value="OK">OK</option>
+                                        <option value="Needs Maintenance">Needs Maintenance</option>
+                                        <option value="Urgent Attention">Urgent Attention</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+
+                            {/* Recommended Action */}
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Recommended Action</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="recommendedAction"
+                                        value={formData.recommendedAction}
+                                        onChange={handleChange}
+                                        placeholder="Enter recommended action"
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <hr />
+
+
+                        {/* ================= ELECTRICAL READINGS ================= */}
+                        <h6 className="text-primary mb-3">Readings</h6>
+
+                        <h7 className="text-secondary">Voltage / Current</h7>
+                        <Row className="mb-3">
+
+                            <Col md={4}>
+                                <Form.Label>L1</Form.Label>
+                                <Form.Control className="mb-2" placeholder="Voltage" name="voltageL1" value={formData.voltageL1} onChange={handleChange} />
+                                <Form.Control placeholder="Current" name="currentL1" value={formData.currentL1} onChange={handleChange} />
+                            </Col>
+
+                            <Col md={4}>
+                                <Form.Label>L2</Form.Label>
+                                <Form.Control className="mb-2" placeholder="Voltage" name="voltageL2" value={formData.voltageL2} onChange={handleChange} />
+                                <Form.Control placeholder="Current" name="currentL2" value={formData.currentL2} onChange={handleChange} />
+                            </Col>
+
+                            <Col md={4}>
+                                <Form.Label>L3</Form.Label>
+                                <Form.Control className="mb-2" placeholder="Voltage" name="voltageL3" value={formData.voltageL3} onChange={handleChange} />
+                                <Form.Control placeholder="Current" name="currentL3" value={formData.currentL3} onChange={handleChange} />
+                            </Col>
+                        </Row>
+
+                        <h6 className="text-secondary mt-4">Oil Status</h6>
                         <Row>
                             <Col md={6}>
                                 <Form.Group className="mb-3">
@@ -216,43 +436,50 @@ const MaintenanceRecordPage = () => {
                                     </Form.Select>
                                 </Form.Group>
                             </Col>
+
                             <Col md={6}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>Oil Temperature (°C)</Form.Label>
-                                    <Form.Control type="text" name="oilTemperature" value={formData.oilTemperature} onChange={handleChange} />
+                                    <Form.Control
+                                        type="text"
+                                        name="oilTemperature"
+                                        value={formData.oilTemperature}
+                                        onChange={handleChange}
+                                    />
                                 </Form.Group>
                             </Col>
                         </Row>
-                    </Card.Body>
-                </Card>
 
-                {/* 4. Status & Remarks */}
-                <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-light fw-bold">Conclusion</Card.Header>
-                    <Card.Body>
-                        <Row>
-                            <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Transformer Status</Form.Label>
-                                    <Form.Select name="transformerStatus" value={formData.transformerStatus} onChange={handleChange}>
-                                        <option value="">-- Select Status --</option>
-                                        <option value="OK">OK</option>
-                                        <option value="Needs Maintenance">Needs Maintenance</option>
-                                        <option value="Urgent Attention">Urgent Attention</option>
-                                    </Form.Select>
-                                </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Recommended Action</Form.Label>
-                                    <Form.Control type="text" name="recommendedAction" value={formData.recommendedAction} onChange={handleChange} />
-                                </Form.Group>
-                            </Col>
-                        </Row>
+                        <hr />
+
+
+                        {/* ================= CONCLUSION & REMARKS ================= */}
+                        <h6 className="text-primary mb-3">Remarks</h6>
+
                         <Form.Group className="mb-3">
-                            <Form.Label>Engineer Remarks</Form.Label>
-                            <Form.Control as="textarea" rows={3} name="comments" value={formData.comments} onChange={handleChange} />
+                            <Form.Label>Corrective Actions Performed</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                name="correctiveAction"
+                                value={formData.correctiveAction}
+                                onChange={handleChange}
+                                placeholder="Describe corrective actions taken"
+                            />
                         </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Additional Remarks</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                name="comments"
+                                value={formData.comments}
+                                onChange={handleChange}
+                                placeholder="Enter additional notes or remarks"
+                            />
+                        </Form.Group>
+
                     </Card.Body>
                 </Card>
 
