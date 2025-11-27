@@ -141,6 +141,11 @@ export const getMaintenanceRecord = (inspectionId) => {
 export const saveMaintenanceRecord = (inspectionId, recordData) => {
     return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/maintenance-record`, recordData);
 };
+export const exportMaintenanceRecordPdf = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/maintenance-record/pdf`, {
+        responseType: 'blob', // Important for binary file download
+    });
+};
 
 export const getMaintenanceHistoryByTransformer = (transformerId) => {
     return axios.get(`${API_BASE_URL}/api/transformers/${transformerId}/maintenance-history`);
