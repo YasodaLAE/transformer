@@ -30,8 +30,12 @@ const MaintenanceRecordPage = () => {
         oilLevel: '',
         oilTemperature: '',
 
+        inspectorName: '',
+        inspectionEngineerDate: '',
+        inspectionEngineerTime: '',
         transformerStatus: '',
         recommendedAction: '',
+        correctiveAction: '',
         comments: ''
     });
 
@@ -63,8 +67,12 @@ const MaintenanceRecordPage = () => {
                     oilLevel: data.oilLevel || '',
                     oilTemperature: data.oilTemperature || '',
 
+                    inspectorName: data.inspectorName || '',
+                    inspectionEngineerDate: data.inspectionEngineerDate || "",
+                    inspectionEngineerTime: data.inspectionEngineerTime || "",
                     transformerStatus: data.transformerStatus || '',
                     recommendedAction: data.recommendedAction || '',
+                    correctiveAction: data.correctiveAction || '',
                     comments: data.comments || ''
                 });
             } catch (err) {
@@ -109,40 +117,45 @@ const MaintenanceRecordPage = () => {
 
             <Form onSubmit={handleSubmit}>
 
-                {/* 1. Transformer Info (Read-Only) */}
+                {/* 1. Transformer Info (System-generated / Read Only) */}
                 <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-light fw-bold">Transformer Details</Card.Header>
+                    <Card.Header className="bg-light fw-bold">Transformer Details (System Generated)</Card.Header>
                     <Card.Body>
                         <Row>
                             <Col md={3}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="text-muted small">Transformer ID</Form.Label>
-                                    <Form.Control type="text" value={formData.transformerId} readOnly disabled className="fw-bold" />
+                                    <Form.Label>Transformer ID</Form.Label>
+                                    <Form.Control value={formData.transformerId} readOnly disabled />
                                 </Form.Group>
                             </Col>
+
                             <Col md={3}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="text-muted small">Region</Form.Label>
-                                    <Form.Control type="text" value={formData.region} readOnly disabled />
+                                    <Form.Label>Region</Form.Label>
+                                    <Form.Control value={formData.region} readOnly disabled />
                                 </Form.Group>
                             </Col>
+
                             <Col md={3}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="text-muted small">Pole ID</Form.Label>
-                                    <Form.Control type="text" value={formData.poleId} readOnly disabled />
+                                    <Form.Label>Pole ID</Form.Label>
+                                    <Form.Control value={formData.poleId} readOnly disabled />
                                 </Form.Group>
                             </Col>
+
                             <Col md={3}>
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="text-muted small">Inspection Date</Form.Label>
-                                    <Form.Control type="text" value={formData.inspectionDate} readOnly disabled />
+                                    <Form.Label>Inspection Date</Form.Label>
+                                    <Form.Control value={formData.inspectionDate} readOnly disabled />
                                 </Form.Group>
                             </Col>
                         </Row>
                     </Card.Body>
                 </Card>
 
-                {/* 2. Job Details */}
+
+
+                {/* 3. Job Details */}
                 <Card className="mb-4 shadow-sm">
                     <Card.Header className="bg-light fw-bold">Job Details</Card.Header>
                     <Card.Body>
@@ -153,6 +166,7 @@ const MaintenanceRecordPage = () => {
                                     <Form.Control type="time" name="jobStartedTime" value={formData.jobStartedTime} onChange={handleChange} />
                                 </Form.Group>
                             </Col>
+
                             <Col md={6}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>Job Completed Time</Form.Label>
@@ -163,47 +177,131 @@ const MaintenanceRecordPage = () => {
                     </Card.Body>
                 </Card>
 
-                {/* --- NEW LOCATION: Inspection Image (Between Job Details and Readings) --- */}
+                {/* 4. Inspection Image */}
                 <Card className="mb-4 shadow-sm">
                     <Card.Header className="bg-primary text-white fw-bold">Inspection Reference Image</Card.Header>
                     <Card.Body className="text-center">
                         {imageUrl ? (
-                            <div style={{ overflow: 'hidden', borderRadius: '4px', backgroundColor: '#f8f9fa', padding: '10px' }}>
-                                <Image src={imageUrl} alt="Thermal Inspection" fluid style={{ maxHeight: '500px', objectFit: 'contain' }} />
-                                <div className="mt-2 text-muted small">Thermal Image for Inspection #{inspectionId}</div>
-                            </div>
+                            <Image src={imageUrl} alt="Thermal Inspection" fluid style={{ maxHeight: '500px', objectFit: 'contain' }} />
                         ) : (
-                            <div className="p-5 text-muted bg-light rounded">
-                                No thermal image available for this inspection.
-                            </div>
+                            <div className="p-5 text-muted">No thermal image available</div>
                         )}
                     </Card.Body>
                 </Card>
-
-                {/* 3. Readings */}
+{/* 5. Engineer Records */}
                 <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-light fw-bold">Readings</Card.Header>
+                    <Card.Header className="bg-primary text-white fw-bold">Engineer Records</Card.Header>
+
                     <Card.Body>
-                        <h6 className="mb-3 text-primary">Voltage & Current</h6>
-                        <Row className="mb-3">
+
+                        {/* ================= ENGINEER INFORMATION ================= */}
+                        <h6 className="text-primary mb-3">Engineer Information</h6>
+
+                        <Row>
+                            {/* Inspector Name */}
                             <Col md={4}>
-                                <Form.Label>Phase 1 (L1)</Form.Label>
-                                <Form.Control placeholder="Voltage (V)" name="voltageL1" value={formData.voltageL1} onChange={handleChange} className="mb-2" />
-                                <Form.Control placeholder="Current (A)" name="currentL1" value={formData.currentL1} onChange={handleChange} />
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Inspector Name</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="inspectorName"
+                                        value={formData.inspectorName || ""}
+                                        onChange={handleChange}
+                                        placeholder="Enter inspector name"
+                                    />
+                                </Form.Group>
                             </Col>
+
+                            {/* Inspection Date */}
                             <Col md={4}>
-                                <Form.Label>Phase 2 (L2)</Form.Label>
-                                <Form.Control placeholder="Voltage (V)" name="voltageL2" value={formData.voltageL2} onChange={handleChange} className="mb-2" />
-                                <Form.Control placeholder="Current (A)" name="currentL2" value={formData.currentL2} onChange={handleChange} />
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Date</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        name="inspectionEngineerDate"
+                                        value={formData.inspectionEngineerDate || ""}
+                                        onChange={handleChange}
+                                    />
+                                </Form.Group>
                             </Col>
+
+                            {/* Inspection Time */}
                             <Col md={4}>
-                                <Form.Label>Phase 3 (L3)</Form.Label>
-                                <Form.Control placeholder="Voltage (V)" name="voltageL3" value={formData.voltageL3} onChange={handleChange} className="mb-2" />
-                                <Form.Control placeholder="Current (A)" name="currentL3" value={formData.currentL3} onChange={handleChange} />
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Time</Form.Label>
+                                    <Form.Control
+                                        type="time"
+                                        name="inspectionEngineerTime"
+                                        value={formData.inspectionEngineerTime || ""}
+                                        onChange={handleChange}
+                                    />
+                                </Form.Group>
                             </Col>
                         </Row>
 
-                        <h6 className="mb-3 text-primary border-top pt-3">Oil Status</h6>
+                        <h7 className="text-secondary">Status</h7>
+                        <Row>
+                            {/* Transformer Status */}
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Transformer Status</Form.Label>
+                                    <Form.Select
+                                        name="transformerStatus"
+                                        value={formData.transformerStatus}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="">-- Select Status --</option>
+                                        <option value="OK">OK</option>
+                                        <option value="Needs Maintenance">Needs Maintenance</option>
+                                        <option value="Urgent Attention">Urgent Attention</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+
+                            {/* Recommended Action */}
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Recommended Action</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="recommendedAction"
+                                        value={formData.recommendedAction}
+                                        onChange={handleChange}
+                                        placeholder="Enter recommended action"
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <hr />
+
+
+                        {/* ================= ELECTRICAL READINGS ================= */}
+                        <h6 className="text-primary mb-3">Readings</h6>
+
+                        <h7 className="text-secondary">Voltage / Current</h7>
+                        <Row className="mb-3">
+
+                            <Col md={4}>
+                                <Form.Label>L1</Form.Label>
+                                <Form.Control className="mb-2" placeholder="Voltage" name="voltageL1" value={formData.voltageL1} onChange={handleChange} />
+                                <Form.Control placeholder="Current" name="currentL1" value={formData.currentL1} onChange={handleChange} />
+                            </Col>
+
+                            <Col md={4}>
+                                <Form.Label>L2</Form.Label>
+                                <Form.Control className="mb-2" placeholder="Voltage" name="voltageL2" value={formData.voltageL2} onChange={handleChange} />
+                                <Form.Control placeholder="Current" name="currentL2" value={formData.currentL2} onChange={handleChange} />
+                            </Col>
+
+                            <Col md={4}>
+                                <Form.Label>L3</Form.Label>
+                                <Form.Control className="mb-2" placeholder="Voltage" name="voltageL3" value={formData.voltageL3} onChange={handleChange} />
+                                <Form.Control placeholder="Current" name="currentL3" value={formData.currentL3} onChange={handleChange} />
+                            </Col>
+                        </Row>
+
+                        <h6 className="text-secondary mt-4">Oil Status</h6>
                         <Row>
                             <Col md={6}>
                                 <Form.Group className="mb-3">
@@ -216,45 +314,53 @@ const MaintenanceRecordPage = () => {
                                     </Form.Select>
                                 </Form.Group>
                             </Col>
+
                             <Col md={6}>
                                 <Form.Group className="mb-3">
                                     <Form.Label>Oil Temperature (°C)</Form.Label>
-                                    <Form.Control type="text" name="oilTemperature" value={formData.oilTemperature} onChange={handleChange} />
+                                    <Form.Control
+                                        type="text"
+                                        name="oilTemperature"
+                                        value={formData.oilTemperature}
+                                        onChange={handleChange}
+                                    />
                                 </Form.Group>
                             </Col>
                         </Row>
+
+                        <hr />
+
+
+                        {/* ================= CONCLUSION & REMARKS ================= */}
+                        <h6 className="text-primary mb-3">Remarks</h6>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Corrective Actions Performed</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                name="correctiveAction"
+                                value={formData.correctiveAction}
+                                onChange={handleChange}
+                                placeholder="Describe corrective actions taken"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Additional Remarks</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                name="comments"
+                                value={formData.comments}
+                                onChange={handleChange}
+                                placeholder="Enter additional notes or remarks"
+                            />
+                        </Form.Group>
+
                     </Card.Body>
                 </Card>
 
-                {/* 4. Status & Remarks */}
-                <Card className="mb-4 shadow-sm">
-                    <Card.Header className="bg-light fw-bold">Conclusion</Card.Header>
-                    <Card.Body>
-                        <Row>
-                            <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Transformer Status</Form.Label>
-                                    <Form.Select name="transformerStatus" value={formData.transformerStatus} onChange={handleChange}>
-                                        <option value="">-- Select Status --</option>
-                                        <option value="OK">OK</option>
-                                        <option value="Needs Maintenance">Needs Maintenance</option>
-                                        <option value="Urgent Attention">Urgent Attention</option>
-                                    </Form.Select>
-                                </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Recommended Action</Form.Label>
-                                    <Form.Control type="text" name="recommendedAction" value={formData.recommendedAction} onChange={handleChange} />
-                                </Form.Group>
-                            </Col>
-                        </Row>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Engineer Remarks</Form.Label>
-                            <Form.Control as="textarea" rows={3} name="comments" value={formData.comments} onChange={handleChange} />
-                        </Form.Group>
-                    </Card.Body>
-                </Card>
 
                 <div className="d-flex justify-content-end gap-2">
                     <Button variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>

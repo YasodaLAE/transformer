@@ -266,7 +266,10 @@ const InspectionDetailPage = () => {
 
                                 {/* NEW BUTTON FOR MAINTENANCE RECORD */}
                                 <Link to={`/inspections/${inspectionId}/record`} className="btn btn-primary btn-sm ms-2">
-                                    Maintenance Record
+                                    Thermal Image Inspection Form
+                                </Link>
+                                <Link to={`/inspections/${inspectionId}/record`} className="btn btn-primary btn-sm ms-2">
+                                    Maintenance Records
                                 </Link>
                                 {isUserLoggedIn && !hasBaselineImage && (<BaselineImageUploader transformerId={transformer.id} onUploadSuccess={fetchData} />)}
                                 {hasBaselineImage && (
