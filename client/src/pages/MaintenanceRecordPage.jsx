@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getMaintenanceRecord, saveMaintenanceRecord, getAllAnnotationsForDisplay } from '../services/apiService';
 import { Form, Button, Card, Row, Col, Spinner, Alert, Image, Table, Badge } from 'react-bootstrap';
 import PageHeader from '../components/Header';
+import { exportMaintenanceRecordPdf } from '../services/apiService';
 
 const MaintenanceRecordPage = () => {
     const API_BASE_URL = 'http://localhost:8080';
@@ -113,6 +114,22 @@ const MaintenanceRecordPage = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleExportPdf = async () => {
+        try {
+            const response = await exportMaintenanceRecordPdf(inspectionId);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Maintenance_Record_${inspectionId}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error("Failed to export PDF", err);
+            setError("Failed to export PDF.");
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -263,43 +280,48 @@ const MaintenanceRecordPage = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {anomalies.map((anomaly, index) => {
-                                                const confidenceDisplay = anomaly.aiConfidence
-                                                    ? `Conf: ${(anomaly.aiConfidence * 100).toFixed(1)}%`
-                                                    : (anomaly.confidence ? `Conf: ${(anomaly.confidence * 100).toFixed(1)}%` : <span className="text-muted fst-italic">Manual</span>);
+                                                                            {anomalies.map((anomaly, index) => {
+                                                                                // 1. Logic to display Confidence/Severity or "Manual"
+                                                                                const confidenceDisplay = anomaly.aiConfidence
+                                                                                    ? `Conf: ${(anomaly.aiConfidence * 100).toFixed(1)}%`
+                                                                                    : (anomaly.confidence ? `Conf: ${(anomaly.confidence * 100).toFixed(1)}%` : <span className="text-muted fst-italic">Manual</span>);
 
-                                                const severityDisplay = anomaly.aiSeverityScore
-                                                    ? `Sev: ${anomaly.aiSeverityScore}`
-                                                    : (anomaly.severity_score ? `Sev: ${anomaly.severity_score}` : "");
+                                                                                const severityDisplay = anomaly.aiSeverityScore
+                                                                                    ? `Sev: ${anomaly.aiSeverityScore}`
+                                                                                    : (anomaly.severity_score ? `Sev: ${anomaly.severity_score}` : "");
 
-                                                return (
-                                                    <tr key={index}>
-                                                        <td>{index + 1}</td>
-                                                        <td>
-                                                            <Badge bg={anomaly.faultType === 'Faulty' ? 'danger' : 'warning'}>
-                                                                {anomaly.faultType}
-                                                            </Badge>
-                                                        </td>
-                                                        <td>
-                                                            {confidenceDisplay} <br/> {severityDisplay}
-                                                        </td>
-                                                        <td className="font-monospace text-muted small">
-                                                            x:{Math.round(anomaly.x !== undefined ? anomaly.x : anomaly.location?.x_min)}
-                                                            y:{Math.round(anomaly.y !== undefined ? anomaly.y : anomaly.location?.y_min)}<br/>
-                                                            [{Math.round(anomaly.width !== undefined ? anomaly.width : (anomaly.location?.x_max - anomaly.location?.x_min))}x
-                                                             {Math.round(anomaly.height !== undefined ? anomaly.height : (anomaly.location?.y_max - anomaly.location?.y_min))}]
-                                                        </td>
-                                                        <td>
-                                                            {anomaly.originalSource === 'USER' ? (
-                                                                <Badge bg="info">Added by {anomaly.userId || 'User'}</Badge>
-                                                            ) : (
-                                                                <Badge bg="secondary">AI Detected</Badge>
-                                                            )}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
+                                                                                // 2. FIX: Case-insensitive check for Faulty vs Potentially Faulty
+                                                                                const isFaulty = anomaly.faultType?.toUpperCase() === 'FAULTY';
+                                                                                const badgeColor = isFaulty ? 'danger' : 'warning';
+
+                                                                                return (
+                                                                                    <tr key={index}>
+                                                                                        <td>{index + 1}</td>
+                                                                                        <td>
+                                                                                            <Badge bg={badgeColor}>
+                                                                                                {anomaly.faultType}
+                                                                                            </Badge>
+                                                                                        </td>
+                                                                                        <td>
+                                                                                            {confidenceDisplay} <br/> {severityDisplay}
+                                                                                        </td>
+                                                                                        <td className="font-monospace text-muted small">
+                                                                                            x:{Math.round(anomaly.x !== undefined ? anomaly.x : anomaly.location?.x_min)}
+                                                                                            y:{Math.round(anomaly.y !== undefined ? anomaly.y : anomaly.location?.y_min)}<br/>
+                                                                                            [{Math.round(anomaly.width !== undefined ? anomaly.width : (anomaly.location?.x_max - anomaly.location?.x_min))}x
+                                                                                             {Math.round(anomaly.height !== undefined ? anomaly.height : (anomaly.location?.y_max - anomaly.location?.y_min))}]
+                                                                                        </td>
+                                                                                        <td>
+                                                                                            {anomaly.originalSource === 'USER' ? (
+                                                                                                <Badge bg="info">Added by {anomaly.userId || 'User'}</Badge>
+                                                                                            ) : (
+                                                                                                <Badge bg="secondary">AI Detected</Badge>
+                                                                                            )}
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                );
+                                                                            })}
+                                                                        </tbody>
                                     </Table>
                                 ) : (
                                     <div className="alert alert-light text-center">
@@ -486,6 +508,7 @@ const MaintenanceRecordPage = () => {
                 <div className="d-flex justify-content-end gap-2">
                     <Button variant="secondary" onClick={() => navigate(-1)}>Cancel</Button>
                     <Button variant="primary" type="submit" size="lg">Save Record</Button>
+                    <Button variant="outline-dark" onClick={handleExportPdf}>Export PDF</Button>
                 </div>
             </Form>
         </div>

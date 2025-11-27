@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime; // <-- Updated import to include Time
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -57,6 +59,20 @@ public class MaintenanceRecordDTO {
     private String recommendedAction;
     private String correctiveAction;
     private String comments;
+
+    // --- NEW: Anomaly List for PDF ---
+    private List<AnomalySimpleDTO> anomalyDetails = new ArrayList<>();
+
+    @Data
+    public static class AnomalySimpleDTO {
+        private String type;
+        private Double confidence;
+        private Integer severity;
+        private String source;
+        // New fields for PDF details
+        private String userId;
+        private String currentStatus;
+    }
 
     public MaintenanceRecordDTO(MaintenanceRecord record, Inspection inspection) {
         this.inspectionId = inspection.getId();

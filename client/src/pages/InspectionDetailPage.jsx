@@ -99,7 +99,7 @@ const InspectionDetailPage = () => {
                         // --- Fallback to AI View ---
                         setHasUserAnnotations(false);
                         const aiDetails = JSON.parse(resultResponse.data.detectionJsonOutput || '[]').map(ann => ({
-                            currentStatus: ann.type || 'FAULTY',
+                            currentStatus: ann.type || 'Faulty',
                             originalSource: 'AI',
                             x: ann.location.x_min,
                             y: ann.location.y_min,
