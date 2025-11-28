@@ -70,12 +70,24 @@ export const getAnomalyDetectionResult = (inspectionId) => {
     return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/anomalies`);
 };
 
-export const triggerAnomalyDetection = (inspectionId, baselineFileName, tempThresholdPercentage) => {
-    const requestBody = {
-            baselineFileName: baselineFileName,
-            tempThresholdPercentage: tempThresholdPercentage
-    };
-    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`, requestBody);
+//export const triggerAnomalyDetection = (inspectionId, baselineFileName, tempThresholdPercentage) => {
+//    const requestBody = {
+//            baselineFileName: baselineFileName,
+//            tempThresholdPercentage: tempThresholdPercentage
+//    };
+//    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`, requestBody);
+//};
+
+// In client/src/services/apiService.js
+
+// client/src/services/apiService.js
+
+export const triggerAnomalyDetection = (inspectionId, baselineFileName, threshold) => {
+    // Correct URL and correct JSON Body payload
+    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/detect-anomalies`, {
+        baselineFileName: baselineFileName,      // Must match field name in DetectionRequest DTO
+        tempThresholdPercentage: threshold       // Must match field name in DetectionRequest DTO
+    });
 };
 
 export const getAnnotatedAnomalyImage = (inspectionId) => {
@@ -118,4 +130,23 @@ export const exportAllFeedbackLog = () => {
 export const triggerModelFineTuning = () => {
     // New endpoint for triggering the process
     return axios.post(`${API_BASE_URL}/api/inspections/finetune-model`);
+};
+
+// --- PHASE 4: MAINTENANCE RECORDS ---
+
+export const getMaintenanceRecord = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/maintenance-record`);
+};
+
+export const saveMaintenanceRecord = (inspectionId, recordData) => {
+    return axios.post(`${API_BASE_URL}/api/inspections/${inspectionId}/maintenance-record`, recordData);
+};
+export const exportMaintenanceRecordPdf = (inspectionId) => {
+    return axios.get(`${API_BASE_URL}/api/inspections/${inspectionId}/maintenance-record/pdf`, {
+        responseType: 'blob', // Important for binary file download
+    });
+};
+
+export const getMaintenanceHistoryByTransformer = (transformerId) => {
+    return axios.get(`${API_BASE_URL}/api/transformers/${transformerId}/maintenance-history`);
 };

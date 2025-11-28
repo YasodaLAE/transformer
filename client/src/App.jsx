@@ -9,6 +9,8 @@ import { AuthProvider } from './hooks/AuthContext';
 import InspectionDetailPage from './pages/InspectionDetailPage';
 import AllInspectionsPage from './pages/AllInspectionsPage';
 import { TrainingStatusProvider } from './context/TrainingStatusContext.jsx';
+import MaintenanceRecordPage from './pages/MaintenanceRecordPage'; // <-- Import
+import RecordHistoryPage from './pages/RecordHistoryPage';
 
 function App() {
     return (
@@ -23,6 +25,8 @@ function App() {
                     <Route path="inspections/by-transformer/:transformerId" element={<InspectionPage/>}/>
                     <Route path="/inspections/by-inspection/:inspectionId" element={<InspectionDetailPage />} />
                     <Route path="/inspections" element={<AllInspectionsPage />} />
+                    <Route path="/inspections/:inspectionId/record" element={<MaintenanceRecordPage />} />
+                    <Route path="/transformers/:transformerId/maintenance-history" element={<RecordHistoryPage />} />
                 </Routes>
             </Layout>
         </Router>

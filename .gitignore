@@ -1,0 +1,16 @@
+# ignore uploaded images
+uploads/
+
+# ignore dataset images and labels
+server/src/main/resources/dataset/images/
+server/src/main/resources/dataset/labels/
+
+# ignore local python env
+server/.venv/
+.venv/
+
+# ignore macOS junk
+.DS_Store
+server/src/.DS_Store
+server/src/main/.DS_Store
+server/src/main/resources/.DS_Store

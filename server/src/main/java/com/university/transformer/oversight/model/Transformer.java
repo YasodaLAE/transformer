@@ -24,6 +24,9 @@ public class Transformer {
     private String noOfFeeders;
     private String transformerType;
     private String details;
+
+    // Removed: serialNumber, make, manufactureYear, ctRatio
+
     private String baselineImageName;
     private String baselineImageCondition;
     private String baselineImageUploader;
@@ -32,5 +35,4 @@ public class Transformer {
     @OneToMany(mappedBy = "transformer", cascade = CascadeType.ALL, fetch = FetchType.EAGER, orphanRemoval = true)
     @JsonManagedReference
     private List<Inspection> inspections;
-
 }

@@ -1,27 +1,20 @@
--- =================================================================
---  DROP TABLES (Children First, Then Parents)
--- =================================================================
--- These tables depend on 'inspection', so they must be dropped first.
-DROP TABLE IF EXISTS annotation_logs;
-DROP TABLE IF EXISTS annotations;             -- <-- NEW DEPENDENCY
+-- 1. Drop tables that reference 'inspection'
+DROP TABLE IF EXISTS maintenance_record;      -- <--- NEW: Drop this first!
 DROP TABLE IF EXISTS anomaly_detection_result;
-DROP TABLE IF EXISTS anomaly;
-
+DROP TABLE IF EXISTS annotations;
 DROP TABLE IF EXISTS thermal_image;
--- (Include any other child tables, like 'file_data', etc.)
+DROP TABLE IF EXISTS annotation_logs;
 
--- 2. Drop the parent table
+-- 2. Drop 'inspection' (which references 'transformer')
 DROP TABLE IF EXISTS inspection;
 
--- 3. Continue with the rest of the tables
+-- 3. Drop 'transformer' (Parent of all)
 DROP TABLE IF EXISTS transformer;
-
 
 -- =================================================================
 --  CREATE TABLES (Parents First, Then Children)
 -- =================================================================
 
--- 1. Create 'transformer' table (Parent)
 CREATE TABLE transformer (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   transformer_id VARCHAR(255),
@@ -29,12 +22,13 @@ CREATE TABLE transformer (
   region VARCHAR(255),
   transformer_type VARCHAR(255),
   details VARCHAR(255),
+  capacity VARCHAR(255),
+  no_of_feeders INT,
+  -- Existing Baseline fields
   baseline_image_condition VARCHAR(255),
   baseline_image_name VARCHAR(255),
   baseline_image_upload_timestamp TIMESTAMP,
-  baseline_image_uploader VARCHAR(255),
-  capacity VARCHAR(255),
-  no_of_feeders INT
+  baseline_image_uploader VARCHAR(255)
 );
 
 -- 2. Create 'inspection' table (Child of 'transformer')
@@ -99,3 +93,36 @@ CREATE TABLE annotations (
 
     FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
 );
+
+--- ... (Previous tables unchanged) ...
+
+ -- 6. MAINTENANCE RECORD TABLE
+ CREATE TABLE maintenance_record (
+     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+     inspection_id BIGINT NOT NULL UNIQUE,
+
+     -- Engineer Info (NEW)
+     inspector_name VARCHAR(255),
+     inspection_engineer_date DATE,
+     inspection_engineer_time TIME,
+
+     -- Electrical Readings
+     voltage_l1 VARCHAR(50),
+     voltage_l2 VARCHAR(50),
+     voltage_l3 VARCHAR(50),
+
+     current_l1 VARCHAR(50),
+     current_l2 VARCHAR(50),
+     current_l3 VARCHAR(50),
+
+     oil_level VARCHAR(50),
+     oil_temperature VARCHAR(50),
+
+     -- Status & Remarks
+     transformer_status VARCHAR(50),
+     recommended_action VARCHAR(255),
+     corrective_action TEXT,
+     comments TEXT,
+
+     FOREIGN KEY (inspection_id) REFERENCES inspection(id) ON DELETE CASCADE
+ );

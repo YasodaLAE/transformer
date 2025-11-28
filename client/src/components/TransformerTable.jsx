@@ -39,6 +39,7 @@ const TransformerTable = ({ transformers, onDelete, onEdit }) => {
                             <Link to={`/inspections/by-transformer/${transformer.id}`} className="btn btn-primary btn-sm me-2">
                                 View
                             </Link>
+
                             {isAdmin && (
                                 <Dropdown>
                                     <Dropdown.Toggle as={CustomToggle} id="dropdown-custom">

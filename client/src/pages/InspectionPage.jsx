@@ -9,7 +9,7 @@ import BaselineImageUploader from '../components/BaselineImageUploader';
 import { getAllTransformers } from '../services/apiService';
 import Spinner from '../components/Spinner';
 import Toast from '../components/Toast';
-
+import { Link } from "react-router-dom";
 
 /**
  * Renders the page for a specific Transformer ID, showing the transformer's details
@@ -145,6 +145,9 @@ const InspectionPage = () => {
             {transformer && (
                 <Card className="mb-4 rounded-4 shadow-sm">
                     <Card.Body>
+                        <Link to={`/transformers`} className="btn btn-sm btn-outline-secondary mb-3">
+                            <i className="bi bi-arrow-left me-1"></i> Back to Transformers
+                        </Link>
                         <div className="d-flex justify-content-between align-items-start mb-2">
                             <div className="d-flex flex-column">
                                 <h3 className="fw-bold">{transformer.transformerId}</h3>
@@ -162,6 +165,8 @@ const InspectionPage = () => {
                                         onUploadSuccess={handleBaselineUploadSuccess}
                                     />
                                 )}
+
+
                                 {/* Baseline Image Info and Actions */}
                                 {baselineImageName && (
                                     <small className="text-muted mt-2 d-flex align-items-center">
@@ -192,6 +197,12 @@ const InspectionPage = () => {
                                         </div>
                                     </small>
                                 )}
+                            <Link
+                                to={`/transformers/${transformerId}/maintenance-history`}
+                                className="btn btn-secondary btn-md"
+                            >
+                                <i className="bi bi-clock-history me-2"></i> View Full Maintenance History
+                            </Link>
                             </div>
                         </div>
                         {/* Summary Details Row */}
