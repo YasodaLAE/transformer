@@ -39,6 +39,36 @@ The anomaly detection view is equipped with intuitive tools enabling users to re
 
 All annotation actions are **automatically logged** with detailed metadata, ensuring full data traceability and removing the need for a manual save step.
 
+### 📊 Phase 4: Maintenance Record Sheet Generation
+
+This phase introduces a complete digital maintenance reporting workflow, allowing engineers to generate, fill, and store transformer-specific maintenance records.
+
+#### Maintenance Form Generation
+- A maintenance record form is automatically created for each inspection.
+- The form includes:
+  - Transformer details (ID, location, capacity)
+  - Inspection timestamp
+  - Embedded thermal image with AI + user-edited anomalies
+  - Full anomaly list with severity and confidence
+
+#### Engineer Inputs
+- Engineers can add:
+    - Inspector name, Date & Time
+    - Transformer status (OK / Needs Maintenance / Urgent Attention)
+    - Electrical readings (Voltage, Current, Oil Level/Temp)
+    - Recommended action
+    - Corrective actions
+    - Additional remarks
+- System-generated content is clearly separated from editable fields.
+
+#### Saving & History View
+- Completed maintenance records are saved to the database.
+- Each record is linked to the transformer, inspection ID, and annotations.
+- History viewer allows browsing all records for each transformer.
+- Record layout is printable and PDF-ready.
+
+---
+
 #### Feedback Integration for Model Improvement
 - All user modified annotations are stored alongside the original AI predictions in a dedicated log.
 - An administrator control in the dashboard allows triggering a backend process to **convert the complete annotation log into a YOLO-compatible dataset structure** and fine tune the existing model, directly using the human feedback.
